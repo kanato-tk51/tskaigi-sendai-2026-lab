@@ -23,6 +23,7 @@ import {
   EXPECTED_NODE,
   EXPECTED_NPM,
   IMAGE_NAME,
+  parseOutputBundle,
   projectInspectionPolicy,
   readJsonIfPresent,
   resolveResultPath,
@@ -43,6 +44,9 @@ const dockerHome = path.join(workRoot, "docker-home");
 const dockerConfig = path.join(workRoot, "docker-config");
 const latestRunFile = path.join(workRoot, "latest-run-id");
 const DOCKER_LOG_LIMIT = 2_097_152;
+const OUTPUT_TRANSFER_CODE = "DOCKER_CP_TMPFS_UNAVAILABLE";
+const OUTPUT_TRANSFER_LIMITATION =
+  "The required docker cp transfer could not read files from the /m0-output tmpfs in Docker 29.6.1; evidence used the fixed, path- and digest-validated docker start --attach bundle fallback.";
 
 function fixedDockerEnvironment() {
   return {
@@ -254,6 +258,7 @@ async function buildImage() {
   const inspection = JSON.parse(inspectImage.rawStdout)[0];
   const metadata = {
     schemaVersion: 1,
+    status: "success",
     builtAt: new Date().toISOString(),
     baseImage: BASE_IMAGE,
     baseImageDigest,
@@ -361,29 +366,38 @@ async function executeContainer({
       throw error;
     }
 
-    const start = await runDockerCommand({
-      arguments: ["start", "--attach", containerName],
-      stepId: `start-${nameSuffix}`,
-      logRoot,
-      recordRoot: rawRoot,
-      timeoutMs: 300_000,
-    });
-    commandRecords.push(start.record);
-
-    const copy = await runDockerCommand({
-      arguments: ["cp", `${containerName}:/m0-output/.`, rawRoot],
-      stepId: `copy-${nameSuffix}`,
-      logRoot,
-      recordRoot: rawRoot,
-    });
-    commandRecords.push(copy.record);
-    requireDockerSuccess(copy, "CONTAINER_OUTPUT_COPY_FAILED");
-
     const inspectionPath =
       mode === "official"
         ? path.join(rawRoot, "container/official-inspect.json")
         : path.join(rawRoot, "scenarios", scenarioId, "container-inspect.json");
     await writeJson(inspectionPath, inspection);
+
+    const start = await runDockerCommand({
+      arguments: ["start", "--attach", containerName],
+      stepId: `start-${nameSuffix}`,
+      logRoot,
+      recordRoot: rawRoot,
+      timeoutMs: 600_000,
+    });
+    commandRecords.push(start.record);
+    let parsed;
+    try {
+      parsed = parseOutputBundle(start.rawStdout, { mode, scenarioId });
+    } catch (cause) {
+      const error = new Error("CONTAINER_OUTPUT_TRANSFER_FAILED", { cause });
+      error.normalizedCode = "CONTAINER_OUTPUT_TRANSFER_FAILED";
+      throw error;
+    }
+    for (const file of parsed.decodedFiles) {
+      const destination = path.join(rawRoot, ...file.path.split("/"));
+      await mkdir(path.dirname(destination), { recursive: true });
+      await writeFile(destination, file.contents);
+    }
+    if (start.record.exitCode !== 0) {
+      const error = new Error("CONTAINER_RUNNER_FAILED");
+      error.normalizedCode = "CONTAINER_RUNNER_FAILED";
+      throw error;
+    }
     return { startRecord: start.record, inspection };
   } finally {
     if (created) {
@@ -455,6 +469,10 @@ async function updateScenarioInspection(rawRoot, scenarioId, inspection) {
   if (!result) return null;
   const issues = validateContainerInspection(inspection);
   result.isolationPolicy = projectInspectionPolicy(inspection);
+  result.limitations ??= [];
+  if (!result.limitations.includes(OUTPUT_TRANSFER_LIMITATION)) {
+    result.limitations.push(OUTPUT_TRANSFER_LIMITATION);
+  }
   result.artifacts ??= {};
   result.artifacts.containerInspect = {
     state: "present",
@@ -462,7 +480,6 @@ async function updateScenarioInspection(rawRoot, scenarioId, inspection) {
   };
   if (issues.length > 0) {
     result.status = "inconclusive";
-    result.limitations ??= [];
     result.limitations.push(
       "Container inspection did not satisfy runtime policy.",
     );
@@ -504,10 +521,23 @@ async function persistRun({
   commandRecords,
   infrastructureCode,
 }) {
+  const scenarioAggregateStatus = overallStatus(official, scenarios);
+  const outputTransfer = {
+    status: "inconclusive",
+    normalizedCode: OUTPUT_TRANSFER_CODE,
+    requiredMethod: "docker cp from /m0-output tmpfs",
+    observedConstraint:
+      "A fixed control file existed inside the running container, while docker cp reported it absent; stopped containers lose tmpfs contents.",
+    fallbackMethod:
+      "docker start --attach with one fixed framed JSON bundle, strict relative-path allowlisting, per-file SHA-256 verification, and size limits",
+  };
   const summary = {
     schemaVersion: 1,
     runId,
-    status: overallStatus(official, scenarios),
+    status:
+      scenarioAggregateStatus === "success"
+        ? "inconclusive"
+        : scenarioAggregateStatus,
     toolchain: {
       node: official?.nodeVersion ?? "unobserved (expected v24.18.0)",
       npm: official?.npmVersion ?? "unobserved (expected 12.0.1)",
@@ -515,6 +545,7 @@ async function persistRun({
       imageDigest: imageMetadata?.baseImageDigest ?? "unavailable",
       containerRuntime: runtimeVersion ?? "Docker unavailable",
     },
+    outputTransfer,
     scenarios,
   };
   const metadata = {
@@ -522,11 +553,12 @@ async function persistRun({
     runId,
     createdAt: new Date().toISOString(),
     status: summary.status,
-    infrastructureCode: infrastructureCode ?? null,
+    infrastructureCode: infrastructureCode ?? OUTPUT_TRANSFER_CODE,
     preparationNetwork:
       "Allowed only for Docker Official Image pull and npm@12.0.1 during image build; not used by this run operation.",
     scenarioRuntimeNetwork: "none (--network none)",
     scenarioIsolation: "one fresh container per scenario",
+    outputTransfer,
     runtimeImage: IMAGE_NAME,
     runtimeImageId: imageMetadata?.runtimeImageId ?? "unavailable",
     baseImage: BASE_IMAGE,

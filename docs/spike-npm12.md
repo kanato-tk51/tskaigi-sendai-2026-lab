@@ -1,94 +1,117 @@
 # npm 12 install lifecycle minimal spike
 
-This document separates version-specific official evidence, pre-run expectations, local observations, unknowns, and inconclusive results for M0. It does not describe M1 or later behavior.
+This document separates version-specific Official evidence, pre-run Expected hypotheses, local Observed results, Unknowns, and Inconclusive findings for M0. It does not describe M1 or later behavior.
 
 ## Environment
 
-The experiment definition fixes Node.js `24.18.0`, npm `12.0.1`, Docker, and `node:24.18.0-bookworm-slim`. The marker dependency is the private local tarball `@tskaigi-lab/m0-install-marker@1.0.0`; its only lifecycle is `postinstall`, writing `/m0-output/marker.jsonl`.
+- Container runtime: Docker `29.6.1` on Linux
+- Base tag: `node:24.18.0-bookworm-slim`
+- Resolved base digest: `sha256:cb4e8f7c443347358b7875e717c29e27bf9befc8f5a26cf18af3c3dec80e58c5`
+- Container Node.js: `v24.18.0`
+- Container npm: `12.0.1`
+- Dependency: private local tarball `@tskaigi-lab/m0-install-marker@1.0.0`
+- Lifecycle: only `postinstall`, writing `/m0-output/marker.jsonl`
+- Raw run: `results/runs/m0/m0-20260713t201443z-79b976f8/` (Git-ignored)
+- Sanitized example: `results/examples/m0-npm12/`
 
-The attempted run is represented by the committed sanitized example at `results/examples/m0-npm12/`. Its raw source is under the ignored `results/runs/m0/<run-id>/` hierarchy. The environment had root Node.js `v20.18.2` and npm `11.12.1`, but no Docker CLI.
-
-Preparation network and experiment runtime network are distinct. Image pull and `npm@12.0.1` image installation are the only preparation operations allowed external network. Scenario containers are configured for `--network none` and local offline tarball installation. Because Docker was unavailable, neither preparation network nor a runtime network namespace was actually used.
+Preparation network and experiment runtime network were separate. `m0:build` used network only to pull the Docker Official Image and install exact `npm@12.0.1`; it packed the dependency with `npm pack --ignore-scripts`. Official-evidence and all five scenario containers used `--network none`, `offline=true`, and the image-local tarball.
 
 ## Official
 
-No npm `12.0.1` help or bundled documentation was captured. Therefore this run establishes no Official claim about unapproved dependency scripts, `allowScripts`, `ignore-scripts`, or local tarball approval representation.
+The following statements are limited to npm `12.0.1`'s captured `npm approve-scripts --help` and bundled `npm-approve-scripts.md` / `config.md`:
 
-`npm approve-scripts` is a fixed experiment input required by the M0 task. It is not reclassified here as version-verified Official evidence. The container runner is prepared to save `npm approve-scripts --help`, optionally `npm help approve-scripts`, bundled `npm-approve-scripts.md`, exact versions, and each allowlisted config value before scenarios begin.
+- `npm approve-scripts <pkg> [<pkg> ...]` is the basic approval usage; `--all` and read-only `--allow-scripts-pending` modes also exist.
+- The command manages the project's `package.json#allowScripts` and is the recommended way to maintain that field.
+- Dependency install scripts are blocked by default when no matching `allowScripts` entry exists. Install completes with a skipped-package warning unless stricter policy applies.
+- The documented install-script set includes `preinstall`, `install`, `postinstall`, and `prepare` for non-registry sources.
+- `ignore-scripts=true` means npm does not run scripts declared in package files. Explicit script commands have a documented exception for their intended script, while pre/post scripts remain disabled.
+- `strict-allow-scripts=true` changes an unreviewed install script from a warning/block into an install error; `--ignore-scripts` overrides that setting.
+- `allow-file=root` permits local tarball files declared in the root project's `package.json`; `allow-directory=none`, `allow-git=none`, and `allow-remote=none` reject those source forms under their documented rules.
+- Approval pinning defaults to true for documented package/version approvals, with `--no-allow-scripts-pin` selecting name-only approval.
+
+`npm help approve-scripts` was attempted and exited `1` because the slim image had no help renderer (`ENOENT`). The bundled command documentation was present and saved instead. The Official text does not document the exact `allowScripts` key produced for this local tarball, so that representation is not claimed as Official.
 
 ## Expected
 
-These are pre-run hypotheses and were not changed to match the attempted run:
+These hypotheses were defined before measurement and were not rewritten to match the run:
 
-- An unapproved dependency install has zero install-lifecycle invocations.
-- Official approval followed by rebuild, reinstall, or a valid `npm ci` produces one `postinstall` marker.
-- Explicit `--ignore-scripts` prevents the marker even when approval state is retained.
+- Unapproved dependency install: marker count `0`.
+- Official approval followed by rebuild: marker count `1`.
+- Official approval plus explicit `--ignore-scripts`: marker count `0`.
+- Approval retained across reinstall: marker count `1`.
+- Approval retained for valid `npm ci`: marker count `1`.
 
-The first hypothesis comes from the npm lifecycle rows in `docs/experiment-matrix.md`; the additional commands are mapped controls for M0. Marker count is not an acceptance condition.
+Marker count was never an implementation acceptance condition.
 
 ## Observed
 
-The only valid local observations are:
+- All measured npm commands exited `0` without timeout.
+- Unapproved `npm install` emitted npm's blocked install-script warning and produced no marker.
+- `npm approve-scripts @tskaigi-lab/m0-install-marker` changed `allowScripts` from absent to `{ "file:/work/input/m0-install-marker-1.0.0.tgz": true }` in every approval scenario. The runner did not construct this entry.
+- Approved rebuild, reinstall, and `npm ci` each produced one valid `postinstall` marker. Approved `npm ci --ignore-scripts` produced no marker.
+- Every initial unapproved setup install had marker count `0`; approval itself did not create a marker.
+- Approval did not change the generated lockfile hash. The stable hash in approval scenarios was `sha256:2339f5466496976c6c4fb68af213a00abd475a18217ccd7e0cb51064915a4dff` before and after the measured command.
+- Container inspection for every scenario reported user `1000:1000`, network mode `none`, read-only rootfs, `CapDrop=["ALL"]`, no added capabilities, `no-new-privileges`, no bind mounts, and tmpfs only at `/work`, `/tmp`, and `/m0-output`.
+- The allowlisted npm config values were captured individually. Cache, user config, and global config resolved to fixed `/work` locations, not the root repository configuration.
 
-- The host root toolchain reported Node.js `v20.18.2` and npm `11.12.1`.
-- The Docker availability check failed with `ENOENT`, normalized as `DOCKER_CLI_UNAVAILABLE`.
-- The runner preserved one summary containing all five fixed scenario IDs with status `inconclusive`.
-- No measured npm command ran. Marker counts, approval entries, and lockfile hashes remain `null`, not zero.
-- Sanitization produced the minimal example without repository absolute paths, host home paths, ANSI escapes, Docker IDs, or npm cache paths.
-
-Configured Docker flags, fixed Node/npm versions, and scenario command arguments are implementation inputs, not Observed runtime enforcement in this run.
+The npm observations above are scenario-level success. The overall M0 run is nevertheless Inconclusive for the output-transfer requirement described below.
 
 ## Unknown
 
-The following remain unknown until Docker-backed execution succeeds:
-
-- The resolved manifest digest for `node:24.18.0-bookworm-slim`.
-- Whether the final image reports Node.js `v24.18.0` and npm `12.0.1` under this Docker installation.
-- npm `12.0.1`'s captured approval help and bundled documentation content.
-- How the local tarball dependency is represented in `package.json#allowScripts`.
-- Whether approval uses a name-only or version-pinned key.
-- Marker counts and command exit codes for all five scenarios.
-- Lockfile creation and hash changes for install, reinstall, rebuild, and `npm ci`.
-- The actual Docker server version and inspection evidence for mounts, network, user, capabilities, and security options.
+- The captured Official documentation does not specify why a local tarball approval is keyed by its fixed `file:` path rather than package name/version; only the observed representation is known.
+- Results for registry, remote tarball, git, directory, transitive, optional, or multi-version dependencies remain unknown.
+- Results under a different Docker release, kernel, architecture, npm patch, or Node.js version remain unknown.
+- Whether another approved container runtime exposes tmpfs content through its copy API is unknown.
+- M0 does not establish any environment, file-read, network, child-process, or general capability behavior.
 
 ## Inconclusive
 
-M0 as a whole is Inconclusive because Docker was unavailable. The build, doctor, run, and verify commands failed nonzero where required; `m0:run` still persisted the infrastructure failure and `m0:verify` rejected the latest run because its summary status is not `success`.
+The required `docker cp` collection step is Inconclusive in Docker `29.6.1`. A fixed control process successfully wrote an 11-byte file and reported it present inside the running `/m0-output` tmpfs, while `docker cp` reported that path absent. Stopping the container removes tmpfs contents, so post-exit copy cannot recover them either.
 
-This is not evidence that npm skipped or executed any script. It is also not evidence that the configured container isolation was enforced.
+To preserve the npm observations without weakening isolation, the runner emitted one fixed framed JSON bundle through `docker start --attach`. The host accepted only mode-specific relative paths, bounded file counts/sizes, and matching per-file SHA-256 digests before materializing raw evidence. This uses no bind mount, socket forwarding, container exec, or runtime network. It is a documented fallback, not fulfillment of the requested `docker cp` flow; therefore summary status is `inconclusive` with `DOCKER_CP_TMPFS_UNAVAILABLE`, and `m0:run` / `m0:verify` return nonzero.
 
 ## Scenario results
 
-| Scenario | Setup | Measured command | Status | Exit | Marker count | Approval before/after | Lock before/after |
-|---|---|---|---|---:|---:|---|---|
-| `unapproved-install` | not run | `npm install` not run | Inconclusive | `null` | `null` | `null` / `null` | `null` / `null` |
-| `approved-rebuild` | not run | `npm rebuild @tskaigi-lab/m0-install-marker` not run | Inconclusive | `null` | `null` | `null` / `null` | `null` / `null` |
-| `approved-scripts-disabled` | not run | `npm ci --ignore-scripts` not run | Inconclusive | `null` | `null` | `null` / `null` | `null` / `null` |
-| `approved-reinstall` | not run | `npm install` not run | Inconclusive | `null` | `null` | `null` / `null` | `null` / `null` |
-| `approved-ci` | not run | `npm ci` not run | Inconclusive | `null` | `null` | `null` / `null` | `null` / `null` |
+| Scenario | Measured command | Scenario status | Exit | Marker count | Approval before / after | Lock before / after |
+|---|---|---|---:|---:|---|---|
+| `unapproved-install` | `npm install` | Success | `0` | `0` | absent / absent | absent / `2339…4dff` |
+| `approved-rebuild` | `npm rebuild @tskaigi-lab/m0-install-marker` | Success | `0` | `1` | absent / local `file:` key `true` | `2339…4dff` / same |
+| `approved-scripts-disabled` | `npm ci --ignore-scripts` | Success | `0` | `0` | absent / local `file:` key `true` | `2339…4dff` / same |
+| `approved-reinstall` | `npm install` | Success | `0` | `1` | absent / local `file:` key `true` | `2339…4dff` / same |
+| `approved-ci` | `npm ci` | Success | `0` | `1` | absent / local `file:` key `true` | `2339…4dff` / same |
 
 ## Approval representation
 
-No `allowScripts` change was observed. Each sanitized scenario stores an approval fragment with `before: null`, `after: null`, and `changed: false` solely because the scenario did not run. These values must not be interpreted as npm's representation.
+Observed after the official command in all four approval scenarios:
 
-The implemented runner invokes only `npm approve-scripts @tskaigi-lab/m0-install-marker` and records the resulting complete `allowScripts` object without constructing or editing an entry itself.
+```json
+{
+  "allowScripts": {
+    "file:/work/input/m0-install-marker-1.0.0.tgz": true
+  }
+}
+```
+
+This is an Observed npm edit, not a runner-written value and not an Official general rule. Approval was absent before the command and remained present through rebuild, reinstall, scripts-disabled `npm ci`, and approved `npm ci`.
 
 ## Lockfile behavior
 
-No lockfile was created, so no install or `npm ci` lock behavior was observed. Missing snapshots are represented as `absent` in scenario evidence; summary hashes are `null`.
+The initial unapproved install created the lockfile. The official approval command changed `package.json` but not the lockfile. Rebuild, reinstall, scripts-disabled `npm ci`, and approved `npm ci` retained the same captured lockfile hash. This is one fixture/run observation, not a guarantee for other dependency sources.
 
 ## Limitations
 
-- Docker absence prevented base image acquisition, npm 12 installation, official evidence capture, container inspection, and all lifecycle measurements.
-- Static checks confirm the configured argument allowlist but cannot prove the runtime boundary.
-- The marker's single small append supports counting but does not prove filesystem-level atomicity.
-- The dependency is a local tarball root dependency; results must not be generalized to registry, git, directory, or transitive dependencies.
-- M0 is marker-only and measures no environment, file-read, network, child-process, or general capability behavior.
-- Container escape and Docker/Node/npm vulnerabilities are out of scope.
+- The required tmpfs-to-`docker cp` transfer did not work; the hash-validated stdout bundle is an explicitly Inconclusive fallback.
+- During manual boundary diagnosis, one incorrect runtime image name caused Docker to attempt and fail an implicit registry pull outside the allowed preparation-network operations. No scenario ran, no credential/home path was read, and no package was obtained. Fixed official/scenario `docker create` arguments now include `--pull never` in addition to the pre-create image inspection.
+- `npm help approve-scripts` was unavailable in the slim image; captured help output and bundled npm documentation supplied Official evidence.
+- The marker uses one small `appendFile` operation; filesystem-level append atomicity is not proven.
+- PID and timestamp vary by invocation and are evidence fields, not deterministic content.
+- Static checks do not prove runtime isolation or lifecycle harmlessness; a human must review the complete marker script, fixed Docker arguments, image digest, and inspection evidence.
+- M0 is marker-only. It implements no common probe, capability attempt, profile comparison, adapter, or general harness.
+- Container escape and Docker/Node/npm vulnerability testing remain out of scope.
 
 ## Reproduction
 
-After installing Docker, review the complete lifecycle script and Docker boundary, then run:
+After Docker group membership is active in the shell, review the lifecycle script and boundary, then run:
 
 ```sh
 npm run m0:build
@@ -97,8 +120,8 @@ npm run m0:run
 npm run m0:verify
 ```
 
-Do not substitute another Node.js/npm version, base image, approval command, or container runtime. `m0:build` resolves and records the exact base digest; `m0:run` performs official evidence capture before five fresh scenario containers; `m0:verify` rejects incomplete or Inconclusive evidence.
+`m0:build` must resolve the recorded base digest and verify exact Node/npm versions. `m0:run` currently returns nonzero after saving all evidence because the required copy method is Inconclusive. `m0:verify` validates structure, safety policy, schema, and sanitization, then also returns nonzero rather than treating the Inconclusive summary as success.
 
 ## Implications for later milestones
 
-M2-A must not consume marker counts or approval semantics from this Inconclusive run. Before M1 review advances toward lifecycle adapter work, a human must review the marker script, Docker create arguments, resolved digest, official npm help, all five scenario results, sanitization, and the distinction between configured and observed isolation. No probe-core or adapter behavior has been implemented or validated by M0.
+M1 review may use this M0 result only as version-specific marker baseline evidence. It must not generalize the local `file:` approval key or lifecycle counts to other source types. Before M2-A, decide and review a supported evidence-transfer boundary; do not silently carry the stdout fallback into a general harness. No probe-core, adapter, capability probe, report harness, or M1+ behavior was implemented by this milestone.

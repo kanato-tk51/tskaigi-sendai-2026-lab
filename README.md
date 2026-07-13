@@ -9,7 +9,7 @@ TypeScript ツールチェーンにおける依存コードの実行経路を、
 - module system: Node.js ESM
 - npm workspaces: `packages/*` のみ
 
-M0 の npm 12 lifecycle 実験は、この root toolchain とは独立した Docker image に固定します。`experiments/` と `fixtures/` は root workspace に含まれません。root install は package script を実行しない設定です。M0 の実行方法と最新の Inconclusive limitation は [experiments/npm12-install/README.md](experiments/npm12-install/README.md) を参照してください。
+M0 の npm 12 lifecycle 実験は、この root toolchain とは独立した Docker image に固定します。`experiments/` と `fixtures/` は root workspace に含まれません。root install は package script を実行しない設定です。全5 scenario の npm 観測は保存済みですが、Docker `29.6.1` の tmpfs を `docker cp` できず、検証付き stdout fallback を用いたため M0 全体は Inconclusive です。実行方法と制約は [experiments/npm12-install/README.md](experiments/npm12-install/README.md) を参照してください。
 
 依存関係は lockfile どおり、script を無効化して導入します。
 

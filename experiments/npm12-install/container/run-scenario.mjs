@@ -49,8 +49,11 @@ const NPM_PATH = "/usr/local/bin/npm";
 const NODE_PATH = "/usr/local/bin/node";
 const APPROVAL_DOC_PATH =
   "/usr/local/lib/node_modules/npm/docs/content/commands/npm-approve-scripts.md";
+const CONFIG_DOC_PATH =
+  "/usr/local/lib/node_modules/npm/docs/content/using-npm/config.md";
 const COMMAND_TIMEOUT_MS = 120_000;
 const LOG_LIMIT_BYTES = 65_536;
+const OUTPUT_BUNDLE_PREFIX = "M0_OUTPUT_BUNDLE_V1:";
 const ANSI_ESCAPE_PATTERN = new RegExp(
   String.raw`\u001B\[[0-?]*[ -/]*[@-~]`,
   "gu",
@@ -130,6 +133,7 @@ async function runFixedCommand({
   stepId,
   stdoutPath,
   stderrPath,
+  timeoutMs = COMMAND_TIMEOUT_MS,
 }) {
   const stdout = { chunks: [], length: 0, truncated: false };
   const stderr = { chunks: [], length: 0, truncated: false };
@@ -137,6 +141,12 @@ async function runFixedCommand({
   const start = performance.now();
   let timedOut = false;
   let spawnErrorCode = null;
+  await writeJson(path.join(OUTPUT_ROOT, ".command-state.json"), {
+    schemaVersion: 1,
+    stepId,
+    state: "started",
+    startTimestamp,
+  });
 
   const outcome = await new Promise((resolve) => {
     const child = spawn(executable, commandArguments, {
@@ -157,13 +167,30 @@ async function runFixedCommand({
       spawnErrorCode = typeof error.code === "string" ? error.code : "UNKNOWN";
       finish(null, null);
     });
+    child.on("exit", (exitCode, signal) => finish(exitCode, signal));
     child.on("close", (exitCode, signal) => finish(exitCode, signal));
+    let forceKill = null;
     const timeout = setTimeout(() => {
       timedOut = true;
       child.kill("SIGTERM");
-    }, COMMAND_TIMEOUT_MS);
-    child.on("close", () => clearTimeout(timeout));
-    child.on("error", () => clearTimeout(timeout));
+      forceKill = setTimeout(() => {
+        child.stdout.destroy();
+        child.stderr.destroy();
+        child.kill("SIGKILL");
+      }, 2000);
+    }, timeoutMs);
+    child.on("exit", () => {
+      clearTimeout(timeout);
+      if (forceKill) clearTimeout(forceKill);
+    });
+    child.on("close", () => {
+      clearTimeout(timeout);
+      if (forceKill) clearTimeout(forceKill);
+    });
+    child.on("error", () => {
+      clearTimeout(timeout);
+      if (forceKill) clearTimeout(forceKill);
+    });
   });
 
   const stdoutText = sanitizeLog(Buffer.concat(stdout.chunks).toString("utf8"));
@@ -172,6 +199,13 @@ async function runFixedCommand({
   await mkdir(path.dirname(stderrPath), { recursive: true });
   await writeFile(stdoutPath, stdoutText, "utf8");
   await writeFile(stderrPath, stderrText, "utf8");
+  await writeJson(path.join(OUTPUT_ROOT, ".command-state.json"), {
+    schemaVersion: 1,
+    stepId,
+    state: "completed",
+    timedOut,
+    exitCode: outcome.exitCode,
+  });
 
   return {
     stepId,
@@ -191,6 +225,7 @@ async function runFixedCommand({
     stdoutTruncated: stdout.truncated,
     stderrTruncated: stderr.truncated,
     outputLimitBytes: LOG_LIMIT_BYTES,
+    timeoutMs,
   };
 }
 
@@ -590,12 +625,30 @@ async function runOfficialEvidence() {
   await mkdir(outputDirectory, { recursive: true });
   const commands = [];
   const definitions = [
-    ["node-version", "node", NODE_PATH, ["--version"]],
-    ["npm-version", "npm", NPM_PATH, ["--version"]],
-    ["approve-scripts-help", "npm", NPM_PATH, ["approve-scripts", "--help"]],
-    ["help-approve-scripts", "npm", NPM_PATH, ["help", "approve-scripts"]],
+    ["node-version", "node", NODE_PATH, ["--version"], 30_000],
+    ["npm-version", "npm", NPM_PATH, ["--version"], 30_000],
+    [
+      "approve-scripts-help",
+      "npm",
+      NPM_PATH,
+      ["approve-scripts", "--help"],
+      30_000,
+    ],
+    [
+      "help-approve-scripts",
+      "npm",
+      NPM_PATH,
+      ["help", "approve-scripts"],
+      15_000,
+    ],
   ];
-  for (const [stepId, command, executable, commandArguments] of definitions) {
+  for (const [
+    stepId,
+    command,
+    executable,
+    commandArguments,
+    timeoutMs,
+  ] of definitions) {
     commands.push(
       await runFixedCommand({
         command,
@@ -607,22 +660,26 @@ async function runOfficialEvidence() {
         stepId,
         stdoutPath: path.join(outputDirectory, `${stepId}.stdout.log`),
         stderrPath: path.join(outputDirectory, `${stepId}.stderr.log`),
+        timeoutMs,
       }),
     );
   }
   const configuration = await recordConfiguration(outputDirectory, commands);
-  let bundledDocumentation = { state: "absent", path: null };
-  if (await exists(APPROVAL_DOC_PATH)) {
-    const contents = sanitizeLog(await readFile(APPROVAL_DOC_PATH, "utf8"));
-    await writeFile(
-      path.join(outputDirectory, "npm-approve-scripts.md"),
-      contents,
-      "utf8",
-    );
-    bundledDocumentation = {
-      state: "present",
-      path: "official/npm-approve-scripts.md",
-    };
+  const bundledDocumentation = {};
+  for (const [key, sourcePath, filename] of [
+    ["approveScripts", APPROVAL_DOC_PATH, "npm-approve-scripts.md"],
+    ["configuration", CONFIG_DOC_PATH, "npm-config.md"],
+  ]) {
+    if (await exists(sourcePath)) {
+      const contents = sanitizeLog(await readFile(sourcePath, "utf8"));
+      await writeFile(path.join(outputDirectory, filename), contents, "utf8");
+      bundledDocumentation[key] = {
+        state: "present",
+        path: `official/${filename}`,
+      };
+    } else {
+      bundledDocumentation[key] = { state: "absent", path: null };
+    }
   }
   const nodeVersion = (
     await readFile(
@@ -703,12 +760,58 @@ async function writeInfrastructureFailure(scenarioId, error) {
   });
 }
 
+async function collectOutputFiles(directory = OUTPUT_ROOT) {
+  const entries = await readdir(directory, { withFileTypes: true });
+  const files = [];
+  for (const entry of entries.sort((left, right) =>
+    left.name.localeCompare(right.name),
+  )) {
+    const entryPath = path.join(directory, entry.name);
+    if (directory === OUTPUT_ROOT && entry.name === "marker.jsonl") {
+      continue;
+    }
+    if (entry.isDirectory()) {
+      files.push(...(await collectOutputFiles(entryPath)));
+    } else if (entry.isFile()) {
+      const contents = await readFile(entryPath);
+      files.push({
+        path: path.relative(OUTPUT_ROOT, entryPath).split(path.sep).join("/"),
+        encoding: "base64",
+        content: contents.toString("base64"),
+        sha256: `sha256:${createHash("sha256").update(contents).digest("hex")}`,
+      });
+    } else {
+      throw new Error("OUTPUT_CONTAINS_UNSUPPORTED_FILE_TYPE");
+    }
+  }
+  return files;
+}
+
+async function emitOutputBundle(mode, scenarioId) {
+  const bundle = {
+    schemaVersion: 1,
+    mode,
+    scenarioId,
+    outputComplete: true,
+    files: await collectOutputFiles(),
+  };
+  const encoded = Buffer.from(JSON.stringify(bundle), "utf8").toString(
+    "base64",
+  );
+  process.stdout.write(`${OUTPUT_BUNDLE_PREFIX}${encoded}\n`);
+}
+
 const arguments_ = process.argv.slice(2);
+let readyMode = "invalid";
+let readyScenarioId = null;
 try {
   if (arguments_.length === 1 && arguments_[0] === "--official") {
+    readyMode = "official";
     await runOfficialEvidence();
   } else if (arguments_.length === 2 && arguments_[0] === "--scenario") {
     const scenarioId = arguments_[1];
+    readyMode = "scenario";
+    readyScenarioId = scenarioId;
     try {
       await runScenario(scenarioId);
     } catch (error) {
@@ -720,4 +823,16 @@ try {
   }
 } catch {
   process.exitCode = 1;
+} finally {
+  try {
+    await writeJson(path.join(OUTPUT_ROOT, ".ready.json"), {
+      schemaVersion: 1,
+      mode: readyMode,
+      scenarioId: readyScenarioId,
+      outputComplete: true,
+    });
+    await emitOutputBundle(readyMode, readyScenarioId);
+  } catch {
+    process.exitCode = 1;
+  }
 }

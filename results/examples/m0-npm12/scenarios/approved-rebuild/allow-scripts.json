@@ -1,5 +1,7 @@
 {
   "before": null,
-  "after": null,
-  "changed": false
+  "after": {
+    "file:/work/input/m0-install-marker-1.0.0.tgz": true
+  },
+  "changed": true
 }

@@ -1,65 +1,284 @@
 {
   "schemaVersion": 1,
   "scenarioId": "approved-rebuild",
-  "status": "inconclusive",
+  "status": "success",
   "expected": "Mapped control hypothesis: official approval followed by rebuild invokes postinstall once.",
-  "setupSteps": [],
-  "measuredCommand": null,
-  "exitCode": null,
-  "markerPresent": false,
-  "markerCount": null,
+  "setupSteps": [
+    {
+      "stepId": "config-ignore-scripts",
+      "command": "npm",
+      "arguments": [
+        "config",
+        "get",
+        "ignore-scripts"
+      ],
+      "exitCode": 0
+    },
+    {
+      "stepId": "config-strict-allow-scripts",
+      "command": "npm",
+      "arguments": [
+        "config",
+        "get",
+        "strict-allow-scripts"
+      ],
+      "exitCode": 0
+    },
+    {
+      "stepId": "config-allow-file",
+      "command": "npm",
+      "arguments": [
+        "config",
+        "get",
+        "allow-file"
+      ],
+      "exitCode": 0
+    },
+    {
+      "stepId": "config-allow-directory",
+      "command": "npm",
+      "arguments": [
+        "config",
+        "get",
+        "allow-directory"
+      ],
+      "exitCode": 0
+    },
+    {
+      "stepId": "config-allow-git",
+      "command": "npm",
+      "arguments": [
+        "config",
+        "get",
+        "allow-git"
+      ],
+      "exitCode": 0
+    },
+    {
+      "stepId": "config-allow-remote",
+      "command": "npm",
+      "arguments": [
+        "config",
+        "get",
+        "allow-remote"
+      ],
+      "exitCode": 0
+    },
+    {
+      "stepId": "config-cache",
+      "command": "npm",
+      "arguments": [
+        "config",
+        "get",
+        "cache"
+      ],
+      "exitCode": 0
+    },
+    {
+      "stepId": "config-userconfig",
+      "command": "npm",
+      "arguments": [
+        "config",
+        "get",
+        "userconfig"
+      ],
+      "exitCode": 0
+    },
+    {
+      "stepId": "config-globalconfig",
+      "command": "npm",
+      "arguments": [
+        "config",
+        "get",
+        "globalconfig"
+      ],
+      "exitCode": 0
+    },
+    {
+      "stepId": "initial-unapproved-install",
+      "command": "npm",
+      "arguments": [
+        "install"
+      ],
+      "exitCode": 0
+    },
+    {
+      "stepId": "official-approval",
+      "command": "npm",
+      "arguments": [
+        "approve-scripts",
+        "@tskaigi-lab/m0-install-marker"
+      ],
+      "exitCode": 0
+    }
+  ],
+  "measuredCommand": {
+    "stepId": "approved-rebuild",
+    "role": "measured",
+    "command": "npm",
+    "arguments": [
+      "rebuild",
+      "@tskaigi-lab/m0-install-marker"
+    ],
+    "cwd": "<consumer>",
+    "startTimestamp": "2026-07-13T20:14:47.166Z",
+    "endTimestamp": "2026-07-13T20:14:47.375Z",
+    "durationMs": 208.787,
+    "exitCode": 0,
+    "signal": null,
+    "timedOut": false,
+    "spawnErrorCode": null,
+    "stdoutPath": "scenarios/approved-rebuild/stdout.log",
+    "stderrPath": "scenarios/approved-rebuild/stderr.log",
+    "stdoutTruncated": false,
+    "stderrTruncated": false,
+    "outputLimitBytes": 65536,
+    "timeoutMs": 120000
+  },
+  "exitCode": 0,
+  "markerPresent": true,
+  "markerCount": 1,
+  "markerParseErrors": [],
   "approvalEntryBefore": null,
-  "approvalEntryAfter": null,
-  "approvalChanged": false,
-  "packageLockHashBefore": null,
-  "packageLockHashAfter": null,
-  "observedResult": "Scenario was not executed because DOCKER_CLI_UNAVAILABLE.",
+  "approvalEntryAfter": {
+    "file:/work/input/m0-install-marker-1.0.0.tgz": true
+  },
+  "approvalChanged": true,
+  "pendingApproval": {
+    "initialInstallExitCode": 0,
+    "allowScriptsAbsent": true,
+    "installedPackagePresent": true,
+    "installedPackageDeclaresPostinstall": true
+  },
+  "packageLockHashBefore": "sha256:2339f5466496976c6c4fb68af213a00abd475a18217ccd7e0cb51064915a4dff",
+  "packageLockHashAfter": "sha256:2339f5466496976c6c4fb68af213a00abd475a18217ccd7e0cb51064915a4dff",
+  "initialState": {
+    "markerCount": 0,
+    "approvalEntry": null,
+    "lockfileHash": null,
+    "nodeModulesPresent": false,
+    "cacheEntries": 1
+  },
+  "finalState": {
+    "nodeModulesPresent": true,
+    "cacheEntries": 2,
+    "allowScripts": {
+      "file:/work/input/m0-install-marker-1.0.0.tgz": true
+    }
+  },
+  "markerCounts": {
+    "initial": 0,
+    "afterInitialInstall": 0,
+    "afterApproval": 0
+  },
+  "npmConfiguration": {
+    "ignore-scripts": {
+      "value": "false",
+      "exitCode": 0,
+      "source": "consumer project config or fixed scenario user/global config"
+    },
+    "strict-allow-scripts": {
+      "value": "false",
+      "exitCode": 0,
+      "source": "consumer project config or fixed scenario user/global config"
+    },
+    "allow-file": {
+      "value": "root",
+      "exitCode": 0,
+      "source": "consumer project config or fixed scenario user/global config"
+    },
+    "allow-directory": {
+      "value": "none",
+      "exitCode": 0,
+      "source": "consumer project config or fixed scenario user/global config"
+    },
+    "allow-git": {
+      "value": "none",
+      "exitCode": 0,
+      "source": "consumer project config or fixed scenario user/global config"
+    },
+    "allow-remote": {
+      "value": "none",
+      "exitCode": 0,
+      "source": "consumer project config or fixed scenario user/global config"
+    },
+    "cache": {
+      "value": "<npm-cache>",
+      "exitCode": 0,
+      "source": "consumer project config or fixed scenario user/global config"
+    },
+    "userconfig": {
+      "value": "/work/npm-home/user.npmrc",
+      "exitCode": 0,
+      "source": "consumer project config or fixed scenario user/global config"
+    },
+    "globalconfig": {
+      "value": "/work/npm-home/global.npmrc",
+      "exitCode": 0,
+      "source": "consumer project config or fixed scenario user/global config"
+    }
+  },
+  "observedResult": "Measured command exited 0; marker count was 1; allowScripts changed: true.",
   "limitations": [
-    "No npm lifecycle observation was made.",
-    "Infrastructure prerequisite failed with DOCKER_CLI_UNAVAILABLE."
+    "A single small append is used for each marker, but filesystem-level atomicity is not proven.",
+    "This marker-only spike does not measure general dependency capabilities.",
+    "The required docker cp transfer could not read files from the /m0-output tmpfs in Docker 29.6.1; evidence used the fixed, path- and digest-validated docker start --attach bundle fallback."
   ],
   "evidencePaths": {
-    "stdout": "absent",
-    "stderr": "absent",
-    "packageBefore": "absent",
-    "packageAfter": "absent",
-    "lockBefore": "absent",
-    "lockAfter": "absent",
-    "marker": "absent",
-    "containerInspect": "absent"
+    "stdout": "stdout.log",
+    "stderr": "stderr.log",
+    "packageBefore": "package-before.json",
+    "packageAfter": "scenarios/approved-rebuild/package-after.json",
+    "lockBefore": "scenarios/approved-rebuild/lock-before.json",
+    "lockAfter": "scenarios/approved-rebuild/lock-after.json",
+    "marker": "scenarios/approved-rebuild/marker.jsonl",
+    "containerInspect": "container-inspect.json"
   },
   "artifacts": {
-    "stdout": {
-      "state": "absent",
-      "path": null
-    },
-    "stderr": {
-      "state": "absent",
-      "path": null
-    },
     "packageBefore": {
-      "state": "absent",
-      "path": null
+      "state": "present",
+      "path": "package-before.json"
     },
     "packageAfter": {
-      "state": "absent",
-      "path": null
+      "state": "present",
+      "path": "scenarios/approved-rebuild/package-after.json"
     },
     "lockBefore": {
-      "state": "absent",
-      "path": null
+      "state": "present",
+      "path": "scenarios/approved-rebuild/lock-before.json"
     },
     "lockAfter": {
-      "state": "absent",
-      "path": null
+      "state": "present",
+      "path": "scenarios/approved-rebuild/lock-after.json"
     },
     "marker": {
-      "state": "absent",
-      "path": null
+      "state": "present",
+      "path": "scenarios/approved-rebuild/marker.jsonl"
     },
     "containerInspect": {
-      "state": "absent",
-      "path": null
+      "state": "present",
+      "path": "scenarios/approved-rebuild/container-inspect.json"
     }
+  },
+  "isolationPolicy": {
+    "valid": true,
+    "issues": [],
+    "user": "1000:1000",
+    "networkMode": "none",
+    "readOnlyRootFilesystem": true,
+    "privileged": false,
+    "capabilityDrop": [
+      "ALL"
+    ],
+    "capabilityAdd": [],
+    "securityOptions": [
+      "no-new-privileges"
+    ],
+    "bindMountCount": 0,
+    "tmpfsPaths": [
+      "/m0-output",
+      "/tmp",
+      "/work"
+    ]
   }
 }

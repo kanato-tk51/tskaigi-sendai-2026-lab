@@ -5,7 +5,10 @@ import { describe, expect, it } from "vitest";
 
 import {
   assertScenarioId,
+  assertOutputFilePath,
   buildContainerCreateArgs,
+  OUTPUT_BUNDLE_PREFIX,
+  parseOutputBundle,
   resolveResultPath,
   sanitizeText,
   SCENARIO_IDS,
@@ -102,6 +105,9 @@ describe("M0 input and path policy", () => {
     ).toBe(
       path.join(repositoryRoot, "results/runs/m0/m0-20260714t010203z-abcdef12"),
     );
+    expect(() => assertOutputFilePath("../escape.json")).toThrow(
+      "Unsafe M0 output path",
+    );
   });
 });
 
@@ -125,6 +131,8 @@ describe("M0 Docker boundary", () => {
       "no-new-privileges",
     ]);
     expect(arguments_).toContain("1000:1000");
+    expect(arguments_).toContain("--pull");
+    expect(arguments_).toContain("never");
     expect(arguments_).toContain("/opt/m0/container/run-scenario.mjs");
     expect(arguments_).not.toContain("--mount");
     expect(arguments_).not.toContain("--volume");
@@ -148,6 +156,68 @@ describe("M0 Docker boundary", () => {
         "host home must not be mounted",
       ]),
     );
+  });
+
+  it("uses a fixed, integrity-checked output bundle for tmpfs evidence", async () => {
+    const containerRunner = await readFile(
+      path.join(
+        repositoryRoot,
+        "experiments/npm12-install/container/run-scenario.mjs",
+      ),
+      "utf8",
+    );
+    const hostRunner = await readFile(
+      path.join(repositoryRoot, "experiments/npm12-install/scripts/m0.mjs"),
+      "utf8",
+    );
+    expect(containerRunner).toContain('path.join(OUTPUT_ROOT, ".ready.json")');
+    expect(containerRunner).toContain("OUTPUT_BUNDLE_PREFIX");
+    expect(containerRunner).toContain(
+      'directory === OUTPUT_ROOT && entry.name === "marker.jsonl"',
+    );
+    expect(containerRunner).toContain(
+      'path.join(OUTPUT_ROOT, ".command-state.json")',
+    );
+    expect(containerRunner).toContain('child.kill("SIGKILL")');
+    expect(containerRunner).toContain("child.stdout.destroy()");
+    expect(containerRunner).toContain('child.on("exit"');
+    expect(containerRunner).toContain('"help-approve-scripts"');
+    expect(hostRunner).toContain("parseOutputBundle(start.rawStdout");
+    expect(hostRunner).toContain('["start", "--attach", containerName]');
+    expect(hostRunner).not.toContain('arguments: ["cp"');
+
+    const contents = Buffer.from("evidence\n", "utf8");
+    const crypto = await import("node:crypto");
+    const bundle = {
+      schemaVersion: 1,
+      mode: "scenario",
+      scenarioId: "approved-ci",
+      outputComplete: true,
+      files: [
+        {
+          path: "scenarios/approved-ci/result.json",
+          encoding: "base64",
+          content: contents.toString("base64"),
+          sha256: `sha256:${crypto.createHash("sha256").update(contents).digest("hex")}`,
+        },
+      ],
+    };
+    const framed = `${OUTPUT_BUNDLE_PREFIX}${Buffer.from(JSON.stringify(bundle)).toString("base64")}\n`;
+    const parsed = parseOutputBundle(framed, {
+      mode: "scenario",
+      scenarioId: "approved-ci",
+    });
+    expect(parsed.decodedFiles[0]?.contents.toString("utf8")).toBe(
+      "evidence\n",
+    );
+    bundle.files[0]!.path = ".unexpected.json";
+    const unsafeFrame = `${OUTPUT_BUNDLE_PREFIX}${Buffer.from(JSON.stringify(bundle)).toString("base64")}\n`;
+    expect(() =>
+      parseOutputBundle(unsafeFrame, {
+        mode: "scenario",
+        scenarioId: "approved-ci",
+      }),
+    ).toThrow("outside its fixed mode path");
   });
 });
 

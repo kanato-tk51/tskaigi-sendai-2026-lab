@@ -61,6 +61,7 @@ export async function sanitizeRun(repositoryRoot, runId) {
         imageDigest: summary.toolchain?.imageDigest ?? "unavailable",
         preparationNetwork: metadata.preparationNetwork,
         scenarioRuntimeNetwork: metadata.scenarioRuntimeNetwork,
+        outputTransfer: metadata.outputTransfer,
       },
       options,
     ),

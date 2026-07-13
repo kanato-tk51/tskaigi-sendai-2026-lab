@@ -1,13 +1,20 @@
 {
   "runId": "<run-id>",
   "toolchain": {
-    "node": "unobserved (expected v24.18.0)",
-    "npm": "unobserved (expected 12.0.1)",
+    "node": "v24.18.0",
+    "npm": "12.0.1",
     "baseImage": "node:24.18.0-bookworm-slim",
-    "imageDigest": "unavailable",
-    "containerRuntime": "Docker unavailable"
+    "imageDigest": "sha256:cb4e8f7c443347358b7875e717c29e27bf9befc8f5a26cf18af3c3dec80e58c5",
+    "containerRuntime": "Docker 29.6.1"
   },
-  "imageDigest": "unavailable",
+  "imageDigest": "sha256:cb4e8f7c443347358b7875e717c29e27bf9befc8f5a26cf18af3c3dec80e58c5",
   "preparationNetwork": "Allowed only for Docker Official Image pull and npm@12.0.1 during image build; not used by this run operation.",
-  "scenarioRuntimeNetwork": "none (--network none)"
+  "scenarioRuntimeNetwork": "none (--network none)",
+  "outputTransfer": {
+    "status": "inconclusive",
+    "normalizedCode": "DOCKER_CP_TMPFS_UNAVAILABLE",
+    "requiredMethod": "docker cp from /m0-output tmpfs",
+    "observedConstraint": "A fixed control file existed inside the running container, while docker cp reported it absent; stopped containers lose tmpfs contents.",
+    "fallbackMethod": "docker start --attach with one fixed framed JSON bundle, strict relative-path allowlisting, per-file SHA-256 verification, and size limits"
+  }
 }

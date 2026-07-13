@@ -208,6 +208,8 @@ export async function verifyStaticSafety() {
       "ALL",
       "no-new-privileges",
       "1000:1000",
+      "--pull",
+      "never",
       "/work:",
       "/tmp:",
       "/m0-output:",

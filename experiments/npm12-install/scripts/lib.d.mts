@@ -4,6 +4,7 @@ export const BASE_IMAGE: string;
 export const IMAGE_NAME: string;
 export const EXPECTED_NODE: string;
 export const EXPECTED_NPM: string;
+export const OUTPUT_BUNDLE_PREFIX: string;
 export const EXPECTED_BY_SCENARIO: Readonly<Record<string, string>>;
 
 export function assertScenarioId(value: unknown): string;
@@ -13,6 +14,14 @@ export function resolveResultPath(
   repositoryRoot: string,
   runId: string,
 ): string;
+export function assertOutputFilePath(value: unknown): string;
+export function parseOutputBundle(
+  rawOutput: unknown,
+  options: { mode: "official" | "scenario"; scenarioId?: string },
+): {
+  bundle: Record<string, unknown>;
+  decodedFiles: Array<{ path: string; contents: Buffer }>;
+};
 export function buildContainerCreateArgs(input: {
   containerName: string;
   mode: "official" | "scenario";
@@ -39,3 +48,4 @@ export function readJsonIfPresent(
 ): Promise<Record<string, unknown> | null>;
 export function sha256FileIfPresent(filePath: string): Promise<string | null>;
 export function writeJson(filePath: string, value: unknown): Promise<void>;
+import type { Buffer } from "node:buffer";

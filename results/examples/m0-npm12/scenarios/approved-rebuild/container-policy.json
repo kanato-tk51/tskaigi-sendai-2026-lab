@@ -1,0 +1,21 @@
+{
+  "valid": true,
+  "issues": [],
+  "user": "1000:1000",
+  "networkMode": "none",
+  "readOnlyRootFilesystem": true,
+  "privileged": false,
+  "capabilityDrop": [
+    "ALL"
+  ],
+  "capabilityAdd": [],
+  "securityOptions": [
+    "no-new-privileges"
+  ],
+  "bindMountCount": 0,
+  "tmpfsPaths": [
+    "/m0-output",
+    "/tmp",
+    "/work"
+  ]
+}
