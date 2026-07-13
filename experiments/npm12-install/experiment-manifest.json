@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M0",
+  "toolchain": {
+    "node": "24.18.0",
+    "npm": "12.0.1",
+    "containerRuntime": "docker",
+    "baseImage": "node:24.18.0-bookworm-slim"
+  },
+  "dependency": {
+    "name": "@tskaigi-lab/m0-install-marker",
+    "version": "1.0.0",
+    "supply": "local-tarball",
+    "lifecycle": "postinstall",
+    "markerPath": "/m0-output/marker.jsonl"
+  },
+  "network": {
+    "preparation": [
+      "docker-official-image-pull",
+      "npm-12.0.1-install-during-image-build"
+    ],
+    "scenarioRuntime": "none"
+  },
+  "allowedContainerPaths": {
+    "read": [
+      "/opt/m0",
+      "/opt/m0-input",
+      "/usr/local/bin/node",
+      "/usr/local/bin/npm",
+      "/usr/local/lib/node_modules/npm/docs/content/commands/npm-approve-scripts.md"
+    ],
+    "write": ["/work", "/tmp", "/m0-output"]
+  },
+  "allowedHostPaths": {
+    "control": ["experiments/npm12-install", "experiments/npm12-install/.work"],
+    "rawResults": ["results/runs/m0"],
+    "sanitizedResults": ["results/examples/m0-npm12"]
+  },
+  "scenarios": [
+    "unapproved-install",
+    "approved-rebuild",
+    "approved-scripts-disabled",
+    "approved-reinstall",
+    "approved-ci"
+  ]
+}

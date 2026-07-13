@@ -1,0 +1,15 @@
+# Documentation index
+
+Read only the documents relevant to the current task.
+
+| Task | Required documents |
+|---|---|
+| Product scope | `product-requirements.md` |
+| Probe implementation | `threat-model.md`, `experiment-protocol.md` |
+| Package or data-flow changes | `architecture.md` |
+| Experiment changes | `experiment-protocol.md`, `experiment-matrix.md` |
+| Starting a milestone | `milestones.md` and related documents |
+| Container profiles | `threat-model.md`, `architecture.md`, `experiment-matrix.md` |
+| Artifact build or deploy | `artifact-pipeline.md`, `threat-model.md` |
+| Conference claims | `evidence-map.md`, sanitized results |
+| Major design decisions | relevant ADRs under `decisions/` |

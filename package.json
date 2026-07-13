@@ -1,0 +1,36 @@
+{
+  "name": "tskaigi-sendai-2026-lab",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "npm@11.12.1",
+  "engines": {
+    "node": ">=20.18.2 <21",
+    "npm": "11.12.1"
+  },
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "lint": "eslint .",
+    "typecheck": "tsc --project tsconfig.json --noEmit",
+    "test": "vitest run",
+    "check": "npm run format:check && npm run lint && npm run typecheck && npm test",
+    "m0:doctor": "node experiments/npm12-install/scripts/m0.mjs doctor",
+    "m0:build": "node experiments/npm12-install/scripts/m0.mjs build",
+    "m0:run": "node experiments/npm12-install/scripts/m0.mjs run",
+    "m0:verify": "node experiments/npm12-install/scripts/m0.mjs verify",
+    "m0:clean": "node experiments/npm12-install/scripts/m0.mjs clean"
+  },
+  "devDependencies": {
+    "@eslint/js": "9.39.5",
+    "@types/node": "20.19.43",
+    "eslint": "9.39.5",
+    "prettier": "3.9.5",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.55.0",
+    "vitest": "3.2.7"
+  }
+}

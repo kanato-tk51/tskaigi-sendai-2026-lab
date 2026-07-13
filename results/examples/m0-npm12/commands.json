@@ -1,0 +1,25 @@
+[
+  {
+    "stepId": "docker-version",
+    "role": "host-orchestrator",
+    "command": "docker",
+    "arguments": [
+      "version",
+      "--format",
+      "{{json .Server}}"
+    ],
+    "cwd": "<repo>",
+    "startTimestamp": "2026-07-13T19:05:35.611Z",
+    "endTimestamp": "2026-07-13T19:05:35.615Z",
+    "durationMs": 3.341,
+    "exitCode": null,
+    "signal": null,
+    "timedOut": false,
+    "spawnErrorCode": "ENOENT",
+    "stdoutPath": "container/host-logs/docker-version.stdout.log",
+    "stderrPath": "container/host-logs/docker-version.stderr.log",
+    "stdoutTruncated": false,
+    "stderrTruncated": false,
+    "outputLimitBytes": 2097152
+  }
+]

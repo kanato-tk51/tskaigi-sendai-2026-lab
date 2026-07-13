@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tskaigi-lab.invalid/m0/summary.schema.json",
+  "title": "M0 npm 12 lifecycle summary",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "runId", "status", "toolchain", "scenarios"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "runId": { "type": "string", "minLength": 1 },
+    "status": { "enum": ["success", "failure", "inconclusive"] },
+    "toolchain": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "node",
+        "npm",
+        "baseImage",
+        "imageDigest",
+        "containerRuntime"
+      ],
+      "properties": {
+        "node": { "type": "string" },
+        "npm": { "type": "string" },
+        "baseImage": { "type": "string" },
+        "imageDigest": { "type": "string" },
+        "containerRuntime": { "type": "string" }
+      }
+    },
+    "scenarios": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "scenarioId",
+          "status",
+          "expected",
+          "setupSteps",
+          "measuredCommand",
+          "exitCode",
+          "markerPresent",
+          "markerCount",
+          "approvalEntryBefore",
+          "approvalEntryAfter",
+          "packageLockHashBefore",
+          "packageLockHashAfter",
+          "observedResult",
+          "limitations",
+          "evidencePaths"
+        ],
+        "properties": {
+          "scenarioId": { "type": "string" },
+          "status": { "enum": ["success", "failure", "inconclusive"] },
+          "expected": { "type": "string" },
+          "setupSteps": { "type": "array" },
+          "measuredCommand": { "type": ["object", "null"] },
+          "exitCode": { "type": ["integer", "null"] },
+          "markerPresent": { "type": "boolean" },
+          "markerCount": { "type": ["integer", "null"], "minimum": 0 },
+          "approvalEntryBefore": { "type": ["object", "null"] },
+          "approvalEntryAfter": { "type": ["object", "null"] },
+          "packageLockHashBefore": { "type": ["string", "null"] },
+          "packageLockHashAfter": { "type": ["string", "null"] },
+          "observedResult": { "type": "string" },
+          "limitations": { "type": "array", "items": { "type": "string" } },
+          "evidencePaths": { "type": "object" }
+        }
+      }
+    }
+  }
+}

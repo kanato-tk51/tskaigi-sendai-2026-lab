@@ -1,0 +1,8 @@
+{
+  "name": "m0-npm12-consumer",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "@tskaigi-lab/m0-install-marker": "file:../input/m0-install-marker-1.0.0.tgz"
+  }
+}

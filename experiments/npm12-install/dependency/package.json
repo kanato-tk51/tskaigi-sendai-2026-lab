@@ -1,0 +1,12 @@
+{
+  "name": "@tskaigi-lab/m0-install-marker",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "files": [
+    "write-marker.mjs"
+  ],
+  "scripts": {
+    "postinstall": "node ./write-marker.mjs"
+  }
+}

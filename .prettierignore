@@ -1,0 +1,13 @@
+node_modules/
+package-lock.json
+dist/
+build/
+coverage/
+.lab/
+results/runs/
+results/examples/m0-npm12/
+
+# Preserve approved design and workflow source text.
+AGENTS.md
+docs/
+prompts/

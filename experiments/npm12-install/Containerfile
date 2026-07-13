@@ -1,0 +1,25 @@
+ARG BASE_IMAGE=node:24.18.0-bookworm-slim
+
+FROM ${BASE_IMAGE} AS npm-toolchain
+
+RUN npm install --global --ignore-scripts --no-audit --no-fund --no-update-notifier npm@12.0.1
+RUN ["node", "-e", "const { spawnSync } = require('node:child_process'); if (process.version !== 'v24.18.0') process.exit(1); const result = spawnSync('/usr/local/bin/npm', ['--version'], { encoding: 'utf8' }); if (result.status !== 0 || result.stdout.trim() !== '12.0.1') process.exit(1);"]
+
+FROM npm-toolchain AS dependency-packer
+
+WORKDIR /m0-build/dependency
+COPY dependency/package.json dependency/write-marker.mjs ./
+RUN mkdir -p /m0-build/tarball && npm pack --ignore-scripts --pack-destination /m0-build/tarball && mv /m0-build/tarball/tskaigi-lab-m0-install-marker-1.0.0.tgz /m0-build/tarball/m0-install-marker-1.0.0.tgz
+
+FROM npm-toolchain AS runtime
+
+WORKDIR /opt/m0
+COPY container/run-scenario.mjs ./container/run-scenario.mjs
+COPY consumer/ /opt/m0-input/consumer/
+COPY --from=dependency-packer /m0-build/tarball/m0-install-marker-1.0.0.tgz /opt/m0-input/tarball/m0-install-marker-1.0.0.tgz
+
+RUN ["node", "-e", "const { spawnSync } = require('node:child_process'); if (process.version !== 'v24.18.0') process.exit(1); const result = spawnSync('/usr/local/bin/npm', ['--version'], { encoding: 'utf8' }); if (result.status !== 0 || result.stdout.trim() !== '12.0.1') process.exit(1);"]
+
+USER 1000:1000
+
+CMD ["node", "/opt/m0/container/run-scenario.mjs"]

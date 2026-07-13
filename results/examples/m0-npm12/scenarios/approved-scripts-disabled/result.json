@@ -1,0 +1,65 @@
+{
+  "schemaVersion": 1,
+  "scenarioId": "approved-scripts-disabled",
+  "status": "inconclusive",
+  "expected": "Mapped control hypothesis: explicit --ignore-scripts prevents postinstall even when approval state is retained.",
+  "setupSteps": [],
+  "measuredCommand": null,
+  "exitCode": null,
+  "markerPresent": false,
+  "markerCount": null,
+  "approvalEntryBefore": null,
+  "approvalEntryAfter": null,
+  "approvalChanged": false,
+  "packageLockHashBefore": null,
+  "packageLockHashAfter": null,
+  "observedResult": "Scenario was not executed because DOCKER_CLI_UNAVAILABLE.",
+  "limitations": [
+    "No npm lifecycle observation was made.",
+    "Infrastructure prerequisite failed with DOCKER_CLI_UNAVAILABLE."
+  ],
+  "evidencePaths": {
+    "stdout": "absent",
+    "stderr": "absent",
+    "packageBefore": "absent",
+    "packageAfter": "absent",
+    "lockBefore": "absent",
+    "lockAfter": "absent",
+    "marker": "absent",
+    "containerInspect": "absent"
+  },
+  "artifacts": {
+    "stdout": {
+      "state": "absent",
+      "path": null
+    },
+    "stderr": {
+      "state": "absent",
+      "path": null
+    },
+    "packageBefore": {
+      "state": "absent",
+      "path": null
+    },
+    "packageAfter": {
+      "state": "absent",
+      "path": null
+    },
+    "lockBefore": {
+      "state": "absent",
+      "path": null
+    },
+    "lockAfter": {
+      "state": "absent",
+      "path": null
+    },
+    "marker": {
+      "state": "absent",
+      "path": null
+    },
+    "containerInspect": {
+      "state": "absent",
+      "path": null
+    }
+  }
+}

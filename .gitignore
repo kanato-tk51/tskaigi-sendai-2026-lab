@@ -1,0 +1,23 @@
+node_modules/
+
+# TypeScript and package build output
+dist/
+build/
+*.tsbuildinfo
+
+# Test and tool output
+coverage/
+.lab/
+.tmp/
+tmp/
+*.log
+
+# Experiment-generated working data
+experiments/**/.work/
+experiments/**/node_modules/
+fixtures/**/.generated/
+results/runs/*
+!results/runs/README.md
+
+# Host-specific files
+.DS_Store

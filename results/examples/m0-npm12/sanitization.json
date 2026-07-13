@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "sourceRunId": "<run-id>",
+  "transformations": [
+    "repository absolute path replaced",
+    "host home and temporary paths normalized",
+    "container IDs removed",
+    "ANSI sequences removed",
+    "npm cache path normalized",
+    "logs truncated to the first 8192 characters",
+    "raw package and lockfile snapshots omitted"
+  ]
+}

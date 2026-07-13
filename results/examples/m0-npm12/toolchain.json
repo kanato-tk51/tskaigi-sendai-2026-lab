@@ -1,0 +1,13 @@
+{
+  "runId": "<run-id>",
+  "toolchain": {
+    "node": "unobserved (expected v24.18.0)",
+    "npm": "unobserved (expected 12.0.1)",
+    "baseImage": "node:24.18.0-bookworm-slim",
+    "imageDigest": "unavailable",
+    "containerRuntime": "Docker unavailable"
+  },
+  "imageDigest": "unavailable",
+  "preparationNetwork": "Allowed only for Docker Official Image pull and npm@12.0.1 during image build; not used by this run operation.",
+  "scenarioRuntimeNetwork": "none (--network none)"
+}
