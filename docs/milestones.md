@@ -170,7 +170,7 @@ experiments/npm12-install/
 │   └── Containerfile                 # M0 専用の pinned disposable container
 ├── scripts/
 │   ├── run-scenarios.mjs             # scenario isolation、実行、記録
-│   └── verify-static-safety.mjs       # workspace、fixture、mount、script の静的検査
+│   └── verify-static.mjs              # workspace、fixture、mount、script の静的検査
 └── .work/runs/<run-id>/               # disposable。version control 対象外
     ├── scenarios/<scenario-id>/       # scenario ごとの consumer/cache/output
     ├── logs/<scenario-id>.txt         # sanitized raw command log
@@ -279,7 +279,7 @@ command を別のものへ黙って置換しない。
 #### Static safety checks
 
 ```sh
-node experiments/npm12-install/scripts/verify-static-safety.mjs
+node experiments/npm12-install/scripts/verify-static.mjs
 git diff -- package.json package-lock.json .npmrc
 git diff --check
 git status --short
@@ -347,9 +347,21 @@ git status --short
 
 ## M1: probe-core
 
+Status: remediation A (C-01/C-02/H-01/M-03) complete。Remediation B (M-04/M-05/M-06/M-07/L-01) complete、M-01のcanonical alias follow-upはremediation Dで実施済み。Remediation C (M-02/L-03/L-04、implementation/docs/error/symlink整合、M2定義) complete。Remediation D (M-08 canonical file alias/canary hash policy) complete。M1 independent review gate: **approved with non-blocking follow-ups**。判定対象は現在の未commit working treeであり、詳細は[独立レビュー記録](reviews/m1-independent-review.md)を参照する。過去のtest数/結果はverification logとして扱い、このstatus文へ固定しない。
+
+### Closure follow-ups
+
+| ID | Status | Closure / limitation |
+|---|---|---|
+| L-05 | complete | `probe-core` static verifierをfail closedにし、Node.js builtin、`src/`内relative import、`src/`内へ解決されるTypeScript `paths`だけを許可する。External bare import、self-reference、package `imports` alias、computed loading、source root escapeを拒否する。 |
+| L-06 | complete | M0 static verifierの現在のfile/commandを実在する`experiments/npm12-install/scripts/verify-static.mjs`へ統一し、既知verification sectionのcommand pathをtestする。 |
+| I-04 | accepted non-blocking limitation | Exclusive create後のdirect file-write失敗ではpartial outputが残り得る。Failureをsuccess扱いせずcapability failureとして記録するが、automatic rollbackは保証しない。Disposable run directoryを前提とし、retryは新しいclean directoryを使う。詳細と将来cleanup条件は[独立レビュー記録](reviews/m1-independent-review.md#i-04-accepted-limitation)を参照する。 |
+
+M2-AはM1 boundaryの観点ではreadyだが、M0 evidence transport decision待ちである。M2-B〜M2-EはM1 boundaryの観点ではreadyである。これは各adapterが実装済みまたは各adapter固有gateを通過済みという意味ではない。
+
 ### Goal
 
-共通probeとイベントスキーマを実装する。
+共通probeと `probe-event/v2` producer event schemaを実装する。
 
 ### Prerequisites
 
@@ -362,6 +374,11 @@ git status --short
 - manifest validation
 - JSONL events
 - unit tests
+- producer-local sequenceと1 producer/1 segment sink
+- allowlisted env/file/write、loopback HTTP、fixed child、bound-file SHA-256
+- manifest allowlist内のmultiple phase/trigger
+- capability attemptと分離したroute invocation/tool API change event
+- 実dependency/importに基づくprobe-core dependency direction verifier
 
 ### Out of scope
 
@@ -369,6 +386,7 @@ git status --short
 - Vitest adapter
 - Vite adapter
 - container profiles
+- adapter、harness、collector、global sequence、report/artifact pipeline
 
 ### Acceptance criteria
 
@@ -377,9 +395,408 @@ git status --short
 - 任意コマンドが実行できない
 - canary値がログに残らない
 - unit testsが成功する
+- logical targetとhost runtime bindingが分離され、missing bindingを拒否する
+- traversal/root外symlink、hostname/external IP、arbitrary child inputを拒否する
+- producer-local sequenceが単調増加し、同一process内の並行JSONL writeが破損しない
+- producer-local sequenceがphase/event kindをまたいで共有される
+- route invocationとtool API changeがcapability attemptと別event kindである
+- adapter recording APIがarbitrary event/details/path/content/diff/callbackを受けない
+- static verifierがadapter directoryの存在だけでは失敗せず、probe-coreからadapter/toolへの依存は拒否する
+- M0 testがM1 packageの存在に依存せず、M1 package metadataはroot integration testで検査する
+- raw canary/path/error/stack/response bodyをeventへ保存しない
+- M0 stdout fallbackをevent transportへ一般化しない
+- canary file readはcontent hashを保存せず、source/artifact file-hashとclassificationで分離する
+- structural validation後、session/sink作成前にasync file identity preflightを完了する
+- 異なるfile targetのcanonical path、既存device/inode、planned output path共有を拒否する
+- raw binding/path/target IDを受け取るpublic hash helperを提供せず、prepared sessionのfile-hash attemptだけを使う
+- loopback successは固定canary protocolの完全一致とabsolute deadlineを要求する
+- sessionがofficial sinkを所有し、closeがin-flight attempt/event writeを待つ
+- sink failure/limit/partial lineをterminal run failureとして伝播する
+- generic file-writeはoutputの排他的新規作成だけで、同一target writeを直列化する
+- read/hash/write permission failureをoperation別codeへ正規化する
 
 ### Verification
 
 - `npm run test --workspace packages/probe-core`
+- `npm run typecheck --workspace packages/probe-core`
+- `npm run build --workspace packages/probe-core`
+- `npm run verify:static --workspace packages/probe-core`
+- `node packages/probe-core/scripts/verify-static.mjs`
 - `npm run typecheck`
 - `npm run lint`
+- `npm run check`
+
+## M2-A: npm lifecycle adapter
+
+### Goal
+
+M0のversion-specific marker-only baselineを変更せず、承認済みcontainer evidence回収境界の中でnpm lifecycle invocationとprobe-core capability eventを統合する。M2-Aを他adapterより先に実施する必然性はない。
+
+### Prerequisites
+
+- M1 independent review gate approved
+- root `npm run check` success
+- `probe-event/v2` adapter event contract approved
+- no real credentials、no external network
+- ExpectedとObservedの分離
+- container内producer segmentの回収境界がhuman reviewで承認済み
+- Docker `29.6.1`の`docker cp` tmpfs制約が未解決なら、このmilestoneはblockedまたはrunをInconclusiveとする
+
+### Read first
+
+- root `AGENTS.md`、`README.md`、`package.json`
+- [index.md](index.md)、[threat-model.md](threat-model.md)、[experiment-protocol.md](experiment-protocol.md)、[architecture.md](architecture.md)、[experiment-matrix.md](experiment-matrix.md)
+- このM2-A定義、[codex-workflow.md](codex-workflow.md)、[spike-npm12.md](spike-npm12.md)
+- M1 independent review結果と承認済みevidence-transfer decision
+
+### In scope
+
+- npm lifecycle専用adapter/fixture/contract test
+- `install-lifecycle` route invocation eventとcapability attemptの分離
+- M0で固定したnpm/Node/version/approval条件の引継ぎ
+- instrumented lifecycleをdisposable experiment container内だけで実行
+- producer segmentのcomplete close、境界外へ回収したbyte列のvalidation
+
+### Out of scope
+
+- M0 evidence、Observed、marker-only resultの変更
+- M0 stdout framed fallbackの汎用event transport化
+- host/root workspace上のinstrumented lifecycle実行
+- 他M2 adapter、generic scenario runner、M3 collector/global sequence/report
+- permissive/constrained profile、artifact pipeline
+
+### Deliverables
+
+- npm lifecycle adapter packageまたは専用container entry
+- fixed manifest/fixtureとprobe-core integration tests
+- 承認済みproducer segment transfer boundaryの設計記録
+- M0 baselineとM2 eventの対応表（Expectedのみ。Observedはrun output）
+- package build/typecheck/test/static scripts
+
+### Acceptance criteria
+
+- lifecycle起動は`route-invocation`、env/file/write/network/childは`capability-attempt`であり相互に偽装しない
+- M0 marker-only evidence、stdout fallback、Observed/Inconclusiveを変更しない
+- instrumented packageのpack/install/runがhostで一度も行われない
+- external network、credential/home/agent/runtime socket mountを使用しない
+- producer segment recoveryが未承認またはtmpfs制約未解決ならsuccessにせずblocked/Inconclusiveにする
+- segment close/failure/sequence/schemaを回収後に再検査する
+
+### Verification commands
+
+```sh
+npm run test --workspace packages/npm-lifecycle-probe
+npm run typecheck --workspace packages/npm-lifecycle-probe
+npm run build --workspace packages/npm-lifecycle-probe
+npm run verify:static --workspace packages/npm-lifecycle-probe
+node experiments/npm12-install/scripts/verify-static.mjs
+npm run check
+git diff --check
+git status --short
+```
+
+承認済み回収境界とroot scriptが追加された後だけ、review済みhost orchestratorの固定commandを実行する。承認前はDocker実行commandを推測で追加・実行しない。
+
+### Risks
+
+- tmpfs producer segmentを承認済みcopy APIで回収できない
+- stdout fallbackを一般化してevidence/control channelを混同する
+- npm approval state、cache、lockfileがscenario間で漏れる
+- M0の限定的Observedを一般化する
+
+### Human review points
+
+- producer segment回収境界とtmpfs制約の解決根拠
+- lifecycle code、container entry、mount/network/runtime argumentsの全体
+- M0 evidence非変更とExpected/Observed分離
+- hostでinstrumented lifecycleを実行する経路がないこと
+
+## M2-B: ESLint adapter
+
+### Goal
+
+固定1-file fixtureでESLint pluginのmodule evaluation、初期化、rule/visitor/fixer経路と、direct write/fixer API changeを別eventとして測定可能にする。
+
+### Prerequisites
+
+- M1 independent review gate approved
+- root `npm run check` success、`probe-event/v2` contract approved
+- no real credentials、no external network、Expected/Observed分離
+- 対象ESLint versionとfixture、file count、cache/watch条件を事前固定
+
+### Read first
+
+- root `AGENTS.md`、[index.md](index.md)、[threat-model.md](threat-model.md)、[experiment-protocol.md](experiment-protocol.md)、[architecture.md](architecture.md)、[experiment-matrix.md](experiment-matrix.md)
+- このM2-B定義、[codex-workflow.md](codex-workflow.md)、M1 independent review結果
+- 固定versionのESLint official plugin/rule/fixer API documentation
+
+### In scope
+
+- module evaluation、plugin/rule initialization、rule `create`
+- designated fileのvisitor callback、fixer invocation
+- lint onlyとlint `--fix`、cache disabled、file count固定
+- route invocation event、direct filesystem write capability event、ESLint fixer APIのtool API change event
+- fix multi-passの実測countを削除せず記録
+
+### Out of scope
+
+- watch/cache/複数file/並列baseline、他adapter
+- arbitrary rule execution、production projectへの導入
+- M3集計/report、profile比較、artifact pipeline
+
+### Deliverables
+
+- `packages/eslint-plugin-probe`、固定fixture/config
+- module/init/create/visitor/fixerのlogical ID/phase manifest
+- lint-only/fix contract/integration testsとstatic verifier
+- direct writeと`source-fix` eventの対応を説明するadapter note
+
+### Acceptance criteria
+
+- module evaluationは専用entryから明示recordし、probe-core/helper importにside effectを加えない
+- route event数からphase別invocation countを算出できる
+- lint-onlyと`--fix`を別scenarioにし、cache disabled/file count 1を検証する
+- visitor/fixer multi-passを推測で1回に補正しない
+- direct filesystem writeとESLint fixer return/materializationを別event/evidenceにする
+- raw filename/path/source/diff/errorをeventへ保存しない
+
+### Verification commands
+
+```sh
+npm run test --workspace packages/eslint-plugin-probe
+npm run typecheck --workspace packages/eslint-plugin-probe
+npm run build --workspace packages/eslint-plugin-probe
+npm run verify:static --workspace packages/eslint-plugin-probe
+npm run verify:static --workspace packages/probe-core
+npm run check
+git diff --check
+git status --short
+```
+
+### Risks
+
+- fix multi-passでvisitor/fixer countが増える
+- config loadとrule initializationを混同する
+- fixer returnとESLintのfilesystem materializationを同一eventにする
+
+### Human review points
+
+- phase/trigger/invocation kindのESLint APIへの対応
+- logical file IDのsanitization、cache/file-count固定の根拠
+- direct write、fixer API change、最終source hashの境界
+
+## M2-C: Vitest setupFiles adapter
+
+### Goal
+
+固定test file/worker条件でsetup module evaluationと`setupFiles` executionを記録し、PID/worker/test-file logical IDとcapability attemptを比較可能にする。
+
+### Prerequisites
+
+- M1 independent review gate approved
+- root `npm run check` success、`probe-event/v2` contract approved
+- no real credentials、no external network、Expected/Observed分離
+- 対象Vitest version、test file count、worker条件、watch disabledを事前固定
+
+### Read first
+
+- root `AGENTS.md`、[index.md](index.md)、[threat-model.md](threat-model.md)、[experiment-protocol.md](experiment-protocol.md)、[architecture.md](architecture.md)、[experiment-matrix.md](experiment-matrix.md)
+- このM2-C定義、[codex-workflow.md](codex-workflow.md)、M1 independent review結果
+- 固定versionのVitest setupFiles/worker official documentation
+
+### In scope
+
+- setup module evaluation、setupFiles execution
+- PID、tool提供のworker ID、test file logical ID
+- test file count固定、worker条件固定、watch disabled
+- route invocation eventとcapability attempt
+- route event件数からのinvocation count
+
+### Out of scope
+
+- Vitestに一般的production artifact変更APIがあるとの仮定
+- watch mode、複数worker比較、cache variant
+- tool API change eventの捏造、他adapter、M3/profile/artifact pipeline
+
+### Deliverables
+
+- `packages/vitest-setup-probe`、固定setup/test fixture/config
+- module/setup logical contractとtests/static verifier
+- worker IDが取得不能な場合`null`とする根拠記録
+
+### Acceptance criteria
+
+- module evaluationとsetup executionを別route eventにする
+- worker IDをPID/filenameから捏造せず、tool APIにない場合`null`にする
+- test file countとworker条件がpreflight/testで固定される
+- watchが無効である
+- capability拒否をroute未起動と混同しない
+- production artifact API change eventを架空に生成しない
+
+### Verification commands
+
+```sh
+npm run test --workspace packages/vitest-setup-probe
+npm run typecheck --workspace packages/vitest-setup-probe
+npm run build --workspace packages/vitest-setup-probe
+npm run verify:static --workspace packages/vitest-setup-probe
+npm run verify:static --workspace packages/probe-core
+npm run check
+git diff --check
+git status --short
+```
+
+### Risks
+
+- process pool/version差でsetup countやworker contextが変化する
+- setup module evaluationとper-test executionを混同する
+- toolがworker/test file contextを公開しない
+
+### Human review points
+
+- worker条件とlogical test file IDの根拠
+- module/setup phaseとtrigger mapping
+- tool API changeをnot applicableとする判断
+
+## M2-D: Vite plugin adapter
+
+### Goal
+
+`vite build`の固定fixtureでconfig/module evaluation、plugin factory、build hooksとofficial transform/emit/bundle mutationを記録する。
+
+### Prerequisites
+
+- M1 independent review gate approved
+- root `npm run check` success、`probe-event/v2` contract approved
+- no real credentials、no external network、Expected/Observed分離
+- 対象Vite version、build input/module count、watch/cache条件を事前固定
+
+### Read first
+
+- root `AGENTS.md`、[index.md](index.md)、[threat-model.md](threat-model.md)、[experiment-protocol.md](experiment-protocol.md)、[architecture.md](architecture.md)、[experiment-matrix.md](experiment-matrix.md)
+- このM2-D定義、[codex-workflow.md](codex-workflow.md)、M1 independent review結果
+- 固定versionのVite/Rollup plugin hook、transform、emitFile documentation
+
+### In scope
+
+- config/module evaluation、plugin factory、`buildStart`、designated `transform`、`generateBundle`、`writeBundle`
+- `vite build`のみ、watch/cache disabledの固定baseline
+- route invocation event、direct filesystem write
+- module transform result、`emitFile` emitted asset/chunk、bundle mutationのtool API change event
+
+### Out of scope
+
+- dev server、watch、HMR、serve hooks
+- arbitrary module全件のcount、他adapter、M3/profile/artifact pipeline
+
+### Deliverables
+
+- `packages/vite-plugin-probe`、固定build fixture/config
+- hook/target logical manifest、contract/integration tests、static verifier
+- transform/emit/bundle eventとmaterialized artifact hashの対応note
+
+### Acceptance criteria
+
+- module evaluation、factory、buildStart、transform、generateBundle、writeBundleを別phase/logical invocationとして記録する
+- designated moduleだけを固定logical IDで数え、raw pathをeventへ入れない
+- direct filesystem writeをtransform/emit/bundle mutationと分離する
+- transform=`module-transform`、emitFile=`emitted-asset|emitted-chunk`、bundle編集=`bundle-mutation`の固定unionを使う
+- `vite build`以外を起動せず、dev/watch/HMRを対象外に保つ
+
+### Verification commands
+
+```sh
+npm run test --workspace packages/vite-plugin-probe
+npm run typecheck --workspace packages/vite-plugin-probe
+npm run build --workspace packages/vite-plugin-probe
+npm run verify:static --workspace packages/vite-plugin-probe
+npm run verify:static --workspace packages/probe-core
+npm run check
+git diff --check
+git status --short
+```
+
+### Risks
+
+- internal module transformをdesignated target countへ混入する
+- generateBundle mutationとwriteBundle時のfilesystem materializationを混同する
+- Rollup/Vite version差でhook ordering/countが変わる
+
+### Human review points
+
+- 各hookのofficial semanticsとphase/trigger mapping
+- transform result、emitFile、bundle mutation、direct writeの境界
+- output logical ID、artifact hash、module count固定
+
+## M2-E: explicit code-generation CLI adapter
+
+### Goal
+
+利用者が明示起動する固定code-generation CLIでstartupからcompletionまでを記録し、direct writeとdocumented generator API changeを分離する。
+
+### Prerequisites
+
+- M1 independent review gate approved
+- root `npm run check` success、`probe-event/v2` contract approved
+- no real credentials、no external network、Expected/Observed分離
+- 固定CLI mode/arguments/input/output directory contractを事前承認
+
+### Read first
+
+- root `AGENTS.md`、[index.md](index.md)、[threat-model.md](threat-model.md)、[experiment-protocol.md](experiment-protocol.md)、[architecture.md](architecture.md)、[experiment-matrix.md](experiment-matrix.md)
+- このM2-E定義、[codex-workflow.md](codex-workflow.md)、M1 independent review結果
+- project-owned generator API/CLI contract
+
+### In scope
+
+- CLI startup、argument parsing、generation start、file write、completion
+- 全phaseの`explicit` trigger
+- allowlisted output directory制限、fixed arguments、dry-run
+- route invocation event、direct write capability event、source generation/emitted artifact相当のtool API change event
+
+### Out of scope
+
+- arbitrary command runner、任意argument/path、shell execution
+- automatic lifecycle/config-load routeとしての表現
+- production project input、他adapter、M3/profile/artifact pipeline
+
+### Deliverables
+
+- `packages/codegen-probe`、固定CLI/generator fixture
+- startup/parse/start/write/completion manifestとtests/static verifier
+- dry-run/no-change contract、output containment test
+- direct writeとgenerator API changeの設計note
+
+### Acceptance criteria
+
+- startup、argument parsing、generation start、file write、completionを別route invocationとして記録する
+- trigger typeが全件`explicit`である
+- argument/output targetは固定manifest allowlist外を拒否し、arbitrary command/pathを受けない
+- dry-runはoutputを変更せず、change eventの`changed: false` semanticsと整合する
+- direct filesystem writeとdocumented generator API changeを別eventにする
+- raw input/output content、diff、pathをeventへ保存しない
+
+### Verification commands
+
+```sh
+npm run test --workspace packages/codegen-probe
+npm run typecheck --workspace packages/codegen-probe
+npm run build --workspace packages/codegen-probe
+npm run verify:static --workspace packages/codegen-probe
+npm run verify:static --workspace packages/probe-core
+npm run check
+git diff --check
+git status --short
+```
+
+### Risks
+
+- fixed CLIをarbitrary command/argument escape hatchへ拡張する
+- generator API resultとfilesystem materializationを混同する
+- dry-runがhidden cache/outputを変更する
+
+### Human review points
+
+- CLI arguments/output containment/dry-runの全code path
+- explicit triggerとphase mapping
+- direct write、generator API change、final output hashの境界

@@ -1,0 +1,9 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "allowJs": true,
+    "checkJs": true,
+    "types": ["node", "vitest"]
+  },
+  "include": ["src/**/*.ts", "src/**/*.js", "test/**/*.ts", "vitest.config.ts"]
+}

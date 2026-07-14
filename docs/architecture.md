@@ -66,9 +66,19 @@
 - event schema、normalized error、redaction、path policy
 - manifest で許可された capability attempt
 - per-producer JSONL segment writer
-- deterministic hash helper
+- prepared `file-hash` attempt内のdeterministic byte hash
 - fixed child target の厳密な validation
 - unit test 用の pure helper
+
+M1 で `@tskaigi-lab/probe-core` として実装した。Public APIはmanifest/runtime bindingのstructural validation、async runtime preparation、event validation/stable serialization、sink所有probe session、固定capability attempt、route invocation/tool API change recording、normalized errorに分かれる。Raw binding/path/target IDを受け取るhash helper、arbitrary event/details factory、Producer JSONL sinkはpublic差替え点ではない。Schema versionは`probe-manifest/v2`、`probe-runtime-bindings/v1`、`probe-event/v2`である。
+
+Manifestはlogical IDと上限、重複なしphase/trigger allowlist、capability/route/tool-change definition、file/tool targetの固定classificationを持ち、host pathとloopback portは明示的runtime bindingに置く。`file-read`=`canary`、`file-hash`=`source|artifact`、`file-write`=`output`であり、tool API targetは`source|artifact`だけでruntime pathを持たない。Canary hashとtool targetへのcanary/output分類はstructural validationで拒否する。異なるfile targetのlexical path、canonical path、既存device/inode identity、planned output path共有はruntime preflightで拒否する。Runtime bindingはcommand、script、arguments、URL、HTTP method/body、write contentを受け付けない。
+
+Structural validationはexternal objectをcanonical scalarへcopyしてnested valueまでfreezeし、返却configurationとは別のprivate`WeakMap` snapshotを作る。Async file preflightはそのsnapshotだけからcanonical root/target、regular-file status、device/inode、planned output pathを取得し、全file targetが一意な場合だけ別brandのprepared immutable snapshotを生成する。Session/path/sinkはprepared snapshotだけを使用し、preflight failureではsegmentを作らない。Root自体のsymlinkとroot内read/hash/parent symlinkはcanonical root内に解決される場合だけ許可し、direct writeのfinal symlinkはroot内向けでも拒否する。Canonical host path/device/inodeはprivate stateにだけ保持しeventへ渡さない。Preflight後のhostile rename、hard-link作成、bind-mount変更を防ぐfilesystem sandboxではなく、cooperative disposable directoryを前提とする。Direct writeは固定markerの排他的新規作成だけで、既存file/symlinkを変更しない。Childはtrusted configuration initialization時のNode executable snapshot、package同梱script、固定argv、`shell: false`、空environmentだけを使う。
+
+内部event factory/validatorは外部draft/eventを保持せず、plain own data propertyからprimitive/plain-dataだけのcanonical discriminated union eventを新規作成する。Event validation/serializationにはmanifest contextが必須で、factory・validator・sinkが同じkind別semantic ruleを利用する。Public indexはarbitrary event/details factoryをexportしない。将来adapterはvalidated configurationをprepareした後に作成したsessionの`runAttempt`、`recordRouteInvocation`、`recordToolApiChange`だけを使い、eventを組み立ててsinkへ渡さない。将来collectorがproducer eventを再検証する場合も、対応するmanifest snapshotを渡す。
+
+Remediation Bのbreaking changeとして、旧`createJsonlEventSink(configuration)` public exportと`createProbeSession(configuration, sink)`を廃止し、session-owned sinkへ統合した。Remediation Cでは単一phaseの`probe-event/v1`を互換維持せずv2へ更新し、manifest-declared IDを選ぶ専用recording APIを追加した。Remediation Dではraw targetを受け取るpublic hash helperを削除し、`validateProbeConfiguration()`、`await prepareProbeConfiguration()`、`await createProbeSession(prepared)`の三境界へ分けた。将来adapterはprepared configurationからsessionを1回作成して全operationをそのsession経由で実行し、必ず`close()`をawaitする。Collectorはsessionへsinkを注入せず、M3でclosed producer segmentを入力として再validationする。
 
 行わないこと:
 
@@ -139,6 +149,38 @@ Direct write scenario では `probe-core` が allowlisted scratch/fixture target
 
 Module evaluation を測る entry point は adapter package 内でも専用 fixture export に隔離する。通常の helper export と `probe-core` の import には side effect を持たせない。
 
+## M1 input/configuration/event boundary
+
+```text
+external manifest + runtime bindings
+              |
+              v  descriptor validation; Proxy/accessor/custom prototype rejected
+canonical validated configuration (public, deeply frozen)
+              |
+              +---- private structural snapshot
+                              |
+                              v  async file identity preflight
+                    prepared immutable snapshot (private WeakMap brand)
+                              | canonical root/path + device/inode stay private
+                              | executable + fixed script snapshot
+                              v
+                                      session (open/closing/closed/failed)
+                                              | runAttempt / recordRouteInvocation / recordToolApiChange
+                                              | owns official sink + shared sequence + in-flight set
+                                              v
+fixed recording input -- canonical copy --> discriminated canonical event
+                                              |
+                                              v  manifest-context semantic validation + fixed limits
+                                      private producer JSONL event sink
+                                              |
+                                              v
+                              complete LF line / terminal failure + partial marker
+```
+
+Public validated configurationはinspectionとruntime preparation入力用であり、session authorityではない。Prepared brandを型assertionで偽装したobjectとunprepared configurationはprivate snapshot lookupに失敗する。Sessionは同じprepared configurationからofficial sinkを作成し、caller callbackや別configurationのsinkを受け取らない。`close()`は開始済みattemptとwrite queueを待ち、sink failureをsession `failed`へ伝播する。Event sinkは入力をそのままserializeせず、canonical copy、manifestとのidentity/attempt整合、producer sequence、event/segment limitを検証した後にだけ完全なJSONL lineをwrite queueへ渡す。Serialization/limit validationに失敗した入力はwrite開始前に拒否する。I/O途中の失敗はpartial-line可能性を保持してterminal failureとなり、完全runとして扱わない。
+
+Loopback attemptは任意local serviceを信用せず、内部固定のmethod/path/status/header/body protocolを完全検証する。Attempt開始時のmonotonic absolute deadlineがconnectionからresponse endまでを覆い、期限時にrequest/response/socketを破棄する。Header/body resource limitとmarker一致結果だけを扱い、raw header/bodyはcanonical eventへ渡さない。
+
 ## Harness の責務
 
 1. manifest/schema revision と pristine fixture hash を確認する。
@@ -169,9 +211,9 @@ versioned scenario + profile
       lab-cli preflight ----> pristine before hash
           |
           v
- route tool -> adapter -> probe-core -> producer JSONL segments
-          |                         |
-          +-> official API result   +-> sanitized events only
+ route tool -> adapter -> probe-core -> canonical immutable event -> producer JSONL segments
+          |                                                    |
+          +-> official API result                              +-> sanitized primitive/plain-data only
           |
           v
      source/artifact after hash
@@ -186,6 +228,10 @@ versioned scenario + profile
 ```
 
 Process/worker ごとに segment を分け、複数 process から同一 file への append を前提にしない。Segment は producer-local sequence を持つ。Collector は segment を schema validation し、documented merge key で canonical JSONL に run-global sequence を付ける。Merge order は causal order の証明には使わない。
+
+M1 が実装するのはproducer segmentまでである。同一processのevent writeはsink内部で直列化し、同一file output targetの副作用writeはsession target lockで直列化する。Generic writeは`O_EXCL|O_NOFOLLOW`の新規固定markerだけなので並行2回目や既存fileは決定的なfailureとなる。Process間global order、segment collection、canonical mergeは実装しない。M0のstdout framed bundle fallbackはこのdata flowへ一般化していない。
+
+M3 collectorは、terminal failureが報告されたsegment、LFで完結しない末尾、JSON parse/schema error、producer sequence gapを部分的に採用せず、そのproducer segment/runをinvalidとして扱う。M1 sessionは副作用後のevidence failureを成功扱いしないが、外部副作用をrollbackするtransactionではない。
 
 Event collection の control channel は network canary と分ける。標準は allowlisted result volume 上の segment file とし、Unix socket を採用する場合も experiment-only path として manifest に明記する。
 
@@ -248,8 +294,10 @@ deploy simulator -X-> build dependencies
 
 循環依存を作らず、report generation は raw event schema に依存し、個別 tool implementation の内部には依存しない。
 
+`probe-core` static verifierはpackage directoryの存在をmilestone guardとして使わない。`probe-core/package.json`のruntime/workspace dependencyと、TypeScript ASTでstatic import/export、type-only import、literal dynamic import、require相当、relative escape、alias解決を検査する。Computed module loadingは依存先を証明できないため拒否する。Adapter packageから`probe-core`への正方向依存はこのverifierの検査対象sourceではなく、失敗理由にしない。
+
 ## 設計時点の仮定
 
 - npm workspace と container runtime の具体 syntax は M-1/M0 で最小構成として確定する。
-- per-producer segment の deterministic merge rule は M1 で schema test とともに確定する。
+- per-producer segment のschema、stable serialization、producer-local sequenceはM1で確定した。Segment間のdeterministic merge ruleとglobal sequenceはM3で確定する。
 - constrained child-process enforcement は portability 上の難所である。M4 で実 enforcement が得られなければ、manifest skip と limitation を明記し、強制できたと主張しない。

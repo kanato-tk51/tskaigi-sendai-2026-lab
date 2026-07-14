@@ -43,7 +43,7 @@ function validInspection(): unknown[] {
 }
 
 describe("M0 marker-only fixture", () => {
-  it("passes the complete static safety verification", async () => {
+  it("passes the permanent static safety verification independently of workspace contents", async () => {
     const result = await verifyStaticSafety();
     expect(result).toMatchObject({ status: "success", failures: [] });
     expect(result.limitations).toContain(

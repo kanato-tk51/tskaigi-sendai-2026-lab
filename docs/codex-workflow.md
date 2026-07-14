@@ -39,11 +39,13 @@
 M-1 repository scaffold
   -> M0 npm 12 install lifecycle minimal spike
   -> M1 probe-core + event schema
-  -> M2-A npm lifecycle adapter
-  -> M2-B ESLint adapter
-  -> M2-C Vitest adapter
-  -> M2-D Vite adapter
-  -> M2-E codegen CLI adapter
+  -> M1 independent review gate
+  -> one approved M2 adapter task at a time:
+       M2-A npm lifecycle adapter
+       M2-B ESLint adapter
+       M2-C Vitest adapter
+       M2-D Vite adapter
+       M2-E codegen CLI adapter
   -> M3 harness + reports
   -> M4 permissive/constrained profiles
   -> M5 build-once/verify/deploy simulator
@@ -51,7 +53,7 @@ M-1 repository scaffold
   -> M7 independent safety/validity review
 ```
 
-M0 は共通 framework の全体実装より先に実施し、npm 12 の version/config/approval state と observed behavior を小さく確定する。M2 の adapter は並行実装せず、A から E まで1つずつ review/merge してから次へ進む。
+M0 は共通 framework の全体実装より先に実施し、npm 12 の version/config/approval state と observed behavior を小さく確定する。M2 の adapter は並行実装せず1つずつreview/mergeする。M2-Aのcontainer producer-segment回収境界が未承認、または`docker cp` tmpfs制約が未解決ならM2-Aをblocked/Inconclusiveとし、M1 gateと各adapter prerequisiteを満たすM2-B〜Eのいずれかを先に選べる。順序変更を理由に複数adapterを同一taskへ含めない。
 
 ## Milestone ごとの読書範囲と変更境界
 

@@ -1,4 +1,4 @@
-import { readFile, readdir } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
@@ -234,25 +234,6 @@ export async function verifyStaticSafety() {
       );
     }
   }
-
-  const packageEntries = await readdir(path.join(repositoryRoot, "packages"), {
-    withFileTypes: true,
-  });
-  const forbiddenM1Packages = new Set([
-    "probe-core",
-    "lab-cli",
-    "eslint-plugin-probe",
-    "vitest-setup-probe",
-    "vite-plugin-probe",
-    "codegen-probe",
-  ]);
-  check(
-    !packageEntries.some(
-      (entry) => entry.isDirectory() && forbiddenM1Packages.has(entry.name),
-    ),
-    "M1 or later package implementation is present",
-    failures,
-  );
 
   const validInspectionFixture = [
     {

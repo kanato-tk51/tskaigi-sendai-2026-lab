@@ -8,6 +8,13 @@ interface RootPackage {
   workspaces?: unknown;
 }
 
+interface ProbeCorePackage {
+  name?: unknown;
+  private?: unknown;
+  type?: unknown;
+  exports?: unknown;
+}
+
 const lifecycleScriptNames = [
   "preinstall",
   "install",
@@ -29,5 +36,27 @@ describe("repository scaffold", () => {
     for (const scriptName of lifecycleScriptNames) {
       expect(packageJson.scripts?.[scriptName]).toBeUndefined();
     }
+  });
+});
+
+describe("M1 probe-core workspace integration", () => {
+  it("declares a private ESM package with build output exports", async () => {
+    const contents = await readFile(
+      new URL("../packages/probe-core/package.json", import.meta.url),
+      "utf8",
+    );
+    const packageJson = JSON.parse(contents) as ProbeCorePackage;
+
+    expect(packageJson).toMatchObject({
+      name: "@tskaigi-lab/probe-core",
+      private: true,
+      type: "module",
+      exports: {
+        ".": {
+          types: "./dist/index.d.ts",
+          import: "./dist/index.js",
+        },
+      },
+    });
   });
 });

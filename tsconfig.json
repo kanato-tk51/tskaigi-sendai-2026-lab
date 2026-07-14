@@ -3,5 +3,11 @@
   "compilerOptions": {
     "types": ["node"]
   },
-  "include": ["tests/**/*.ts", "vitest.config.ts"]
+  "include": [
+    "tests/**/*.ts",
+    "packages/probe-core/src/**/*.ts",
+    "packages/probe-core/test/**/*.ts",
+    "packages/probe-core/vitest.config.ts",
+    "vitest.config.ts"
+  ]
 }

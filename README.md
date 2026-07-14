@@ -1,6 +1,6 @@
 # tskaigi-sendai-2026-lab
 
-TypeScript ツールチェーンにおける依存コードの実行経路を、安全なローカル条件で比較するための実験ラボです。M-1 の repository scaffold と、独立した M0 npm 12 marker-only spike を実装しています。`probe-core`、adapter、共通 harness はまだ未実装です。
+TypeScript ツールチェーンにおける依存コードの実行経路を、安全なローカル条件で比較するための実験ラボです。M-1 の repository scaffold、独立した M0 npm 12 marker-only spike、M1 の副作用なしで import できる `@tskaigi-lab/probe-core` を実装しています。adapter と共通 harness はまだ未実装です。
 
 ## Development baseline
 
@@ -29,6 +29,15 @@ npm run check
 ```
 
 `npm run check` は format check、lint、typecheck、unit test の順に実行します。`lab:*` や `artifact:*` の planned command は後続 milestone の対象であり、現在は存在しません。
+
+M1 の package 単位の確認には次を使用します。`probe-core` は `probe-event/v2` でcapability attempt、route invocation、official tool API changeを分離し、manifest allowlist内の複数phaseとproducerごとのJSONL segmentまでを担当します。segment collector、global sequence、adapter実測はM2/M3以降の対象です。
+
+```sh
+npm run probe-core:build
+npm run probe-core:typecheck
+npm run probe-core:test
+npm run probe-core:static
+```
 
 M0 は通常の regression check に含めず、Docker を明示して個別実行します。
 
