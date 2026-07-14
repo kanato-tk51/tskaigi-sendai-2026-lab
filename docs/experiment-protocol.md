@@ -54,6 +54,16 @@ File targetには用途を固定unionで宣言する。`file-read`は`classifica
 
 Adapter 内の module-evaluation marker は測定対象として意図的に配置できるが、再利用 library 部分の import-time side effect にはしない。
 
+### M2-B ESLint adapter mapping
+
+M2-BはESLint `9.39.5`、ESM、flat config、1 JavaScript fixtureを固定し、`lint-only`と`fix`を別scenarioとして実行する。両scenarioともcache、watch、config discovery、glob input、concurrencyを無効にする。Plugin routeはmodule evaluation、plugin initialization、rule create、Program visitor、fixer callbackをそれぞれ`route-invocation`として記録し、phaseは`module-evaluation`、`plugin-initialization`、`rule-create`、`visitor-callback`、`fixer-callback`、triggerは`configured`とする。Runnerの明示起動をplugin routeのtriggerへ転記しない。
+
+最初のProgram visitorだけがenvironment canary read、canary file read、source snapshot hash、dedicated output marker write、固定loopback HTTP、fixed child Node.jsを各1回queueする。ESLint fix multi-passでrule/visitorが再実行されてもcapability attemptを繰り返さず、route eventは実呼出しをすべて保持する。
+
+Lint-onlyではofficial API changeを`skipped/NOT_APPLICABLE`として記録する。Fixではfixer callbackが固定literal rangeのreplacementをESLintへ返し、harnessが`ESLint.outputFixes()`をawaitした後、`official-api-change`/`explicit`の`source-fix` eventへchanged、before/after SHA-256、before/after byte sizeだけを記録する。Plugin/rule sourceはNode.js filesystem APIをimportせず、fixtureを直接変更しない。Dedicated outputへのdirect writeは別の`capability-attempt`であり、source fixと同一event/hashへ統合しない。
+
+M2-Bが生成するのはschema validation済みproducer-local raw segmentまでである。Event kindをまたぐproducer sequenceは0始まり連番とするが、global sequence、canonical merge、summary/Markdown report、experiment matrixのObserved更新はM3の責務である。実装条件とlocal contract countは[M2-B adapter note](m2-b-eslint-adapter.md)を参照する。
+
 ## Scenario manifest
 
 Scenario manifest は、実行前に固定する入力と期待値を宣言する。raw canary value や host absolute path は含めない。最低限、次の項目を持つ。
