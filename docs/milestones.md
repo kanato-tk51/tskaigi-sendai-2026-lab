@@ -513,6 +513,12 @@ git status --short
 
 ## M2-B: ESLint adapter
 
+Status: implementation **complete**; independent review **approved with non-blocking follow-ups**; blockers: none. F-01 through F-06 remain open and are recorded in the [M2-B independent review record](reviews/m2-b-eslint-adapter.md). M2-B experiment-matrix Observed results remain unmeasured, and the M3 collector, global sequence, and reporting remain unimplemented.
+
+Historical status before review closure, superseded by the current status above:
+
+Status: **implementation complete; independent review pending** (superseded).
+
 ### Goal
 
 固定1-file fixtureでESLint pluginのmodule evaluation、初期化、rule/visitor/fixer経路と、direct write/fixer API changeを別eventとして測定可能にする。

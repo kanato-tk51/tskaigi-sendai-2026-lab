@@ -1,6 +1,6 @@
 # tskaigi-sendai-2026-lab
 
-TypeScript ツールチェーンにおける依存コードの実行経路を、安全なローカル条件で比較するための実験ラボです。M-1 の repository scaffold、独立した M0 npm 12 marker-only spike、M1 の副作用なしで import できる `@tskaigi-lab/probe-core` を実装しています。adapter と共通 harness はまだ未実装です。
+TypeScript ツールチェーンにおける依存コードの実行経路を、安全なローカル条件で比較するための実験ラボです。M-1 の repository scaffold、独立した M0 npm 12 marker-only spike、M1 の副作用なしで import できる `@tskaigi-lab/probe-core`、M2-B の固定 ESLint adapter を実装しています。M2-A/C/D/E と共通 harness はまだ未実装です。
 
 ## Development baseline
 
@@ -38,6 +38,16 @@ npm run probe-core:typecheck
 npm run probe-core:test
 npm run probe-core:static
 ```
+
+M2-B は `packages/eslint-plugin-probe` の private ESM package `@tskaigi-lab/adapter-eslint` です。ESLint `9.39.5`、1 JavaScript fixture、flat config、cache/watch/config discovery 無効の `lint-only` と `fix` を固定し、module evaluation、plugin initialization、rule create、Program visitor、fixer callbackを記録します。direct filesystem writeはprobe-core capability、source fixはESLint official fixer APIのtool changeとして別eventにします。
+
+```sh
+npm run m2b:verify
+npm run m2b:run:lint
+npm run m2b:run:fix
+```
+
+Runnerはschema validation済みのproducer-local raw segmentだけをignored `results/runs/m2-b-eslint/`へ保存します。Global sequence、collector、summary/Markdown reportはM3の責務です。詳細は[M2-B ESLint adapter note](docs/m2-b-eslint-adapter.md)を参照してください。
 
 M0 は通常の regression check に含めず、Docker を明示して個別実行します。
 

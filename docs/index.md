@@ -11,6 +11,7 @@ Read only the documents relevant to the current task.
 | Experiment changes | `experiment-protocol.md`, `experiment-matrix.md` |
 | Starting a milestone | `milestones.md` and related documents |
 | M1 closure or independent review decision | `milestones.md`, `reviews/m1-independent-review.md` |
+| M2-B ESLint adapter implementation or review | `milestones.md`, `m2-b-eslint-adapter.md`, `reviews/m2-b-eslint-adapter.md`, `experiment-protocol.md`, `architecture.md`, `experiment-matrix.md` |
 | Container profiles | `threat-model.md`, `architecture.md`, `experiment-matrix.md` |
 | Artifact build or deploy | `artifact-pipeline.md`, `threat-model.md` |
 | Conference claims | `evidence-map.md`, sanitized results |
