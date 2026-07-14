@@ -8,7 +8,8 @@ Read `docs/index.md` and only the documents relevant to the current task.
 - Only read environment variables prefixed with `PROBE_CANARY_`.
 - Only access paths explicitly allowed by the experiment manifest.
 - Never access the user's home directory, SSH agent, credential stores,
-  Docker socket directly, cloud metadata endpoints, or external network hosts.
+  Docker socket directly, cloud metadata endpoints, or external network hosts,
+  except for the narrowly authorized Remote Git push described below.
   An approved host orchestrator may invoke a fixed container-runtime CLI, but
   must never mount or forward its socket into an experiment container.
 - Network probes must be loopback-only.
@@ -17,6 +18,14 @@ Read `docs/index.md` and only the documents relevant to the current task.
 - Run instrumented install lifecycle experiments only inside their disposable
   experiment container.
 - Record observed results without changing the experiment to force expectations.
+
+## Git and network
+
+- Remote Git operations are prohibited by default.
+- Exception: When the user explicitly requests publication and confirms the
+  target branch, pushing the current reviewed commits to that branch is allowed.
+- Do not fetch, pull, force-push, delete remote branches, or push directly to
+  the default branch unless the user explicitly requests that exact action.
 
 ## Engineering
 
