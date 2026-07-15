@@ -114,9 +114,13 @@ Scenario harnessはESLint `9.39.5`のflat configをAPIへ直接渡し、1 fixtur
 
 ### `packages/vitest-setup-probe`
 
-- setup module evaluation と setup-file execution の marker
+- 同じsetup-module import内のlate module-evaluation/setup-body checkpoint
 - test file/worker context の、Vitest が提供する範囲での記録
-- source/artifact modification API がない場合の `NOT_APPLICABLE` の明示
+- source/artifact modification API がない場合のtool target/change空集合によるnot applicableの明示
+
+M2-Cではこのpathをprivate ESM package `@tskaigi-lab/adapter-vitest-setup`として実装した。Package rootは定数、error、型だけをexportし、instrumented `./setup` entry、Vitest、scenario harnessへ到達せずimport-time side effectを持たない。Coordinatorのofficial global setupがexact version、resolved config、run固有tool temp、fixed manifest/runtime bindingを検証し、structured-clone-safeな固定contextだけを`provide`する。Fork workerのsetup entryはofficial `inject`後に再validation、preparation、session作成、同じawaited module import内の2 checkpointと6 capability eventの逐次記録、segment closeまでを所有する。最初のcheckpoint以前にstatic import、inject、validation、preparation、session作成があるため、pre-checkpoint failureのroute 0件をmodule未評価またはvalid observationとは扱わない。Prepared object、session、sink、file handle、Promise、callback、raw canaryはprocess境界を越えない。
+
+固定条件はVitest `3.2.7`、`forks`/`singleFork`、worker 1、setup/test fileとtest case各1、watch/cache/parallelism無効、Vite `configLoader: runner`である。Coordinatorへ渡す`TMPDIR`/`TMP`/`TEMP`、Vitest project transform temp、Vite cacheはrun root内に固定する。Vite `6.4.3`が固定configから上方向へ解決する実際のnearest boundary、すなわちadapter-local `node_modules/.vite-temp`を、`lstat`でENOENTだけをabsentとしてcanonical parent/identityとともにpre/post検査する。Pre-existing file/directory/symlinkは削除せずrunを拒否し、tool/cache rootのsymlink・identity replacementも拒否する。このpreflightは全filesystem raceの排除を主張しない。Tool内部temp writeはprobeのdirect-write eventへ数えない。Linuxではdirect spawnの専用process groupへTERM、bounded grace後にKILLを送り、coordinator closeが`code: null`と期待signalの組合せであること、およびworker/pool消滅を確認してからloopback、environment boundary、tool temp、run rootの順でcleanupする。Close deadline、signal failure、unexpected disposition、group residueでsettlementを証明できなければ競合cleanupを抑止し、timeout/output-limitをprimary、termination/cleanup codeをsecondaryに保つ。これはPID reuse防止またはOS process sandboxではない。Test bodyはsetup完了後のprogress witnessでありroute eventではない。Vitest production artifact APIを仮定しないためtool target/changeは空で、direct output markerはprobe-core capabilityとして別eventになる。Local runnerはvalidated producer segmentまでをignored resultへcopyするが、collector/global sequence/reportとprofile enforcementはM3/M4まで追加しない。
 
 ### `packages/vite-plugin-probe`
 

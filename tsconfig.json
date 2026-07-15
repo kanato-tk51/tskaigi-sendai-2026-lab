@@ -11,6 +11,11 @@
     "packages/eslint-plugin-probe/src/**/*.ts",
     "packages/eslint-plugin-probe/test/**/*.ts",
     "packages/eslint-plugin-probe/vitest.config.ts",
+    "packages/vitest-setup-probe/src/**/*.ts",
+    "packages/vitest-setup-probe/fixture/**/*.ts",
+    "packages/vitest-setup-probe/test/**/*.ts",
+    "packages/vitest-setup-probe/vitest.config.ts",
+    "packages/vitest-setup-probe/vitest.scenario.config.ts",
     "vitest.config.ts"
   ]
 }

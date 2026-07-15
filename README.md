@@ -1,6 +1,6 @@
 # tskaigi-sendai-2026-lab
 
-TypeScript ツールチェーンにおける依存コードの実行経路を、安全なローカル条件で比較するための実験ラボです。M-1 の repository scaffold、独立した M0 npm 12 marker-only spike、M1 の副作用なしで import できる `@tskaigi-lab/probe-core`、M2-B の固定 ESLint adapter を実装しています。M2-A/C/D/E と共通 harness はまだ未実装です。
+TypeScript ツールチェーンにおける依存コードの実行経路を、安全なローカル条件で比較するための実験ラボです。M-1 の repository scaffold、独立した M0 npm 12 marker-only spike、M1 の副作用なしで import できる `@tskaigi-lab/probe-core`、M2-B の固定 ESLint adapter、M2-C の固定 Vitest `setupFiles` adapter を実装しています。M2-A/D/E と共通 harness はまだ未実装です。
 
 ## Development baseline
 
@@ -48,6 +48,15 @@ npm run m2b:run:fix
 ```
 
 Runnerはschema validation済みのproducer-local raw segmentだけをignored `results/runs/m2-b-eslint/`へ保存します。Global sequence、collector、summary/Markdown reportはM3の責務です。詳細は[M2-B ESLint adapter note](docs/m2-b-eslint-adapter.md)を参照してください。
+
+M2-C は `packages/vitest-setup-probe` の private ESM package `@tskaigi-lab/adapter-vitest-setup` `0.0.0` です。Vitest exact `3.2.7`、`forks` pool、single fork/worker、setup file/test file/test case 各1件を固定します。2 route eventは別callbackではなく、同じawaited setup-module import内のlate module-evaluation checkpointとsetup-body checkpointです。worker ID は `null`、session/segment はworker所有、tool API changeはnot applicableです。
+
+```sh
+npm run m2c:verify
+npm run m2c:run
+```
+
+`m2c:run` は引数を受けず、意味上 `vitest run --config vitest.scenario.config.ts --configLoader runner fixture/designated.test.ts` だけを adapter workspace で起動します。Coordinatorにはrun固有のtool tempを`TMPDIR`/`TMP`/`TEMP`として渡し、timeout/output-limitではLinuxの専用process groupをsettleしてからinventory/cleanupします。検証済みproducer segmentはignored `results/runs/m2-c-vitest/<run-id>/`へ保存されます。詳細は[M2-C Vitest setupFiles adapter note](docs/m2-c-vitest-setup-adapter.md)を参照してください。
 
 M0 は通常の regression check に含めず、Docker を明示して個別実行します。
 

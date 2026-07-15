@@ -593,9 +593,15 @@ git status --short
 
 ## M2-C: Vitest setupFiles adapter
 
+Status: implementation **complete**; independent review **approved with non-blocking follow-ups**; blockers: none. B-01, R-B02-01, and R-B03-01 are resolved. F-01 through F-03 and M1 I-04 remain open and are recorded in the [M2-C independent review record](reviews/m2-c-vitest-setup-adapter.md). M2-C experiment-matrix Observed results remain unmeasured, permissive/constrained profile comparison has not run, and the M3 collector, global sequence, and reporting remain unimplemented. The two clean-boundary local integration runs are adapter contract checks, not matrix Observed evidence.
+
+Historical status before exact-path empty-directory cleanup and the clean-boundary focused re-review, superseded by the current status above:
+
+Status: **implementation complete; second blocker remediation implemented; clean-boundary verification blocked; independent re-review pending** (superseded). The actual adapter-local config-temp entry was a pre-existing empty directory, so the intended fail-closed preflight blocked production verification until its ownership and identity were investigated and the user explicitly authorized exact-path `rmdir` after revalidation.
+
 ### Goal
 
-固定test file/worker条件でsetup module evaluationと`setupFiles` executionを記録し、PID/worker/test-file logical IDとcapability attemptを比較可能にする。
+固定test file/worker条件で、同じawaited `setupFiles` module import内のlate module-evaluation/setup-body checkpointを記録し、PID/worker/setup logical IDとcapability attemptを比較可能にする。
 
 ### Prerequisites
 
@@ -612,8 +618,8 @@ git status --short
 
 ### In scope
 
-- setup module evaluation、setupFiles execution
-- PID、tool提供のworker ID、test file logical ID
+- same setup-module import内のlate module-evaluation/setup-body checkpoint
+- PID、tool提供のworker ID、setup/test file logical ID
 - test file count固定、worker条件固定、watch disabled
 - route invocation eventとcapability attempt
 - route event件数からのinvocation count
@@ -627,12 +633,16 @@ git status --short
 ### Deliverables
 
 - `packages/vitest-setup-probe`、固定setup/test fixture/config
-- module/setup logical contractとtests/static verifier
+- checkpoint/temp/process-lifecycle contractとtests/static verifier
 - worker IDが取得不能な場合`null`とする根拠記録
 
 ### Acceptance criteria
 
-- module evaluationとsetup executionを別route eventにする
+- module evaluation開始や別callbackを主張せず、同一setup-module import内の2 checkpointを別route eventにする
+- checkpoint以前のbootstrap failureをroute 0件のvalid observationへ変換しない
+- Viteが固定configから実際に選ぶadapter-local nearest config-tempをENOENT-onlyの`lstat`、canonical parent/identity、pre/post absenceで検査し、pre-existing stateを削除しない
+- tool-owned transform/cache tempをrun固有boundaryへ固定し、symlink/identity replacementを拒否してpre/post inventory後にowned rootだけcleanupする
+- timeout/output-limitではcoordinatorの期待close dispositionとworker process group消滅を確認後にcleanupし、settlement不明なら競合cleanupを抑止する
 - worker IDをPID/filenameから捏造せず、tool APIにない場合`null`にする
 - test file countとworker条件がpreflight/testで固定される
 - watchが無効である
@@ -660,8 +670,9 @@ git status --short
 
 ### Human review points
 
-- worker条件とlogical test file IDの根拠
-- module/setup phaseとtrigger mapping
+- worker条件とlogical setup/test file IDの根拠
+- 同一module import内checkpointのphase/trigger mappingとpre-checkpoint観測限界
+- actual nearest config-temp boundary、fail-closed existence/canonical identity、Linux process-group close disposition/unsafe-cleanup順序
 - tool API changeをnot applicableとする判断
 
 ## M2-D: Vite plugin adapter
