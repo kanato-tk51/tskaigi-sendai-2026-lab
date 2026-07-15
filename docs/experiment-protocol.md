@@ -72,6 +72,42 @@ Coordinator global setupはexact runtime versionとresolved config、fixed manif
 
 Producer orderはlate-module checkpoint、setup-body checkpoint、environment/file-read/file-hash/direct-write/loopback/fixed-childの6 attemptで、Expectedはsequence `0..7`の8 eventである。Vitest/Viteのtransform/cache/config temporary writeはprobe capabilityと別である。Coordinatorの`TMPDIR`/`TMP`/`TEMP`とproject temp/cacheをrun root内へ固定する。Config tempはrepository root固定ではなく、Vite `6.4.3`が固定configから上方向に選ぶ実際のadapter-local nearest `node_modules/.vite-temp`を対象とする。`lstat`ではENOENTだけをabsentとし、pre-existing file/directory/symlink、permission/unknown error、canonical parent/identity mismatchをfail closedにして既存stateを削除しない。`configLoader: runner`でもpre/post absentを検査し、全filesystem raceを防いだとは扱わない。Linuxのdirect-spawn専用process groupをTERM、bounded grace後にKILLし、coordinator closeの`code: null`/期待signal dispositionとworker/pool消滅を確認するまではloopback/environment/temp/run-root cleanupへ進まない。Signal failure、close deadline、unexpected disposition、process residueでsettlement不明なら競合cleanupを抑止する。Timeout/output-limitをprimaryに保持し、termination/cleanup failureはsecondaryにする。Unexpected route/producer/event/temp/process residueはrun failureにする。Vitest production artifact APIを捏造せず、`toolApiTargets`/`toolApiChanges`とtool eventはいずれも0とする。Direct output markerだけが別の`direct-filesystem-write` capabilityである。詳細は[M2-C adapter note](m2-c-vitest-setup-adapter.md)を参照する。
 
+### M2-D Vite plugin adapter Expected mapping
+
+M2-Dは実装前のExpected-only contractとして、Node.js `v20.18.2`、npm `11.12.1`、Vite exact `6.4.3`、Rollup exact `4.62.2`、esbuild exact `0.25.12`と、固定adapter cwdからの`vite build --config vite.scenario.config.ts --configLoader runner --mode production`だけを固定する。Vite CLIは`process.execPath`、fixed CLI path/argv、`shell: false`で直接spawnし、variantは`observe`または`api`だけとする。Dev/serve/preview/watch/HMRとuser argv/arbitrary config/mode/cwdへ到達させない。実装時はM2-D workspaceがVite `6.4.3`を直接pinする。Npm versionはlauncher policy metadataであり、plugin processがnpmを実行した証拠ではない。
+
+Routeは`vite-late-plugin-module-checkpoint`と`vite-plugin-factory`を`configured`、`vite-build-start`、`vite-designated-transform`、`vite-generate-bundle`、`vite-write-bundle`を`automatic`とする6件である。最初のeventはstatic import、bootstrap、context validation、preparation、session作成後のlate checkpointであってevaluation開始ではなく、checkpoint前failureや0 eventはinvalid runである。Factoryはconfigによる別call boundaryである。Trusted `configResolved` validatorはcontrol planeであってdependency routeではない。Transformはexact hook filterを通ったdesignated logical target 1件だけを数え、entry/internal/non-target invocationを全plugin transform countとして隠さない。
+
+Sequential `buildStart` route直後にenvironment、file read、source hash、dedicated direct filesystem write、loopback、fixed childの6 capability attemptを1回だけ置く。Transform graphやmodule数へattempt countを依存させず、source hashはtransform前に取得する。Direct markerは`outDir`外のprobe outputであり、tool API changeや通常artifact writeではない。
+
+Tool API change definition/eventは両variantとも3件である。`module-transform`はdesignated sourceのtransform return result hash/size/changeを持ち、source file不変とfinal chunkを別検査する。`emitted-asset`は`this.emitFile`によるfixed asset 1件をOutputBundle内で確認し、reference ID/contentを保存しない。`bundle-mutation`はfixed entry chunkのcode mutationを別targetとしてbefore/after hash/size/changeで記録する。通常のVite/Rollup output writeはtool-owned materializationであり第4のtool changeではない。Observeは3 operationを開始せず3 eventすべて`skipped/NOT_APPLICABLE`とし、API不存在、policy拒否、API callしたno-opを意味しない。APIは同じ3 eventを`success`とするExpectedである。
+
+Producer 1、`workerId: null`のExpected orderは次のroute 6、capability 6、tool change 3、total 15、producer sequence `0..14`である。Global sequenceはM3まで追加しない。
+
+```text
+0  vite-late-plugin-module-checkpoint
+1  vite-plugin-factory
+2  vite-build-start
+3  vite-attempt-environment
+4  vite-attempt-file-read
+5  vite-attempt-file-hash
+6  vite-attempt-file-write
+7  vite-attempt-loopback
+8  vite-attempt-child
+9  vite-designated-transform
+10 vite-module-transform-change
+11 vite-generate-bundle
+12 vite-emitted-asset-change
+13 vite-bundle-mutation-change
+14 vite-write-bundle
+```
+
+`generateBundle`でtransform adoption、emitted asset、bundle mutationを検証し、`writeBundle`後にsessionをcloseした後だけparentがdisk inventory/hashを検証する。Fixtureは`fixture/entry.ts`が`fixture/designated.ts`を1回static importし、side effect利用でtree-shakeを防ぐsingle input/outputである。Dynamic import、CSS、HTML/public asset、追加framework/plugin、external importを使わない。Observe outputはentry chunk 1件、API outputはentry chunkとfixed asset各1件で、source/config/plugin hashは不変、bundle mutationはfile数を増やさない。
+
+Resolved configはsingle production build、`apply: "build"`、legacy client、watchなし、write true、preflight済みfresh owned `outDir`、public/manifest/sourcemap/minify/module preload/compressed-size reportなし、assets inline 0、Rollup cache false、`optimizeDeps: { noDiscovery: true, include: [] }`、single ES output、fixed filenames、fresh cacheDir、`envDir: false`、fixed non-empty `envPrefix`へfail closedに固定する。Deprecated `optimizeDeps.disabled`と存在しない一般的Vite `cache: false`は使わない。
+
+Temporary/process boundaryはM2-C patternを再利用し、run固有`TMPDIR`/`TMP`/`TEMP`、nearest `.vite-temp` pre/post absence、Vite cache/outDir canonical inventory、Linux process group、timeout/output limit、TERM→bounded grace→KILL、expected close disposition、group absence、settlement unknown時のcleanup抑止を要求する。Success closeは`{ code: 0, signal: null }`、normal nonzero closeは`{ code: nonzero, signal: null }`として区別する。Producer 1はOS process 1を意味せず、Rollupは固定条件でin-process、esbuildはtool-owned childを起動し得る。Probe-owned fixed childと区別し、Vite/esbuild childのgroup settlementは実装時に実測する。後段のevent/count/version/config/materialization/process/output/cleanup failureを正常な15-event Observedへ変換しない。Raw source/transformed/bundle/asset/config/path/error/stack/stdout/stderr/executable/loopback body/canary digest/reference ID/module ID/bundle key/filenameは保存せず、fixed logical ID、normalized outcome/reason、approved hash/size/change、duration、checkpoint、producer sequence、sanitized version metadata、PID/PPID、`workerId: null`だけを許可する。詳細は[M2-D Expected contract](m2-d-vite-plugin-adapter.md)を参照する。
+
 ## Scenario manifest
 
 Scenario manifest は、実行前に固定する入力と期待値を宣言する。raw canary value や host absolute path は含めない。最低限、次の項目を持つ。
