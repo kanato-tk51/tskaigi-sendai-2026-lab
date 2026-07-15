@@ -677,50 +677,125 @@ git status --short
 
 ## M2-D: Vite plugin adapter
 
+Status: **Expected contract documentation reconciled; independent docs review approved with non-blocking note; blockers: none; implementation not started; experiment-matrix Observed unmeasured**. B-01 is resolved, and the implementation-prerequisite Expected-only docs gate is complete; see the [M2-D Expected contract independent review record](reviews/m2-d-vite-contract-docs.md). This is not `M2-D complete` or `implementation complete`: the independent implementation review has not been performed, permissive/constrained profiles have not run, and M3 collector/global sequence/reporting remain unimplemented.
+
 ### Goal
 
-`vite build`の固定fixtureでconfig/module evaluation、plugin factory、build hooksとofficial transform/emit/bundle mutationを記録する。
+Vite configへ登録されたdependency pluginがNode.js上で実行されるconfigured routeを、固定production buildで検証可能にする。Late plugin-module checkpoint、plugin factory、`buildStart`、exact designated `transform`、`generateBundle`、`writeBundle`のrouteと、capability attempt、official tool API change、probe direct write、通常artifact materializationを分離する。
 
 ### Prerequisites
 
 - M1 independent review gate approved
 - root `npm run check` success、`probe-event/v2` contract approved
 - no real credentials、no external network、Expected/Observed分離
-- 対象Vite version、build input/module count、watch/cache条件を事前固定
+- Expected contractのindependent design reviewが`APPROVE DOCS RECONCILIATION`
+- Node.js `v20.18.2`、npm `11.12.1`、Vite exact `6.4.3`、Rollup exact `4.62.2`、esbuild exact `0.25.12`
+- Vite `6.4.3`をM2-D workspaceからdirect pinすること。npmはlauncher policy metadataでありplugin processがnpmを実行した証拠ではない
 
 ### Read first
 
 - root `AGENTS.md`、[index.md](index.md)、[threat-model.md](threat-model.md)、[experiment-protocol.md](experiment-protocol.md)、[architecture.md](architecture.md)、[experiment-matrix.md](experiment-matrix.md)
-- このM2-D定義、[codex-workflow.md](codex-workflow.md)、M1 independent review結果
+- [M2-D Vite plugin adapter Expected contract](m2-d-vite-plugin-adapter.md)、このM2-D定義、[codex-workflow.md](codex-workflow.md)、M1 independent review結果
 - 固定versionのVite/Rollup plugin hook、transform、emitFile documentation
+
+### Fixed command and versions
+
+固定commandは次だけである。
+
+```text
+vite build --config vite.scenario.config.ts --configLoader runner --mode production
+```
+
+Harnessは`process.execPath`、fixed Vite CLI path/argv/cwd、`shell: false`だけを使い、user argvやarbitrary config/mode/cwdを受け取らない。Variantは固定`observe`または`api`だけで、dev、serve、preview、watch、HMRへ到達不能とする。`configLoader: runner`はVite `6.4.3`で有効だがexperimentalである。Producer eventのtoolはVite `6.4.3`、Rollup `4.62.2`はhook ordering/filter/bundle/output、esbuild `0.25.12`はTS transform/output/tool-owned child processの固定条件とする。
 
 ### In scope
 
-- config/module evaluation、plugin factory、`buildStart`、designated `transform`、`generateBundle`、`writeBundle`
-- `vite build`のみ、watch/cache disabledの固定baseline
-- route invocation event、direct filesystem write
-- module transform result、`emitFile` emitted asset/chunk、bundle mutationのtool API change event
+- `vite-late-plugin-module-checkpoint`/configured、`vite-plugin-factory`/configuredと、`vite-build-start`、`vite-designated-transform`、`vite-generate-bundle`、`vite-write-bundle`/automaticの6 route
+- sequential `buildStart` route直後のenvironment、file read、source hash、direct filesystem write、loopback、fixed childの6 capability attempt
+- designated sourceを変更しない`module-transform`、`this.emitFile`によるfixed `emitted-asset`、fixed entry chunkの`bundle-mutation`の3 tool API change
+- observe/apiともroute 6、capability 6、tool change 3、total 15、producer sequence `0..14`、producer 1、`workerId: null`
+- probe direct marker、3 tool API change、Vite/Rollupの通常output artifact writeの別evidence
+- source/config/plugin hash不変とbuild output変更の別evidence
 
 ### Out of scope
 
 - dev server、watch、HMR、serve hooks
 - arbitrary module全件のcount、他adapter、M3/profile/artifact pipeline
+- global sequence、Observed count/result、presentation evidence
+- 通常output writeを第4のtool API changeとすること、probe direct markerをtool API changeとすること
 
 ### Deliverables
 
 - `packages/vite-plugin-probe`、固定build fixture/config
 - hook/target logical manifest、contract/integration tests、static verifier
-- transform/emit/bundle eventとmaterialized artifact hashの対応note
+- transform/emit/bundle eventとmaterialized artifact hashの対応
+- Expected contractの正本である[M2-D adapter note](m2-d-vite-plugin-adapter.md)
+
+### Expected event order
+
+両variantのproducer orderは次の15 eventを正本とする。Route eventはhook-entry checkpointであり、module-transform eventはtransform API resultであってfinal chunk hashではない。Global sequenceはM3責務のため追加しない。
+
+```text
+0  vite-late-plugin-module-checkpoint
+1  vite-plugin-factory
+2  vite-build-start
+3  vite-attempt-environment
+4  vite-attempt-file-read
+5  vite-attempt-file-hash
+6  vite-attempt-file-write
+7  vite-attempt-loopback
+8  vite-attempt-child
+9  vite-designated-transform
+10 vite-module-transform-change
+11 vite-generate-bundle
+12 vite-emitted-asset-change
+13 vite-bundle-mutation-change
+14 vite-write-bundle
+```
+
+Observeでも3 tool change definition/eventを持つがchange operationは開始せず、各eventは`skipped/NOT_APPLICABLE`とする。API不存在、policy拒否、API call後のno-opを意味せず、M1に`VARIANT_DISABLED`がないためM2-B precedentに従う。APIは同じ3 eventを`success`とするExpectedである。
+
+### Fixed fixture and build boundary
+
+Fixtureは`fixture/entry.ts`と`fixture/designated.ts`だけで、single Rollup inputのentryがdesignatedを1回static importし、valueをside effectで使ってtree-shakeを防ぐ。Dynamic import、CSS、HTML entry、public asset、framework/plugin追加、external dependency importは置かない。LF/literal markerを固定し、source/config/plugin hashは両variantで不変とする。Observe outputはentry chunk 1件、API outputはentry chunkとfixed emitted asset各1件で、bundle mutationはfile数を増やさない。Direct markerは`outDir`外の専用probe outputとする。
+
+Resolved configをtrusted `configResolved` control-plane validatorでfail closedにし、validator自体はdependency routeへ数えない。固定値はcommand `build`、mode `production`、`apply: "build"`、legacy single-client、`builder`未指定、`build.watch: null`、CLI `--watch`なし、`build.write: true`、fresh owned canonical `outDir`、ownership/empty/containment preflight後だけ`emptyOutDir: true`、`copyPublicDir: false`、`publicDir: false`、manifest/ssrManifest/sourcemap/minify false、`modulePreload: false`、`assetsInlineLimit: 0`、`reportCompressedSize: false`、Rollup cache false、`optimizeDeps: { noDiscovery: true, include: [] }`、single input/output object、format `es`、fixed entry/chunk/asset filenames、dynamic chunkなし、fresh Vite `cacheDir`、`envDir: false`、fixed non-empty `envPrefix`である。Deprecated `optimizeDeps.disabled`と、存在しない一般的Vite `cache: false` optionは使用しない。
+
+Materialization gateは、probe direct marker、module transform/emitted asset/bundle mutationのAPI result、Vite/Rollup通常artifact writeを分ける。`generateBundle`でtransform adoption、OutputBundle内のemitted asset、bundle mutationを検証し、`writeBundle`後にsessionをcloseしてからparent harnessがdisk inventory/hashを検証する。Reference ID、raw code/content/path/key/filenameは保存しない。後段validation failureを正常な15-event Observedへ変換しない。
+
+### Temporary, process, and output acceptance
+
+M2-Cのfixed direct spawn、run-specific `TMPDIR`/`TMP`/`TEMP`、actual nearest `.vite-temp` pre/post absence、canonical Vite cache inventory、Linux専用process group、timeout/output limit、TERM→bounded grace→KILL、expected close disposition、process-group absence、settlement unknown時のcleanup抑止を再利用する。Vite固有にfresh `outDir` ownership/canonical containment、observe/api別output file count、final artifact hash、esbuild child residueを検証し、tool temp/cache/outDir/run rootをowned boundary内だけcleanupする。
+
+Success closeは`{ code: 0, signal: null }`、normal nonzero closeは`{ code: nonzero, signal: null }`としてsignal terminationと区別する。Producer 1はOS process 1を意味せず、plugin producerはVite coordinator 1である。Rollupは固定条件でin-process、esbuildはtool-owned childを起動し得る。Fixed-child capabilityは別のprobe-owned child attemptである。Vite/esbuild childがprocess group内でsettleするかは実装時に実測し、ExpectedからObservedを捏造しない。
 
 ### Acceptance criteria
 
-- module evaluation、factory、buildStart、transform、generateBundle、writeBundleを別phase/logical invocationとして記録する
-- designated moduleだけを固定logical IDで数え、raw pathをeventへ入れない
-- direct filesystem writeをtransform/emit/bundle mutationと分離する
-- transform=`module-transform`、emitFile=`emitted-asset|emitted-chunk`、bundle編集=`bundle-mutation`の固定unionを使う
-- `vite build`以外を起動せず、dev/watch/HMRを対象外に保つ
+- exact version/command/config/fixtureを実行前に検証し、Vite `6.4.3`をworkspaceからdirect pinする
+- route 6、capability 6、tool change 3、total 15、producer sequence `0..14`を上記orderで記録する
+- plugin-module checkpointをevaluation開始とせず、checkpoint前failure/0 eventをvalid runへしない
+- plugin factoryを別call boundaryとし、trusted `configResolved` validatorはrouteへ数えない
+- exact hook filterを通るdesignated logical targetだけを1件数え、entry/internal/non-target invocationを全transform countと表現しない
+- `buildStart`をsequential hookとしてcapabilityを直後に1回実行する
+- transform=`module-transform`、emitFile=`emitted-asset`、bundle編集=`bundle-mutation`の3 eventを統合しない
+- direct write、tool API result、通常artifact writeを分離し、source不変とoutput変更を別検査する
+- observeの3 eventはoperation未開始の`skipped/NOT_APPLICABLE`、APIの3 eventは`success` Expectedとする
+- data policyに従いraw source/transformed/bundle/asset/config/path/error/output/reference ID/module ID/bundle key/filenameを保存しない
+- expected process close/settlement、artifact inventory/hash、owned cleanupまで成功したrunだけをvalidとする
 
 ### Verification commands
+
+```sh
+npm run format:check
+npm run lint
+npm run typecheck
+npm test
+npm run check
+git diff --check
+git status --short
+```
+
+実装taskでは上記root regressionに加え、実装後に追加されるworkspace contractを次で検証する。Vite scenario buildを含むcommandは実装taskまで実行しない。
 
 ```sh
 npm run test --workspace packages/vite-plugin-probe
@@ -738,12 +813,16 @@ git status --short
 - internal module transformをdesignated target countへ混入する
 - generateBundle mutationとwriteBundle時のfilesystem materializationを混同する
 - Rollup/Vite version差でhook ordering/countが変わる
+- experimental config runner、esbuild child、process-group settlement、tool temp/cache/output residueの実挙動がExpectedと異なる
+- late validation failure後に15 eventが揃っていることだけをvalid successと誤認する
 
 ### Human review points
 
 - 各hookのofficial semanticsとphase/trigger mapping
-- transform result、emitFile、bundle mutation、direct writeの境界
-- output logical ID、artifact hash、module count固定
+- transform result、emitFile、bundle mutation、direct write、通常artifact materializationの境界
+- source/config/plugin immutability、output logical ID/count/hash、module count固定
+- temp/cache/outDir canonical ownership、close disposition、esbuild/process-group residue、unsafe-cleanup gate
+- raw data禁止とfixed logical ID/sanitized version metadataだけを残すevidence boundary
 
 ## M2-E: explicit code-generation CLI adapter
 
