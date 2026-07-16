@@ -1,0 +1,31 @@
+{
+  "name": "@tskaigi-lab/adapter-codegen",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist/"
+  ],
+  "scripts": {
+    "build": "tsc --project tsconfig.build.json",
+    "typecheck": "tsc --project tsconfig.json --noEmit",
+    "test": "vitest run --config vitest.config.ts --configLoader runner",
+    "verify:static": "node scripts/verify-static.mjs",
+    "scenario:observe": "npm run build && node dist/local-runner.js observe",
+    "scenario:api": "npm run build && node dist/local-runner.js api",
+    "scenario:dry-run": "npm run build && node dist/local-runner.js dry-run"
+  },
+  "dependencies": {
+    "@tskaigi-lab/probe-core": "0.0.0"
+  },
+  "engines": {
+    "node": "20.18.2",
+    "npm": "11.12.1"
+  }
+}

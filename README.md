@@ -1,6 +1,6 @@
 # tskaigi-sendai-2026-lab
 
-TypeScript ツールチェーンにおける依存コードの実行経路を、安全なローカル条件で比較するための実験ラボです。M-1 の repository scaffold、独立した M0 npm 12 marker-only spike、M1 の副作用なしで import できる `@tskaigi-lab/probe-core`、M2-B の固定 ESLint adapter、M2-C の固定 Vitest `setupFiles` adapter、M2-D の固定 Vite plugin adapter を実装しています。M2-A/E と共通 harness はまだ未実装です。
+TypeScript ツールチェーンにおける依存コードの実行経路を、安全なローカル条件で比較するための実験ラボです。M-1 の repository scaffold、独立した M0 npm 12 marker-only spike、M1 の副作用なしで import できる `@tskaigi-lab/probe-core`、M2-B の固定 ESLint adapter、M2-C の固定 Vitest `setupFiles` adapter、M2-D の固定 Vite plugin adapter、M2-E の固定 code-generation CLI adapter を実装しています。M2-A と共通 harness はまだ未実装です。M2-D/E は独立実装レビュー済みで、詳細は[M2-D implementation review](docs/reviews/m2-d-vite-plugin-adapter.md)と[M2-E implementation review](docs/reviews/m2-e-codegen-adapter.md)を参照してください。
 
 ## Development baseline
 
@@ -67,6 +67,17 @@ npm run m2d:run:api
 ```
 
 Vite coordinatorは意味上 `vite build --config vite.scenario.config.ts --configLoader runner --mode production`だけをfixed argv/cwdで起動します。Observeは3 operationを開始せず`skipped/NOT_APPLICABLE`、APIはmodule transform、fixed emitted asset、entry bundle mutationを各1件実行します。Probe direct marker、official API result、通常のVite/Rollup output writeは別evidenceです。Local runnerは検証済みproducer segmentとsanitized summaryをignored `results/runs/m2-d-vite/<variant>/<run-id>/`へ保存しますが、これはexperiment-matrix Observed、profile比較、M3 collector/global sequence/reportではありません。詳細は[M2-D Vite plugin adapter note](docs/m2-d-vite-plugin-adapter.md)を参照してください。
+
+M2-E は `packages/codegen-probe` の private ESM package `@tskaigi-lab/adapter-codegen` `0.0.0` です。固定 explicit CLI は `observe`、`api`、`dry-run` のみを受け付け、route 5、capability 6、tool API change 1、total 12、producer sequence `0..11` を記録します。
+
+```sh
+npm run m2e:verify
+npm run m2e:run:observe
+npm run m2e:run:api
+npm run m2e:run:dry-run
+```
+
+Observe は direct filesystem write、API は documented generator API と fixed artifact materialization、dry-run は変更なしを記録します。Local runner は sanitized results を ignored `results/runs/m2-e-codegen/<mode>/<run-id>/` に保存しますが、これは experiment-matrix Observed、profile 比較、M3 collector/report ではありません。詳細は[M2-E code-generation adapter note](docs/m2-e-codegen-adapter.md)を参照してください。
 
 M0 は通常の regression check に含めず、Docker を明示して個別実行します。
 

@@ -21,6 +21,10 @@
     "packages/vite-plugin-probe/test/**/*.ts",
     "packages/vite-plugin-probe/vitest.config.ts",
     "packages/vite-plugin-probe/vite.scenario.config.ts",
+    "packages/codegen-probe/src/**/*.ts",
+    "packages/codegen-probe/fixture/**/*.ts",
+    "packages/codegen-probe/test/**/*.ts",
+    "packages/codegen-probe/vitest.config.ts",
     "vitest.config.ts"
   ]
 }
