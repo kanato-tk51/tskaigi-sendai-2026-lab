@@ -1,0 +1,9 @@
+{
+  "name": "@tskaigi-lab/m2a-install-probe",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "postinstall": "node /opt/m2a-adapter/dist/lifecycle-entry.js"
+  }
+}

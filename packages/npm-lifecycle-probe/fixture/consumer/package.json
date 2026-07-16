@@ -1,0 +1,8 @@
+{
+  "name": "m2a-npm-lifecycle-consumer",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "@tskaigi-lab/m2a-install-probe": "file:../input/m2a-install-probe-1.0.0.tgz"
+  }
+}

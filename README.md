@@ -1,6 +1,6 @@
 # tskaigi-sendai-2026-lab
 
-TypeScript ツールチェーンにおける依存コードの実行経路を、安全なローカル条件で比較するための実験ラボです。M-1 の repository scaffold、独立した M0 npm 12 marker-only spike、M1 の副作用なしで import できる `@tskaigi-lab/probe-core`、M2-B の固定 ESLint adapter、M2-C の固定 Vitest `setupFiles` adapter、M2-D の固定 Vite plugin adapter、M2-E の固定 code-generation CLI adapter を実装しています。M2-A と共通 harness はまだ未実装です。M2-D/E は独立実装レビュー済みで、詳細は[M2-D implementation review](docs/reviews/m2-d-vite-plugin-adapter.md)と[M2-E implementation review](docs/reviews/m2-e-codegen-adapter.md)を参照してください。
+TypeScript ツールチェーンにおける依存コードの実行経路を、安全なローカル条件で比較するための実験ラボです。M-1 の repository scaffold、独立した M0 npm 12 marker-only spike、M1 の副作用なしで import できる `@tskaigi-lab/probe-core`、M2-A の固定 npm lifecycle adapter、M2-B の固定 ESLint adapter、M2-C の固定 Vitest `setupFiles` adapter、M2-D の固定 Vite plugin adapter、M2-E の固定 code-generation CLI adapter を実装しています。M2-A の container evidence-transfer boundary と共通 harness はまだ未実装です。M2-A/D/E は独立実装レビュー済みですが、M2-A の runtime gate と experiment-matrix Observed は未実測です。詳細は[M2-A adapter contract](docs/m2-a-npm-lifecycle-adapter.md)、[M2-A implementation review](docs/reviews/m2-a-npm-lifecycle-adapter.md)、[M2-D implementation review](docs/reviews/m2-d-vite-plugin-adapter.md)、[M2-E implementation review](docs/reviews/m2-e-codegen-adapter.md)を参照してください。
 
 ## Development baseline
 
@@ -57,6 +57,14 @@ npm run m2c:run
 ```
 
 `m2c:run` は引数を受けず、意味上 `vitest run --config vitest.scenario.config.ts --configLoader runner fixture/designated.test.ts` だけを adapter workspace で起動します。Coordinatorにはrun固有のtool tempを`TMPDIR`/`TMP`/`TEMP`として渡し、timeout/output-limitではLinuxの専用process groupをsettleしてからinventory/cleanupします。検証済みproducer segmentはignored `results/runs/m2-c-vitest/<run-id>/`へ保存されます。詳細は[M2-C Vitest setupFiles adapter note](docs/m2-c-vitest-setup-adapter.md)を参照してください。
+
+M2-A は `packages/npm-lifecycle-probe` の private ESM package `@tskaigi-lab/adapter-npm-lifecycle` です。Node.js `v24.18.0`、npm `12.0.1`、固定 `postinstall` entry、route 1、capability 6、tool API change 0、total 7を固定します。Host側はmanifest、fixture、static verifier、probe-core preparationだけを検証し、instrumented lifecycleのpack/install/runはdisposable container内に限定します。
+
+```sh
+npm run m2a:verify
+```
+
+M0のDocker `29.6.1` tmpfs-to-`docker cp` evidence-transfer制約が未解決のため、container executionとexperiment-matrix ObservedはBlocked/Inconclusiveのままです。詳細は[M2-A npm lifecycle adapter note](docs/m2-a-npm-lifecycle-adapter.md)を参照してください。
 
 M2-D は `packages/vite-plugin-probe` の private ESM package `@tskaigi-lab/adapter-vite-plugin` `0.0.0` です。Vite exact `6.4.3`をworkspaceからdirect pinし、Rollup `4.62.2`、esbuild `0.25.12`、single production build、fixed entry/designated fixtureを固定します。Observe/APIともroute 6、`buildStart`直後のcapability 6、tool API change 3、total 15、producer sequence `0..14`、producer 1、worker ID `null`です。
 

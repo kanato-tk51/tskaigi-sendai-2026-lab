@@ -428,6 +428,8 @@ M2-AはM1 boundaryの観点ではreadyだが、M0 evidence transport decision待
 
 ## M2-A: npm lifecycle adapter
 
+Status: **implementation complete; independent review approved with non-blocking follow-ups; runtime evidence-transfer boundary blocked/Inconclusive; experiment-matrix Observed unmeasured**. The fixed source/fixture contract is documented in [M2-A npm lifecycle adapter](m2-a-npm-lifecycle-adapter.md), and the review decision is recorded in [the M2-A independent review](reviews/m2-a-npm-lifecycle-adapter.md). Host pack/install/lifecycle execution is prohibited; M0's Docker `29.6.1` tmpfs-to-`docker cp` limitation remains unresolved, so no container run is treated as success.
+
 ### Goal
 
 M0のversion-specific marker-only baselineを変更せず、承認済みcontainer evidence回収境界の中でnpm lifecycle invocationとprobe-core capability eventを統合する。M2-Aを他adapterより先に実施する必然性はない。
@@ -489,6 +491,7 @@ npm run test --workspace packages/npm-lifecycle-probe
 npm run typecheck --workspace packages/npm-lifecycle-probe
 npm run build --workspace packages/npm-lifecycle-probe
 npm run verify:static --workspace packages/npm-lifecycle-probe
+npm run m2a:verify
 node experiments/npm12-install/scripts/verify-static.mjs
 npm run check
 git diff --check
