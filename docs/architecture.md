@@ -165,6 +165,10 @@ Resolved configはsingle non-watch production build、fresh cache/outDir、singl
 
 M2-Eではこのpathをprivate ESM package `@tskaigi-lab/adapter-codegen`として実装した。固定CLIは`process.execPath dist/cli.js <fixed-mode>`のみを受け付け、`observe`、`api`、`dry-run`を固定する。startup、argument parsing、generation start、file write、completionの全routeを`explicit` triggerで記録し、6 capability attemptとdocumented generator API changeを分離する。Observeはdirect filesystem write、APIは固定artifactのgenerator APIとtool-owned materialization、dry-runは両方の変更なしを記録する。Package rootはimport-safeで、CLI entryだけがsessionを作成する。固定input/output、run-local canary、loopback、producer segment、raw-data policy、materialization、cleanupを検証し、local resultはM3 collector/reportやM4 profile evidenceへ昇格させない。
 
+### `packages/npm-lifecycle-probe`
+
+M2-Aではこのpathをprivate ESM package `@tskaigi-lab/adapter-npm-lifecycle`として実装した。Host側はfixed manifest、fixture、static verifier、probe-core configuration preparationだけを検証し、instrumented packageのpack/install/lifecycleはdisposable npm 12 container内の固定entryからのみ実行する。Lifecycle routeは`automatic`の`npm-install-lifecycle` 1件、capability attemptは6件、tool API changeは0件である。M0の未解決なDocker tmpfs evidence-transfer境界が解決するまで、container executionはblocked/Inconclusiveであり、Observed evidenceへ昇格させない。
+
 ### `experiments/npm12-install`
 
 - npm 12 の対象挙動だけを確かめる独立 experiment definition

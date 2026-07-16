@@ -11,6 +11,7 @@ Read only the documents relevant to the current task.
 | Experiment changes | `experiment-protocol.md`, `experiment-matrix.md` |
 | Starting a milestone | `milestones.md` and related documents |
 | M1 closure or independent review decision | `milestones.md`, `reviews/m1-independent-review.md` |
+| M2-A npm lifecycle adapter implementation or review | `milestones.md`, `m2-a-npm-lifecycle-adapter.md`, `spike-npm12.md`, `experiment-protocol.md`, `architecture.md`, `experiment-matrix.md`, `threat-model.md` |
 | M2-B ESLint adapter implementation or review | `milestones.md`, `m2-b-eslint-adapter.md`, `reviews/m2-b-eslint-adapter.md`, `experiment-protocol.md`, `architecture.md`, `experiment-matrix.md` |
 | M2-C Vitest setupFiles adapter implementation or review | `milestones.md`, `m2-c-vitest-setup-adapter.md`, `reviews/m2-c-vitest-setup-adapter.md`, `reviews/m1-independent-review.md`, `experiment-protocol.md`, `architecture.md`, `experiment-matrix.md` |
 | M2-D Vite plugin adapter Expected contract, implementation, or independent read-only review | `milestones.md`, `m2-d-vite-plugin-adapter.md`, `reviews/m2-d-vite-contract-docs.md`, `reviews/m2-d-vite-plugin-adapter.md`, `reviews/m1-independent-review.md`, `experiment-protocol.md`, `architecture.md`, `experiment-matrix.md` |
