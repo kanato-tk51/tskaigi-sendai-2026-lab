@@ -677,7 +677,7 @@ git status --short
 
 ## M2-D: Vite plugin adapter
 
-Status: **Expected contract documentation reconciled; independent docs review approved with non-blocking note; blockers: none; implementation not started; experiment-matrix Observed unmeasured**. B-01 is resolved, and the implementation-prerequisite Expected-only docs gate is complete; see the [M2-D Expected contract independent review record](reviews/m2-d-vite-contract-docs.md). This is not `M2-D complete` or `implementation complete`: the independent implementation review has not been performed, permissive/constrained profiles have not run, and M3 collector/global sequence/reporting remain unimplemented.
+Status: **M2-D implementation complete; independent review approved with non-blocking follow-ups; blockers: none; experiment-matrix Observed unmeasured**. The implementation-prerequisite Expected-only docs gate remains approved with its non-blocking snapshot note; see the [M2-D Expected contract independent review record](reviews/m2-d-vite-contract-docs.md). The independent implementation review is recorded in [M2-D Vite plugin adapter independent review](reviews/m2-d-vite-plugin-adapter.md). Local adapter verification is not experiment-matrix Observed evidence: permissive/constrained profiles have not run, and M3 collector/global sequence/reporting remain unimplemented.
 
 ### Goal
 
@@ -803,6 +803,9 @@ npm run typecheck --workspace packages/vite-plugin-probe
 npm run build --workspace packages/vite-plugin-probe
 npm run verify:static --workspace packages/vite-plugin-probe
 npm run verify:static --workspace packages/probe-core
+npm run m2d:verify
+npm run m2d:run:observe
+npm run m2d:run:api
 npm run check
 git diff --check
 git status --short

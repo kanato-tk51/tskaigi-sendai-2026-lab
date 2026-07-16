@@ -1,6 +1,6 @@
 # tskaigi-sendai-2026-lab
 
-TypeScript ツールチェーンにおける依存コードの実行経路を、安全なローカル条件で比較するための実験ラボです。M-1 の repository scaffold、独立した M0 npm 12 marker-only spike、M1 の副作用なしで import できる `@tskaigi-lab/probe-core`、M2-B の固定 ESLint adapter、M2-C の固定 Vitest `setupFiles` adapter を実装しています。M2-A/D/E と共通 harness はまだ未実装です。
+TypeScript ツールチェーンにおける依存コードの実行経路を、安全なローカル条件で比較するための実験ラボです。M-1 の repository scaffold、独立した M0 npm 12 marker-only spike、M1 の副作用なしで import できる `@tskaigi-lab/probe-core`、M2-B の固定 ESLint adapter、M2-C の固定 Vitest `setupFiles` adapter、M2-D の固定 Vite plugin adapter を実装しています。M2-A/E と共通 harness はまだ未実装です。
 
 ## Development baseline
 
@@ -57,6 +57,16 @@ npm run m2c:run
 ```
 
 `m2c:run` は引数を受けず、意味上 `vitest run --config vitest.scenario.config.ts --configLoader runner fixture/designated.test.ts` だけを adapter workspace で起動します。Coordinatorにはrun固有のtool tempを`TMPDIR`/`TMP`/`TEMP`として渡し、timeout/output-limitではLinuxの専用process groupをsettleしてからinventory/cleanupします。検証済みproducer segmentはignored `results/runs/m2-c-vitest/<run-id>/`へ保存されます。詳細は[M2-C Vitest setupFiles adapter note](docs/m2-c-vitest-setup-adapter.md)を参照してください。
+
+M2-D は `packages/vite-plugin-probe` の private ESM package `@tskaigi-lab/adapter-vite-plugin` `0.0.0` です。Vite exact `6.4.3`をworkspaceからdirect pinし、Rollup `4.62.2`、esbuild `0.25.12`、single production build、fixed entry/designated fixtureを固定します。Observe/APIともroute 6、`buildStart`直後のcapability 6、tool API change 3、total 15、producer sequence `0..14`、producer 1、worker ID `null`です。
+
+```sh
+npm run m2d:verify
+npm run m2d:run:observe
+npm run m2d:run:api
+```
+
+Vite coordinatorは意味上 `vite build --config vite.scenario.config.ts --configLoader runner --mode production`だけをfixed argv/cwdで起動します。Observeは3 operationを開始せず`skipped/NOT_APPLICABLE`、APIはmodule transform、fixed emitted asset、entry bundle mutationを各1件実行します。Probe direct marker、official API result、通常のVite/Rollup output writeは別evidenceです。Local runnerは検証済みproducer segmentとsanitized summaryをignored `results/runs/m2-d-vite/<variant>/<run-id>/`へ保存しますが、これはexperiment-matrix Observed、profile比較、M3 collector/global sequence/reportではありません。詳細は[M2-D Vite plugin adapter note](docs/m2-d-vite-plugin-adapter.md)を参照してください。
 
 M0 は通常の regression check に含めず、Docker を明示して個別実行します。
 

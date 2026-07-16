@@ -16,6 +16,11 @@
     "packages/vitest-setup-probe/test/**/*.ts",
     "packages/vitest-setup-probe/vitest.config.ts",
     "packages/vitest-setup-probe/vitest.scenario.config.ts",
+    "packages/vite-plugin-probe/src/**/*.ts",
+    "packages/vite-plugin-probe/fixture/**/*.ts",
+    "packages/vite-plugin-probe/test/**/*.ts",
+    "packages/vite-plugin-probe/vitest.config.ts",
+    "packages/vite-plugin-probe/vite.scenario.config.ts",
     "vitest.config.ts"
   ]
 }
