@@ -2,13 +2,13 @@
 
 ## Status and presentation role
 
-Status: **Expected contract documentation reconciled; independent docs review approved with non-blocking note; blockers: none; implementation not started; Observed unmeasured**.
+Status: **M2-D implementation complete; independent review approved with non-blocking follow-ups; blockers: none; experiment-matrix Observed unmeasured**.
 
 The final docs-gate decision is `APPROVE WITH NON-BLOCKING FOLLOW-UPS`. B-01 is resolved, and the full decision, reviewed snapshot identity, and non-blocking snapshot note are preserved in the [M2-D Expected contract independent review record](reviews/m2-d-vite-contract-docs.md).
 
-The route `6`, capability `6`, tool API change `3`, total `15`, and producer order below remain Expected only. Runtime implementation, local integration, permissive/constrained profiles, output materialization, the 15-event observation, and esbuild/process-group settlement remain unmeasured. This implementation-prerequisite docs gate is separate from the future M2-D independent implementation review and does not make M2-D complete.
+The route `6`, capability `6`, tool API change `3`, total `15`, and producer order below remain the approved Expected contract for future experiment-matrix runs. The local adapter implements and verifies that denominator for fixed observe/API production builds, including output materialization and esbuild/process-group settlement. The independent implementation review is approved with non-blocking follow-ups. These local contract runs are not experiment-matrix Observed evidence and do not compare permissive/constrained profiles.
 
-This document is the canonical **Expected-only** contract for the M2-D Vite plugin adapter before implementation. M2-D is not implemented, no local adapter observation or experiment-matrix Observed evidence has been collected, and M2-D is not complete. Expected must not be changed later to fit an Observed result.
+This document remains the canonical **Expected-only** contract for the M2-D Vite plugin adapter. Implementation status and local verification are recorded without changing Expected to fit a result. Experiment-matrix Observed evidence remains unmeasured and unchanged; the implementation review decision and boundaries are recorded in the [independent review record](reviews/m2-d-vite-plugin-adapter.md).
 
 M2-D supports the TSKaigi Sendai 2026 explanation of a configured route: a dependency plugin registered in Vite config executes on Node.js during one fixed production build. Configured plugin loading/factory calls, automatic build hooks, six capability attempts, three official tool API changes, probe direct writes, and tool-owned output materialization remain distinct evidence.
 
@@ -205,3 +205,7 @@ They may persist only schema-approved fields, including fixed logical IDs, norma
 | `api` | 6 | 6 | 3 `success` | 15 | `0..14` | 1 | `null` |
 
 Implementation acceptance requires the exact command/config/fixture/version contract, exact event order and counts, source/config/plugin immutability, the three distinct API results, variant-specific output materialization, close/process settlement, and owned-boundary cleanup. Missing or extra events, unexpected transform targets, version/config drift, failed materialization validation, or late process/output/cleanup failure invalidate the run rather than altering Expected.
+
+The implementation is the private ESM workspace `packages/vite-plugin-probe`, with Vite exact `6.4.3` as a direct dependency. Its package root is import-safe; only the dedicated `./plugin` entry creates the coordinator-owned probe session. Fixed local commands are `npm run m2d:verify`, `npm run m2d:run:observe`, and `npm run m2d:run:api`. The static verifier is scoped inspection and is not a runtime sandbox proof. Local summaries retain only fixed logical IDs, normalized results, approved hashes/sizes/counts, sanitized versions, and process context; raw code/config/path/error/output/reference identifiers are not persisted.
+
+Implementation verification fixes the observe output at one entry chunk and API output at one entry chunk plus one emitted asset, confirms source/config/plugin input hashes unchanged, confirms the direct marker remains outside `outDir`, and rejects API-result/disk mismatches. Fresh run-specific tool temp/cache/outDir/run roots and the actual nearest `.vite-temp` boundary are inventoried fail closed. Successful runs require close `{ code: 0, signal: null }`, process-group absence, no esbuild residue, complete segment close, and owned cleanup. Producer 1 remains the Vite coordinator and does not mean OS process 1.
