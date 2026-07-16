@@ -163,6 +163,8 @@ Resolved configはsingle non-watch production build、fresh cache/outDir、singl
 - module evaluation、CLI main、generation API、direct write attempt の分離
 - arbitrary command/argument を受け付けない固定 fixture mode
 
+M2-Eではこのpathをprivate ESM package `@tskaigi-lab/adapter-codegen`として実装した。固定CLIは`process.execPath dist/cli.js <fixed-mode>`のみを受け付け、`observe`、`api`、`dry-run`を固定する。startup、argument parsing、generation start、file write、completionの全routeを`explicit` triggerで記録し、6 capability attemptとdocumented generator API changeを分離する。Observeはdirect filesystem write、APIは固定artifactのgenerator APIとtool-owned materialization、dry-runは両方の変更なしを記録する。Package rootはimport-safeで、CLI entryだけがsessionを作成する。固定input/output、run-local canary、loopback、producer segment、raw-data policy、materialization、cleanupを検証し、local resultはM3 collector/reportやM4 profile evidenceへ昇格させない。
+
 ### `experiments/npm12-install`
 
 - npm 12 の対象挙動だけを確かめる独立 experiment definition

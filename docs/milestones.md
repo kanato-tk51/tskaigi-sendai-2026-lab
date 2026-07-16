@@ -829,6 +829,8 @@ git status --short
 
 ## M2-E: explicit code-generation CLI adapter
 
+Status: **M2-E implementation complete; independent review approved with non-blocking follow-ups; blockers: none; experiment-matrix Observed unmeasured**. The Expected contract is [M2-E explicit code-generation CLI adapter](m2-e-codegen-adapter.md), and the decision is recorded in the [M2-E independent review record](reviews/m2-e-codegen-adapter.md). Local verification is not experiment-matrix Observed evidence; profile enforcement and M3 collector/reporting remain unimplemented.
+
 ### Goal
 
 利用者が明示起動する固定code-generation CLIでstartupからcompletionまでを記録し、direct writeとdocumented generator API changeを分離する。
@@ -882,6 +884,10 @@ npm run test --workspace packages/codegen-probe
 npm run typecheck --workspace packages/codegen-probe
 npm run build --workspace packages/codegen-probe
 npm run verify:static --workspace packages/codegen-probe
+npm run m2e:verify
+npm run m2e:run:observe
+npm run m2e:run:api
+npm run m2e:run:dry-run
 npm run verify:static --workspace packages/probe-core
 npm run check
 git diff --check
