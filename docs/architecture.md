@@ -99,6 +99,8 @@ Remediation Bのbreaking changeとして、旧`createJsonlEventSink(configuratio
 
 CLI は policy を迂回する escape hatch や arbitrary command runner を提供しない。
 
+M3では`@tskaigi-lab/lab-cli`として、version controlされた`m3-synthetic-collector`だけをdispatchするimport-safeなprivate ESM packageを実装した。Closed segmentはcopyしたbyte sequenceとして対応する`probe-manifest/v2`で再validationし、fatal UTF-8、size、LF、JSON、canonical byte serialization、`producerSequence`をsegment単位でfail closedにする。Producer ID、stable segment IDの順にmergeし、M1 event自体を変更せず`lab-canonical-event/v1` envelopeへglobal sequenceを付ける。このsequenceは因果順序または実時間順を表さない。Invalid/incomplete runはpartial prefixを採用せずcountsを`null`にし、canonical events/comparison/hash success outputを生成しない。`lab-scenario-definition/v2`と`lab-scenario-snapshot/v2`はattempt/tool outcomeとhash delta Expectedを持ち、run metadata/summary/hash evidenceもv2である。Manifest snapshot、`lab-run-completion/v1` snapshot、raw segmentをimmutable inputとして保持し、fixed owned run regeneratorがderived fileをbyte-for-byte再生成する。Synthetic outputはadapter/profile/matrix Observedへ自動昇格しない。Actual adapter process orchestration、profile enforcement、artifact pipeline orchestrationはM4/M5以降の責務として残る。
+
 ### `packages/eslint-plugin-probe`
 
 - plugin module evaluation、initialization、rule/file hook の marker
@@ -286,6 +288,7 @@ Run directory の予定構成は以下とする。
 ```text
 results/runs/<run-id>/
 ├── manifest.snapshot.json
+├── run-completion.snapshot.json
 ├── run-metadata.json
 ├── events.jsonl
 ├── summary.json
@@ -295,9 +298,10 @@ results/runs/<run-id>/
 ```
 
 - `events.jsonl` が observed evidence の正本である。
-- `run-metadata.json` は tool/Node version、profile revision、container input、run validity を持つ。
-- `summary.json` と `comparison.md` は events と manifest snapshot から再生成する。
-- `hashes.json` は allowlisted source/artifact の before/after を持つ。
+- `manifest.snapshot.json`、`run-completion.snapshot.json`、`segments/`がimmutable collector inputである。
+- `run-metadata.json` は tool/Node version、profile revision、container input、segment retention、run validity を持つ。
+- `events.jsonl`、`run-metadata.json`、`summary.json`、`comparison.md`、`hashes.json`はimmutable inputから再生成する。
+- `hashes.json` は allowlisted source/artifact のbefore/afterと`changed` / `unchanged` / `unavailable`を、file hashとtool API changeを分離して持つ。
 - `results/examples` に移す場合は redaction と再生成可能性を human review する。
 
 Expected は scenario manifest/matrix、observed は run directory に置き、同じ file を双方から更新しない。
@@ -343,5 +347,5 @@ deploy simulator -X-> build dependencies
 ## 設計時点の仮定
 
 - npm workspace と container runtime の具体 syntax は M-1/M0 で最小構成として確定する。
-- per-producer segment のschema、stable serialization、producer-local sequenceはM1で確定した。Segment間のdeterministic merge ruleとglobal sequenceはM3で確定する。
+- per-producer segment のschema、stable serialization、producer-local sequenceはM1で確定した。Segment間はM3でproducer ID、stable segment ID、segment line orderの順にdeterministic mergeし、因果順序ではないglobal sequenceを付ける契約を確定した。
 - constrained child-process enforcement は portability 上の難所である。M4 で実 enforcement が得られなければ、manifest skip と limitation を明記し、強制できたと主張しない。
