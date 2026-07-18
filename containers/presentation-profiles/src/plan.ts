@@ -63,7 +63,7 @@ const RESULT_ROOT = path.join(
   "p2-selected-profiles",
 );
 const CONTAINER_INPUT_ROOT = "/opt/p2/input" as const;
-const CONTAINER_RUNNER = "/opt/p2/input/presentation-runner.mjs" as const;
+const CONTAINER_RUNNER = "/opt/p2/input/presentation-runner.js" as const;
 
 const DEFINITIONS: readonly ScenarioDefinition[] = Object.freeze([
   Object.freeze({

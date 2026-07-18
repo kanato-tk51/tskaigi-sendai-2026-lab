@@ -1208,8 +1208,8 @@ git status --short
 ## Presentation MVP critical path
 
 Status: **active; P1 complete; P2 Expected contract and non-executing create
-plan complete; codegen binding/projection complete and its fixed staging runner
-next**.
+plan complete; codegen binding/projection/fixed runner source complete and its
+exact staging assembly next**.
 
 This section supersedes every earlier `next task` or `current-next-task` clause
 for scheduling. The preceding M4 history remains an accurate record of work and
@@ -1302,10 +1302,8 @@ Implementation update (2026-07-19):
 `containers/presentation-profiles/src/plan.ts` fixes an argument-free ordered
 four-scenario plan, the pinned local image reference, pair-identical staging and
 semantic commands, separate run roots, and offline/non-root/read-only Docker
-`create` arguments. Dedicated typecheck and five unit tests pass. The plan does
-not expose an executor, and no staging runner, Docker operation, profile
-Observed, or matrix update exists yet. The next task is the fixed staging runner,
-pre-session scenario/profile binding, and small sanitized result projection.
+`create` arguments. The plan does not expose an executor, and no staging
+assembly, Docker operation, profile Observed, or matrix update exists yet.
 
 Codegen binding update (2026-07-19): M2-E validates the two exact selected
 scenario/run/profile tuples and binds the selected scenario ID before manifest
@@ -1313,9 +1311,12 @@ or session creation while preserving the local M2-E path. Its selected bindings
 separate event, tool/canary, read-only source snapshot, and direct-write roots;
 the constrained plan makes the last root read-only. The small sanitized
 projection validates the exact tuple/order/counts and preserves mismatch or
-inconclusive state. No Docker command, profile run, matrix update, or Observed
-value was produced. The next task is the fixed codegen staging runner; Vite
-remains unchanged.
+inconclusive state. The import-safe codegen runner source fixes its two scenario
+identities, canary exposure, loopback service, repeated Node permission
+arguments, timeout, and output limits. P2 typecheck and 15 static/unit tests
+pass. It remains unassembled, and no Docker command, profile run, matrix update,
+or Observed value was produced. The next task is the exact codegen staging
+assembly; Vite remains unchanged.
 
 ### P3 — Minimal artifact demo
 

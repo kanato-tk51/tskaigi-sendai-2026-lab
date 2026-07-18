@@ -1,9 +1,9 @@
 # P2 selected profile evidence contract
 
 Status: **Expected and the non-executing four-scenario Docker create plan are
-fixed; codegen exact context, separated runtime bindings, and sanitized
-projection are implemented; staging, execution, and all selected Observed
-remain unmeasured**.
+fixed; codegen exact context, separated runtime bindings, sanitized projection,
+and the import-safe fixed runner source are implemented; staging assembly,
+execution, and all selected Observed remain unmeasured**.
 
 Contract date: 2026-07-19
 
@@ -136,12 +136,14 @@ reference, pair-identical staging roots and semantic commands, separate run
 roots, and Docker `create` arguments for offline, non-root, read-only execution
 without a runtime-socket mount.
 
-This is configuration intent, not runtime evidence. The referenced staging
-runner and directories do not exist yet, no Docker command is exposed or
-executed, and `experiment-matrix.md` remains unchanged. The next implementation
-slice is the repository-owned staging runner that binds the selected scenario
-and profile before adapter session creation and emits the small sanitized result
-projection.
+This is configuration intent, not runtime evidence. The codegen runner source
+now fixes its two selected identities, child environment, loopback service,
+permission arguments, timeout, and output limits. It is import-safe and has no
+Docker operation. The referenced staging directories and exact dependency
+assembly do not exist yet, no Docker command is exposed or executed, and
+`experiment-matrix.md` remains unchanged. The next implementation slice is the
+fixed codegen staging assembly that copies only its reviewed runtime closure and
+runner input into the planned read-only staging root.
 
 Codegen binding update (2026-07-19): M2-E accepts only the exact
 `codegen-observe-p/c` scenario, run, and profile tuples recorded by this
@@ -150,5 +152,6 @@ the existing local M2-E context unchanged. Its selected runtime binding now
 separates the event, tool/canary, read-only source snapshot, and direct-write
 roots; the constrained Docker plan mounts the direct-write root read-only. A
 small projection retains exact identity/order/counts and separates expected
-matches, mismatches, and inconclusive streams without raw fields. The staging
-runner and executor remain absent, so this update creates no profile observation.
+matches, mismatches, and inconclusive streams without raw fields. The fixed
+runner source remains unassembled and the executor remains absent, so this
+update creates no profile observation.
