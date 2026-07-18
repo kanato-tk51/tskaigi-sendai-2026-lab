@@ -908,3 +908,143 @@ git status --short
 - CLI arguments/output containment/dry-runの全code path
 - explicit triggerとphase mapping
 - direct write、generator API change、final output hashの境界
+
+## M3: harness and reports
+
+Status: **implementation and B-01 through B-05 remediation independently re-reviewed; M3 gate approved with non-blocking follow-ups; experiment-matrix Observed unchanged**. The first independent review and its blocked decision remain recorded in [M3 harness and reports independent review](reviews/m3-harness-and-reports.md); closure evidence and the current gate decision are recorded in [M3 harness and reports remediation re-review](reviews/m3-harness-and-reports-remediation.md). `packages/lab-cli`はrepository-owned synthetic contract fixtureでcollector/reducer/report境界を検証する。M2-B〜M2-Eのlocal runner outputはadapter contract evidenceであり、M3のcanonical runまたはexperiment-matrix Observedへ自動昇格しない。M2-Aのcontainer evidence-transfer boundaryは引き続きBlocked/Inconclusiveであり、M3実装を理由に成功扱いしない。
+
+### Goal
+
+Versioned scenario input、run completion、closed producer segmentをtool非依存に検証・集約し、immutableなraw inputからdeterministicな`events.jsonl`、`run-metadata.json`、`summary.json`、`comparison.md`、`hashes.json`を再生成できる固定harness/report境界を実装する。
+
+### Prerequisites
+
+- M1 independent review gate approved、`probe-manifest/v2`と`probe-event/v2` contract approved
+- 対象adapterのindependent review approved。M2-Aはblocked/inconclusiveのまま入力対象外にできる
+- root `npm run check` success
+- scenario expected、producer segment、observed resultを別file・別更新経路に置くcontractをhuman reviewする
+- deterministic merge key、canonical event envelope、invalid/incomplete run semanticsを実装前に承認する
+
+### Read first
+
+- root `AGENTS.md`、[index.md](index.md)、このM3定義、[codex-workflow.md](codex-workflow.md)
+- [experiment-protocol.md](experiment-protocol.md)、[experiment-matrix.md](experiment-matrix.md)、[architecture.md](architecture.md)
+
+### Fixed input and output contract
+
+M3 inputは固定scenario definitionとdisposable run directoryだけである。CLIは任意command、任意module、任意pathを受けず、version controlされたscenario IDからfixed adapter runner contractを選ぶ。M3実装時のfixtureはrepository-owned synthetic producer segmentを使用し、adapter integration runやmatrix Observedを生成しない。
+
+```text
+results/runs/<run-id>/
+├── manifest.snapshot.json
+├── run-completion.snapshot.json
+├── run-metadata.json
+├── hashes.json
+├── segments/
+│   └── <producer-id>.jsonl
+├── events.jsonl
+├── summary.json
+└── comparison.md
+```
+
+`manifest.snapshot.json`、`run-completion.snapshot.json`、`segments/`はimmutable inputであり、collector/reducerはraw segmentのbyte列を変更しない。Segmentはcopy後にfatal UTF-8 decodeし、canonical serialized bytesと一致する場合だけ採用する。`events.jsonl`の各行はM1 event自体へfieldを追加せず、`lab-canonical-event/v1` envelopeとして`globalSequence`とvalidation済み`probe-event/v2`を保持する。Global sequenceはproducer間の因果順序や実時間順を表さない。
+
+M3 remediation後のschemaは`lab-scenario-definition/v2`、`lab-scenario-snapshot/v2`、`lab-run-metadata/v2`、`lab-summary/v2`、`lab-hash-evidence/v2`である。`probe-event/v2`、`lab-canonical-event/v1`、`lab-run-completion/v1`は変更しない。
+
+Segment ingestion orderは、validation済み`producerId`のUnicode code point順、次にmanifest snapshotが列挙するstable segment ID順とし、segment内ではline orderを保持する。1 producer 1 segmentを要求し、各segmentの`producerSequence`は`0..n-1`のgapなし連番にする。Run/scenario/producer/manifest contextの不一致、重複producer、未宣言segmentを拒否する。
+
+### In scope
+
+- `packages/lab-cli/**`、`scenarios/**`、result schema/report tests、必要最小限のroot package script
+- scenario/profile manifest loadとcross-validation、run IDとdisposable output ownership
+- fixed adapter runner contractのdispatch。User指定command/argv/cwd/module pathは受けない
+- closed producer segmentのsize/LF/JSON/schema/semantic/sequence/context再validation
+- unknown fieldを削除して採用せず、segment単位でfail closedにするredaction boundary
+- deterministic mergeと`lab-canonical-event/v1` global sequence付与
+- phase/event kind/attempt type/outcome、PID/PPID/worker構造、tool API change、hash deltaのreducer
+- expected/observed diff、run validity、timeout、collector/schema error、logical evidence locationを持つJSON/Markdown report
+- raw segment、manifest snapshot、run completion snapshotから同一byteのderived outputを再生成するtest
+- missing、timeout、partial、invalid segmentを0 invocationへ変換しないnegative test
+
+### Out of scope
+
+- `probe-event/v2`、adapter contract、adapter local runner outputの変更
+- M2-A lifecycleのhost pack/install/run、未解決container evidence-transfer境界の回避
+- permissive/constrained container enforcement、profile Observedの生成（M4）
+- experiment-matrixのObserved欄、`results/examples/**`、evidence mapの更新（M6）
+- artifact build/verify/deploy orchestration（M5）
+- arbitrary command/module/path runner、shell実行、external network、real credential
+- invalid segmentからvalid prefixだけを採用するbest-effort recovery
+
+### Deliverables
+
+- private ESM package `packages/lab-cli`とstrict TypeScript build/test/static verifier
+- versioned scenario definition schemaとrepository-owned deterministic collector fixtures
+- `lab-canonical-event/v1`、run metadata、summary、hash evidenceのversioned schemas
+- fixed scenario dispatch、collector、reducer、JSON/Markdown renderer
+- `prompts/m3-harness-and-reports.md`
+- `prompts/m3-harness-and-reports-remediation.md`
+- raw-to-derived regeneration、permutation、partial/corrupt/missing/timeout、raw-data rejection tests
+
+### Run validity and report semantics
+
+- Attemptの`failure`/`skipped`やExpected mismatchは、evidenceがcompleteならrun自体をinvalidにしない。Observed outcomeとmismatchをそのまま集計する
+- Missing segment、terminal sink/close failure、LFなし末尾、blank/oversize line、JSON/schema/semantic error、producer sequence gap/duplicate、manifest context mismatch、unexpected timeout、hash finalization failureはrunを`inconclusive`にする
+- `inconclusive` runではinvocation/capability/tool-change countを`0`と表示せず`null`/unavailableにし、canonical `events.jsonl`とcomparison success rowを生成しない
+- Valid runのExpected mismatchは`complete`のままcomparisonへ保持し、ExpectedまたはObservedを補正しない
+- Summary/Markdownはabsolute path、raw canary、file content、diff、raw error/stack、stdout/stderr、executable path、loopback bodyを保持しない
+- PID/PPID/workerはeventには実値を保持するが、run間比較では構造的relationshipへprojectし、PID値の一致をidentityとして扱わない
+
+### Acceptance criteria
+
+- `packages/lab-cli`はtool packageをruntime importせず、fixed adapter runner contractだけへ依存する
+- CLI import時にfilesystem、process、network、timer、report生成を開始しない
+- Scenario ID以外のuser指定command、argv、cwd、module path、output pathを受け付けない
+- Manifest snapshotとsegment metadataをstructural validationし、unknown key、accessor、custom prototype、symlink/path escapeを拒否する
+- 各producer segmentを対応manifest contextで`probe-event/v2`として再validationし、raw event objectを信頼しない
+- Segment size 4 MiB、event 1,024件、line 16,384 bytesのM1上限をcollectorでもfail closedにする
+- SegmentはLF終端、1行1 object、producer sequence `0..n-1`、1 producer 1 segmentでなければならない
+- Deterministic ingestion orderと`globalSequence: 0..n-1`がinput file enumeration order、filesystem order、timestampに依存しない
+- Canonical envelopeはM1 eventを変更せず、global sequenceが因果順序ではないことをmetadata/reportに明記する
+- Raw segmentをbyte-for-byte変更せず、同じmanifest/completion snapshotとsegmentからderived outputを再生成すると同一byteになる
+- Reducerがphase別route count、event kind、attempt type/outcome、tool API change、PID/PPID/worker構造、hash delta、Expected mismatchをeventから生成する
+- Run metadataがsanitized tool/Node version、profile revision、container input、segment retentionを持つ
+- Missing/timeout/invalid/incomplete runを0 invocationまたはvalid successに変換せず、partial event/countを採用しない
+- Expected fileとexperiment matrixをcollector/reducerが変更しない
+- Report outputに禁止raw dataまたはabsolute pathがなく、evidence locationはrun root相対のlogical pathだけである
+- M2 local runner resultをmatrix Observed、profile evidence、presentation evidenceとして自動登録しない
+- Unit/integration/static testsとroot regressionが成功する
+
+### Verification commands
+
+M3実装ではroot `package.json`の同名scriptを使用して次を実行する。
+
+```sh
+npm run typecheck --workspace packages/lab-cli
+npm run build --workspace packages/lab-cli
+npm run verify:static --workspace packages/lab-cli
+npm run test --workspace packages/lab-cli
+npm run m3:verify
+npm run verify:static --workspace packages/probe-core
+npm run check
+git diff --check
+git status --short
+```
+
+### Risks
+
+- Timestampやfilesystem enumeration orderを因果順序として誤解する
+- Invalid segmentのvalid-looking prefixを採用し、event lossを隠す
+- Missing/timeoutを0 invocationへ変換し、未実測とroute未起動を混同する
+- Local adapter verificationをmatrix/profile Observedへ昇格させる
+- Reporterがraw path、error、content、canary、stdout/stderrを再導入する
+- Harnessをarbitrary command/path escape hatchへ拡張する
+
+### Human review points
+
+- `lab-canonical-event/v1` envelopeとM1 `probe-event/v2`非変更境界
+- deterministic merge key、duplicate/gap/partial/terminal failureのfail-closed判定
+- complete/inconclusive、attempt outcome、Expected mismatchの分離
+- raw segment不変性、completion snapshot、raw-to-summary/report再生成可能性
+- fixed scenario dispatchとarbitrary command/path/module拒否
+- M2 local evidence、M3 canonical run、M4 profile evidence、M6 presentation evidenceの分離

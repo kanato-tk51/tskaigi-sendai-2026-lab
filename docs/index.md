@@ -16,6 +16,7 @@ Read only the documents relevant to the current task.
 | M2-C Vitest setupFiles adapter implementation or review | `milestones.md`, `m2-c-vitest-setup-adapter.md`, `reviews/m2-c-vitest-setup-adapter.md`, `reviews/m1-independent-review.md`, `experiment-protocol.md`, `architecture.md`, `experiment-matrix.md` |
 | M2-D Vite plugin adapter Expected contract, implementation, or independent read-only review | `milestones.md`, `m2-d-vite-plugin-adapter.md`, `reviews/m2-d-vite-contract-docs.md`, `reviews/m2-d-vite-plugin-adapter.md`, `reviews/m1-independent-review.md`, `experiment-protocol.md`, `architecture.md`, `experiment-matrix.md` |
 | M2-E explicit code-generation CLI adapter implementation or review | `milestones.md`, `m2-e-codegen-adapter.md`, `reviews/m2-e-codegen-adapter.md`, `reviews/m1-independent-review.md`, `experiment-protocol.md`, `architecture.md`, `experiment-matrix.md` |
+| M3 harness, collector, reducer, or report implementation/review | `milestones.md`, `codex-workflow.md`, `experiment-protocol.md`, `architecture.md`, `experiment-matrix.md` |
 | Container profiles | `threat-model.md`, `architecture.md`, `experiment-matrix.md` |
 | Artifact build or deploy | `artifact-pipeline.md`, `threat-model.md` |
 | Conference claims | `evidence-map.md`, sanitized results |

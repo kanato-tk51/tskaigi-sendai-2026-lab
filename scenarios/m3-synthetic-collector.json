@@ -1,0 +1,33 @@
+{
+  "schemaVersion": "lab-scenario-definition/v2",
+  "scenarioId": "m3-synthetic-collector",
+  "evidenceClass": "contract-fixture",
+  "profileId": "not-applicable",
+  "outputLocation": "results/runs/m3-harness",
+  "expected": {
+    "totalEvents": 2,
+    "eventKinds": [
+      {
+        "id": "capability-attempt",
+        "count": 0
+      },
+      {
+        "id": "route-invocation",
+        "count": 2
+      },
+      {
+        "id": "tool-api-change",
+        "count": 0
+      }
+    ],
+    "routePhases": [
+      {
+        "id": "synthetic-route-phase",
+        "count": 2
+      }
+    ],
+    "attemptOutcomes": [],
+    "toolChangeOutcomes": [],
+    "hashDeltas": []
+  }
+}
