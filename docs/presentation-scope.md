@@ -6,8 +6,12 @@ Decision date: 2026-07-18
 
 Related decision: [ADR-0002](decisions/0002-prioritize-presentation-mvp.md)
 
-P0 scope/workflow pivot status: **complete and root-verified**. P1 evidence
-inventory is the current next task.
+P0 scope/workflow pivot status: **complete and root-verified**. The P1
+[evidence inventory](presentation-evidence-inventory.md) and its
+[independent review](reviews/presentation-evidence-inventory.md) are complete;
+the gate is approved with no findings. The current next task is a
+Docker-non-executing P2 codegen binding and fixed-runner contract; no selected
+profile run or matrix Observed exists yet.
 
 ## Purpose
 
@@ -144,10 +148,11 @@ lockfile/digest identity become declared inputs to the offline stages.
 5. **P4 — evidence map and talk table:** generate sanitized examples, the compact
    route/profile table, `docs/evidence-map.md`, and one focused final review.
 
-The active next task after P0 is `docs/presentation-evidence-inventory.md`. It
-must identify evidence already available, evidence that is only static/unit or
-Expected, and the smallest missing run for each claim. It must not run Docker or
-change matrix Observed.
+The P1 implementation is recorded in
+`docs/presentation-evidence-inventory.md`; its independent review approved the
+classification and gap inventory with no findings. P2 begins with a
+Docker-non-executing exact contract that resolves the codegen mapping and fixes
+the four selected run boundaries before runner implementation or execution.
 
 ## Definition of done
 
