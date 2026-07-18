@@ -1208,8 +1208,8 @@ git status --short
 ## Presentation MVP critical path
 
 Status: **active; P1 complete; P2 Expected contract and non-executing create
-plan complete; codegen binding/projection/fixed runner source complete and its
-exact staging assembly next**.
+plan complete; codegen binding/projection/fixed runner/staging assembly complete
+and its focused non-executing review next**.
 
 This section supersedes every earlier `next task` or `current-next-task` clause
 for scheduling. The preceding M4 history remains an accurate record of work and
@@ -1313,10 +1313,12 @@ the constrained plan makes the last root read-only. The small sanitized
 projection validates the exact tuple/order/counts and preserves mismatch or
 inconclusive state. The import-safe codegen runner source fixes its two scenario
 identities, canary exposure, loopback service, repeated Node permission
-arguments, timeout, and output limits. P2 typecheck and 15 static/unit tests
-pass. It remains unassembled, and no Docker command, profile run, matrix update,
-or Observed value was produced. The next task is the exact codegen staging
-assembly; Vite remains unchanged.
+arguments, timeout, and output limits. Its argument-free staging assembly copies
+the fixed 30-file runner/codegen/probe-core closure into the pair-shared
+read-only source root and was locally verified offline. P2 typecheck and 20
+static/unit tests pass. No Docker command, profile run, matrix update, or
+Observed value was produced. The next task is the focused Docker-non-executing
+review required before adding the codegen executor; Vite remains unchanged.
 
 ### P3 — Minimal artifact demo
 

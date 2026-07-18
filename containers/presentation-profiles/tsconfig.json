@@ -7,6 +7,7 @@
   },
   "include": [
     "runner/**/*.d.ts",
+    "runner/**/*.json",
     "runner/**/*.js",
     "src/**/*.ts",
     "test/**/*.ts",

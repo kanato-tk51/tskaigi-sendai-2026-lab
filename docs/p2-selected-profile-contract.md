@@ -2,8 +2,8 @@
 
 Status: **Expected and the non-executing four-scenario Docker create plan are
 fixed; codegen exact context, separated runtime bindings, sanitized projection,
-and the import-safe fixed runner source are implemented; staging assembly,
-execution, and all selected Observed remain unmeasured**.
+fixed runner source, and exact staging assembly are implemented; execution and
+all selected Observed remain unmeasured**.
 
 Contract date: 2026-07-19
 
@@ -137,13 +137,16 @@ roots, and Docker `create` arguments for offline, non-root, read-only execution
 without a runtime-socket mount.
 
 This is configuration intent, not runtime evidence. The codegen runner source
-now fixes its two selected identities, child environment, loopback service,
-permission arguments, timeout, and output limits. It is import-safe and has no
-Docker operation. The referenced staging directories and exact dependency
-assembly do not exist yet, no Docker command is exposed or executed, and
-`experiment-matrix.md` remains unchanged. The next implementation slice is the
-fixed codegen staging assembly that copies only its reviewed runtime closure and
-runner input into the planned read-only staging root.
+fixes its two selected identities, child environment, loopback service,
+permission arguments, timeout, and output limits. Its argument-free assembly
+copies exactly 30 regular files: the runner/snapshot/package bytes, nine codegen
+CLI modules, and the probe-core package plus 17 runtime modules. It rejects an
+existing staging root, symlink/non-file sources, duplicate copies, and escaping
+targets. A local offline assembly verified the 30-file inventory and module
+resolution; generated staging remains ignored. No Docker command is exposed or
+executed, and `experiment-matrix.md` remains unchanged. The next slice is the
+focused Docker-non-executing review of this codegen plan, runner, and staged
+inventory required before an executor may be added.
 
 Codegen binding update (2026-07-19): M2-E accepts only the exact
 `codegen-observe-p/c` scenario, run, and profile tuples recorded by this
@@ -153,5 +156,5 @@ separates the event, tool/canary, read-only source snapshot, and direct-write
 roots; the constrained Docker plan mounts the direct-write root read-only. A
 small projection retains exact identity/order/counts and separates expected
 matches, mismatches, and inconclusive streams without raw fields. The fixed
-runner source remains unassembled and the executor remains absent, so this
-update creates no profile observation.
+runner source and exact closure can now be assembled offline; the executor
+remains absent, so this update creates no profile observation.
