@@ -13,9 +13,10 @@ the gate is approved with no findings. The Docker-non-executing P2
 [codegen binding and fixed-runner contract](p2-selected-profile-contract.md) is
 complete, and its non-executing Docker create plan has static/unit coverage. The
 codegen exact context, separated bindings, sanitized projection, fixed runner,
-and exact staging assembly now have static/unit coverage. The current next task
-is the focused non-executing codegen review required before an executor; no
-selected profile run or matrix Observed exists yet.
+and exact staging assembly now have static/unit coverage. Its focused
+non-executing review resolved one child-denial normalization finding and approved
+minimal executor implementation. No selected profile run or matrix Observed
+exists yet.
 
 ## Purpose
 

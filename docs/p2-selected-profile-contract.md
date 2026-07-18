@@ -2,8 +2,8 @@
 
 Status: **Expected and the non-executing four-scenario Docker create plan are
 fixed; codegen exact context, separated runtime bindings, sanitized projection,
-fixed runner source, and exact staging assembly are implemented; execution and
-all selected Observed remain unmeasured**.
+fixed runner source, exact staging assembly, and focused codegen review are
+complete; execution and all selected Observed remain unmeasured**.
 
 Contract date: 2026-07-19
 
@@ -158,3 +158,27 @@ small projection retains exact identity/order/counts and separates expected
 matches, mismatches, and inconclusive streams without raw fields. The fixed
 runner source and exact closure can now be assembled offline; the executor
 remains absent, so this update creates no profile observation.
+
+## Focused codegen non-executing review
+
+Review date: 2026-07-19. Result: **approved for minimal executor implementation,
+not approved as runtime evidence**.
+
+The review checked the fixed image/CLI/create arguments, pair-shared 30-file
+staging bytes, read-only and separated mounts, non-root user, network-none plus
+loopback-only service, fixed child command, bounded output/time, and sanitized
+projection. Local Node.js `v20.18.2` help confirms the repeated
+`--allow-fs-read`, `--allow-fs-write`, and omitted `--allow-child-process`
+options used by the constrained runner. No Docker command was called.
+
+One finding was fixed before approval: Node.js denies an unpermitted spawn by
+synchronously throwing `ERR_ACCESS_DENIED`. `probe-core` previously normalized
+that path to `INTERNAL_ERROR`; it now emits the intended sanitized
+`CHILD_PROCESS_FAILURE`, with a unit test that excludes the raw error. The
+rebuilt local staging again matches all 30 fixed sources byte-for-byte.
+
+The executor must still create an empty disposable Docker config, create fresh
+UID-writable result roots, invoke only the fixed codegen plans with bounded
+output/time, verify the created container/image identity, and pass raw events
+through the existing projection. These are implementation prerequisites, not
+Observed claims and not permission to run Docker.

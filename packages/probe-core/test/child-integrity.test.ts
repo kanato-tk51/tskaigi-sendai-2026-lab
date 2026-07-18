@@ -30,6 +30,55 @@ beforeEach(() => {
 });
 
 describe("fixed child executable integrity", () => {
+  it("normalizes a synchronous permission denial without raw error data", async () => {
+    const denied = Object.assign(new Error("must not be recorded"), {
+      code: "ERR_ACCESS_DENIED",
+    });
+    spawnMock.mockImplementationOnce(() => {
+      throw denied;
+    });
+    const fixture = await createTestConfiguration(
+      [
+        {
+          targetId: "child-target",
+          kind: "fixed-child",
+          timeoutMs: 500,
+          maxOutputBytes: 1024,
+        },
+      ],
+      [
+        {
+          attemptId: "child-attempt",
+          type: "child-node-process",
+          targetId: "child-target",
+          enabled: true,
+        },
+      ],
+      [{ targetId: "child-target", kind: "fixed-child" }],
+    );
+    try {
+      const session = await createProbeSession(fixture.configuration);
+      const event = await session.runAttempt("child-attempt");
+      await session.close();
+      expect(event).toMatchObject({
+        outcome: "failure",
+        normalizedErrorCode: "CHILD_PROCESS_FAILURE",
+        details: {
+          kind: "child",
+          exitCode: null,
+          timedOut: false,
+          responseVerified: false,
+          stdoutBytes: 0,
+          stderrBytes: 0,
+        },
+      });
+      expect(JSON.stringify(event)).not.toContain("must not be recorded");
+      expect(JSON.stringify(event)).not.toContain("ERR_ACCESS_DENIED");
+    } finally {
+      await fixture.cleanup();
+    }
+  });
+
   it("uses the trusted initialization snapshot after process.execPath changes", async () => {
     const originalDescriptor = Object.getOwnPropertyDescriptor(
       process,

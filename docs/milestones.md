@@ -1208,8 +1208,8 @@ git status --short
 ## Presentation MVP critical path
 
 Status: **active; P1 complete; P2 Expected contract and non-executing create
-plan complete; codegen binding/projection/fixed runner/staging assembly complete
-and its focused non-executing review next**.
+plan complete; codegen binding/projection/fixed runner/staging assembly/review
+complete and its minimal executor implementation next**.
 
 This section supersedes every earlier `next task` or `current-next-task` clause
 for scheduling. The preceding M4 history remains an accurate record of work and
@@ -1317,8 +1317,12 @@ arguments, timeout, and output limits. Its argument-free staging assembly copies
 the fixed 30-file runner/codegen/probe-core closure into the pair-shared
 read-only source root and was locally verified offline. P2 typecheck and 20
 static/unit tests pass. No Docker command, profile run, matrix update, or
-Observed value was produced. The next task is the focused Docker-non-executing
-review required before adding the codegen executor; Vite remains unchanged.
+Observed value was produced. A focused Docker-non-executing review confirmed the
+fixed Node 20.18.2 permission flags and 30 staged bytes, then found and fixed the
+synchronous child-denial normalization path (`ERR_ACCESS_DENIED` now becomes the
+sanitized `CHILD_PROCESS_FAILURE`). The review approves minimal codegen executor
+implementation, not execution or an Observed claim. The next task is that fixed
+executor and its static/unit tests; Vite remains unchanged.
 
 ### P3 — Minimal artifact demo
 
