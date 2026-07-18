@@ -13,6 +13,7 @@ import {
 } from "../src/constants.js";
 import {
   createFixedManifest,
+  createSelectedProfileRuntimeBindings,
   validateManifestContract,
 } from "../src/manifest.js";
 
@@ -46,5 +47,43 @@ describe("M2-E fixed explicit CLI contract", () => {
       expect(manifest.attempts[3]?.enabled).toBe(variant === "observe");
       expect(manifest.toolApiChanges[0]?.enabled).toBe(true);
     }
+  });
+
+  it("separates selected event, tool, source, and direct-write roots", () => {
+    const bindings = createSelectedProfileRuntimeBindings(4321).bindings;
+    expect(bindings).toEqual([
+      {
+        targetId: "codegen-event-segment",
+        kind: "path",
+        rootPath: "/tmp/p2-result",
+        relativePath: "codegen-cli-producer.jsonl",
+      },
+      { targetId: "codegen-environment-canary", kind: "environment" },
+      {
+        targetId: "codegen-file-canary",
+        kind: "path",
+        rootPath: "/tmp/p2-tool",
+        relativePath: "canary/input.txt",
+      },
+      {
+        targetId: "codegen-input-snapshot",
+        kind: "path",
+        rootPath: "/opt/p2/input",
+        relativePath: "input-snapshot.txt",
+      },
+      {
+        targetId: "codegen-direct-output",
+        kind: "path",
+        rootPath: "/tmp/p2-direct-write",
+        relativePath: "direct-write-marker.json",
+      },
+      {
+        targetId: "codegen-loopback",
+        kind: "loopback-http",
+        address: "127.0.0.1",
+        port: 4321,
+      },
+      { targetId: "codegen-fixed-child", kind: "fixed-child" },
+    ]);
   });
 });

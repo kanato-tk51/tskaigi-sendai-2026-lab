@@ -177,7 +177,11 @@ function createCommand(
       "--mount",
       bindMount(toolRoot, "/tmp/p2-tool", false),
       "--mount",
-      bindMount(directWriteRoot, "/tmp/p2-direct-write", false),
+      bindMount(
+        directWriteRoot,
+        "/tmp/p2-direct-write",
+        definition.profileId === "constrained",
+      ),
       "--workdir",
       CONTAINER_INPUT_ROOT,
       FIXED_NODE_IMAGE,
