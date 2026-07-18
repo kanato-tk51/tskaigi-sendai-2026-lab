@@ -1207,7 +1207,8 @@ git status --short
 
 ## Presentation MVP critical path
 
-Status: **active; P0 scope pivot complete and root-verified; P1 evidence inventory next**.
+Status: **active; P1 evidence inventory complete and independently approved;
+P2 contract next**.
 
 This section supersedes every earlier `next task` or `current-next-task` clause
 for scheduling. The preceding M4 history remains an accurate record of work and
@@ -1260,9 +1261,12 @@ git status --short
 
 ### P1 — Presentation evidence inventory
 
-This is the **current next task after P0**. Create
-`docs/presentation-evidence-inventory.md` without executing Docker or changing
-matrix Observed.
+The implementation is recorded in
+[`docs/presentation-evidence-inventory.md`](presentation-evidence-inventory.md)
+without executing Docker or changing matrix Observed. Its
+[fresh independent read-only review](reviews/presentation-evidence-inventory.md)
+approved the classifications, sanitized projections, rejected inputs, and exact
+P2/P3 gaps with no findings.
 
 For every C-01 through C-07 claim, list:
 
@@ -1279,7 +1283,10 @@ static/unit results to matrix/profile Observed.
 
 ### P2 — Selected profile evidence
 
-After P1 review, implement the smallest fixed runner and run only
+After P1 review, create a Docker-non-executing exact contract that resolves the
+codegen adapter-to-scenario mismatch without filtering observed events and fixes
+the four selected run boundaries. Then implement the smallest fixed runner,
+review the exact implementation/runtime operation, and run only
 `vite-observe-p/c` and `codegen-observe-p/c`. Each pair must use identical image
 and fixture bytes, fixed commands/arguments, non-root execution, read-only
 source, dedicated writable result paths, bounded time/output, offline runtime,
