@@ -4,6 +4,7 @@ Read only the documents relevant to the current task.
 
 | Task | Required documents |
 |---|---|
+| Presentation MVP scope, evidence inventory, selected profile runs, or talk data | `presentation-scope.md`, `product-requirements.md`, `milestones.md`, `codex-workflow.md`; add `experiment-matrix.md` for route/profile selection, `artifact-pipeline.md` for the artifact demo, and `threat-model.md` for runtime execution |
 | Product scope | `product-requirements.md` |
 | Probe implementation | `threat-model.md`, `experiment-protocol.md` |
 | Package or data-flow changes | `architecture.md` |
@@ -27,3 +28,7 @@ Read only the documents relevant to the current task.
 | Artifact build or deploy | `artifact-pipeline.md`, `threat-model.md` |
 | Conference claims | `evidence-map.md`, sanitized results |
 | Major design decisions | relevant ADRs under `decisions/` |
+
+The presentation-MVP row is the active delivery route. Historical M4 recovery
+rows remain available only for an explicitly resumed high-assurance research
+task; they are not the default next action.

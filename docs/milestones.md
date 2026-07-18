@@ -1204,3 +1204,115 @@ git status --short
 - Start前inspectとcontainer内control evidenceの独立性
 - Node/runtime child denial、read-only write denial、loopback target absenceの正確な表現
 - Raw-data policy、transfer/completion、inconclusive semantics、control/route evidence分離
+
+## Presentation MVP critical path
+
+Status: **active; P0 scope pivot complete and root-verified; P1 evidence inventory next**.
+
+This section supersedes every earlier `next task` or `current-next-task` clause
+for scheduling. The preceding M4 history remains an accurate record of work and
+findings, but it is no longer the default continuation path. The active scope is
+[TSKaigi Sendai 2026 presentation MVP](presentation-scope.md), accepted by
+[ADR-0002](decisions/0002-prioritize-presentation-mvp.md).
+
+### Frozen research track
+
+- The production offline-build recovery backend remains blocked on B-16/B-17.
+  Do not implement its remediation, define/execute another recovery gate,
+  inspect/retry the retained tag, or mutate/delete the retained run state as part
+  of the presentation MVP.
+- Keep the ordinary M4 entry fail closed. Static/unit results, doctor records,
+  and the failed build are not profile runtime Observed.
+- M4 profile-control remains optional diagnostic/appendix evidence. ADR-0001's
+  control/route evidence distinction remains in force, but generic recovery is
+  no longer a prerequisite for selected presentation route runs.
+- Full generic collector/provenance hardening and remediation-specific review
+  loops are deferred until a project human explicitly resumes the research
+  track.
+
+### P0 — Scope and workflow pivot
+
+Deliverables:
+
+- `docs/presentation-scope.md` with C-01 through C-07, selected scenarios,
+  minimal artifact demo, safety boundary, and phase-specific network policy
+- ADR-0002, scoped agent instructions, documentation routing, and this
+  authoritative milestone update
+- M4/exact-input status updated to frozen rather than remediation-next
+
+Acceptance criteria:
+
+- no code, Expected value, Observed value, retained runtime state, or Docker
+  state is changed by the pivot
+- root agent rules distinguish ordinary development from probe/container
+  execution while nested rules preserve canary/path/network/child restrictions
+- all documentation routes identify the presentation MVP as the active track
+- root regression and formatting checks pass
+
+Verification commands:
+
+```sh
+npm run format:check
+npm run check
+git diff --check
+git status --short
+```
+
+### P1 — Presentation evidence inventory
+
+This is the **current next task after P0**. Create
+`docs/presentation-evidence-inventory.md` without executing Docker or changing
+matrix Observed.
+
+For every C-01 through C-07 claim, list:
+
+- the candidate existing M0/M2/M3/M4 evidence and its exact evidence class
+  (`Observed`, `Inconclusive`, `local adapter evidence`, `static/unit`, or
+  `Expected-only`)
+- whether the bytes are sanitized, reproducible, and suitable for a conference
+  claim
+- the smallest missing runtime run and fixed scenario needed to close the gap
+- limitations that must appear next to the claim
+
+The inventory must not promote local adapter output, synthetic M3 output, or M4
+static/unit results to matrix/profile Observed.
+
+### P2 — Selected profile evidence
+
+After P1 review, implement the smallest fixed runner and run only
+`vite-observe-p/c` and `codegen-observe-p/c`. Each pair must use identical image
+and fixture bytes, fixed commands/arguments, non-root execution, read-only
+source, dedicated writable result paths, bounded time/output, offline runtime,
+and no runtime-socket forwarding. Record environment/file/write/loopback/child
+attempts separately and preserve mismatch or unavailable enforcement.
+
+Do not add other matrix rows, watch/cache/parallel variants, or a generic M4
+recovery dependency to this task.
+
+### P3 — Minimal artifact demo
+
+Implement one repository-owned fixed artifact build, canonical build receipt,
+separate-directory digest verification/copy, and one-byte tamper rejection.
+Build exactly once; verify/deploy must not install or rebuild. Keep the receipt
+small and state explicitly that identity/provenance does not prove harmlessness.
+The full artifact framework in `artifact-pipeline.md` remains deferred.
+
+### P4 — Evidence map and final presentation review
+
+Generate sanitized examples, one compact five-route trigger table, one selected
+profile/capability table, one artifact result table, and `docs/evidence-map.md`.
+Every empirical claim must link to observed evidence and display its limitation.
+Perform one focused final safety/validity review of the claim/evidence map;
+do not create remediation-specific review loops for non-critical appendix code.
+
+### Presentation MVP completion criteria
+
+- C-01 through C-07 have observed evidence or an explicit displayed limitation.
+- Five routes appear in the trigger/phase/count comparison, but only the selected
+  Vite/codegen routes require permissive/constrained runtime evidence.
+- Missing and inconclusive evidence remain visible and are not converted to
+  zero/success.
+- The artifact is built once, verified/copied without rebuild, and a one-byte
+  mutation is rejected.
+- No claim relies on AGENTS instructions or container configuration alone as
+  runtime enforcement evidence.

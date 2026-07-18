@@ -1,6 +1,8 @@
 # tskaigi-sendai-2026-lab
 
-TypeScript ツールチェーンにおける依存コードの実行経路を、安全なローカル条件で比較するための実験ラボです。M-1 の repository scaffold、独立した M0 npm 12 marker-only spike、M1 の副作用なしで import できる `@tskaigi-lab/probe-core`、M2-A の固定 npm lifecycle adapter、M2-B の固定 ESLint adapter、M2-C の固定 Vitest `setupFiles` adapter、M2-D の固定 Vite plugin adapter、M2-E の固定 code-generation CLI adapter を実装しています。M2-A の container evidence-transfer boundary と共通 harness はまだ未実装です。M2-A/D/E は独立実装レビュー済みですが、M2-A の runtime gate と experiment-matrix Observed は未実測です。詳細は[M2-A adapter contract](docs/m2-a-npm-lifecycle-adapter.md)、[M2-A implementation review](docs/reviews/m2-a-npm-lifecycle-adapter.md)、[M2-D implementation review](docs/reviews/m2-d-vite-plugin-adapter.md)、[M2-E implementation review](docs/reviews/m2-e-codegen-adapter.md)を参照してください。
+TypeScript ツールチェーンにおける依存コードの実行経路を、安全なローカル条件で比較するための実験ラボです。M-1 の repository scaffold、独立した M0 npm 12 marker-only spike、M1 の副作用なしで import できる `@tskaigi-lab/probe-core`、M2-A〜M2-E の固定adapter、M3のdeterministic collector/reducer/report harnessを実装しています。M3はsynthetic contract fixtureだけをcanonical runとして扱い、M2 local runner outputやexperiment-matrix Observedへ自動昇格しません。M2-A の container evidence-transfer boundaryは未解決で、runtime gateとexperiment-matrix Observedは未実測です。詳細は[M2-A adapter contract](docs/m2-a-npm-lifecycle-adapter.md)、[M2-A implementation review](docs/reviews/m2-a-npm-lifecycle-adapter.md)、[M2-D implementation review](docs/reviews/m2-d-vite-plugin-adapter.md)、[M2-E implementation review](docs/reviews/m2-e-codegen-adapter.md)を参照してください。
+
+現在のactive delivery trackは[TSKaigi Sendai 2026 presentation MVP](docs/presentation-scope.md)です。既存のM3/M4 high-assurance実装は削除せずresearch appendixとして凍結し、発表では7件のclaim、代表profile比較、小さなbuild-once/tamper demo、sanitized evidence mapを優先します。
 
 ## Development baseline
 
@@ -28,9 +30,9 @@ npm test
 npm run check
 ```
 
-`npm run check` は format check、lint、typecheck、unit test の順に実行します。`lab:*` や `artifact:*` の planned command は後続 milestone の対象であり、現在は存在しません。
+`npm run check` は format check、lint、typecheck、unit test の順に実行します。`artifact:*` の planned command は後続 milestone の対象であり、現在は存在しません。
 
-M1 の package 単位の確認には次を使用します。`probe-core` は `probe-event/v2` でcapability attempt、route invocation、official tool API changeを分離し、manifest allowlist内の複数phaseとproducerごとのJSONL segmentまでを担当します。segment collector、global sequence、adapter実測はM2/M3以降の対象です。
+M1 の package 単位の確認には次を使用します。`probe-core` は `probe-event/v2` でcapability attempt、route invocation、official tool API changeを分離し、manifest allowlist内の複数phaseとproducerごとのJSONL segmentまでを担当します。M3 collectorはclosed segmentを対応manifestで再検証してglobal sequenceを付けますが、その順序は因果順序や実時間順を表しません。
 
 ```sh
 npm run probe-core:build
@@ -86,6 +88,15 @@ npm run m2e:run:dry-run
 ```
 
 Observe は direct filesystem write、API は documented generator API と fixed artifact materialization、dry-run は変更なしを記録します。Local runner は sanitized results を ignored `results/runs/m2-e-codegen/<mode>/<run-id>/` に保存しますが、これは experiment-matrix Observed、profile 比較、M3 collector/report ではありません。詳細は[M2-E code-generation adapter note](docs/m2-e-codegen-adapter.md)を参照してください。
+
+M3は`packages/lab-cli`のprivate ESM package `@tskaigi-lab/lab-cli`です。`probe-event/v2`を変更せず`lab-canonical-event/v1` envelopeへ格納し、producer ID順のdeterministic ingestion、global sequence、summary、comparison、hash delta evidenceを生成します。Missing、timeout、partial、schema error、sequence gapは部分採用せずInconclusiveとし、0 invocationへ変換しません。Manifest、run completion、raw byte segmentをimmutable inputとして分離し、derived fileを削除したowned runは`regenerateFixedScenario(runId)`で同一byteへ再生成できます。
+
+```sh
+npm run m3:verify
+npm run m3:run:fixture
+```
+
+`m3:run:fixture`が受け付けるのはversion controlされたsynthetic scenarioだけです。出力はignored `results/runs/m3-harness/<run-id>/`に置かれ、adapter実測、profile evidence、presentation evidenceではありません。M3 remediationと独立re-reviewは完了し、gateはnon-blocking follow-ups付きで承認済みです。
 
 M0 は通常の regression check に含めず、Docker を明示して個別実行します。
 

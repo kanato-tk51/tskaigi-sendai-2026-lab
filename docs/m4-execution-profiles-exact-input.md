@@ -160,6 +160,16 @@ followed by a fresh read-only re-review. Docker access, recovery execution,
 state deletion, built-image identity, profile binding, controls, runtime
 enforcement, and all Observed evidence remain pending.
 
+Presentation-MVP freeze update (2026-07-18; supersedes every recovery next-task
+clause above for scheduling): [ADR-0002](decisions/0002-prioritize-presentation-mvp.md)
+retains this exact-input/build/recovery work as a frozen research appendix with
+B-16/B-17 open. The ordinary entry remains fail closed. The presentation MVP
+does not inspect or retry the retained tag, mutate/delete retained state, close
+the recovery findings, or treat this static/unit and failed-build history as
+profile runtime Observed. The active next task is the evidence inventory in
+[`docs/presentation-scope.md`](presentation-scope.md), followed by separately
+scoped selected Vite/codegen profile evidence.
+
 ## Version-controlled base input
 
 The exact-key `lab-profile-image-input/v1` proposal contains only sanitized,

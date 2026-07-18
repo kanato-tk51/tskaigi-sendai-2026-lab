@@ -87,3 +87,8 @@ List separately scoped work or a review date, if any.
 6. 後続 experiment の observed result は ADR 本文へ転記せず evidence へ link する。
 
 Expected hypothesis に反する observed evidence が出ても、過去 ADR を書き換えて整合させない。判断を変更するなら新しい ADR で supersede する。
+
+## Current records
+
+- [ADR-0001: profile control と route evidence を分離する](0001-separate-profile-controls-from-route-evidence.md)
+- [ADR-0002: Prioritize the presentation MVP](0002-prioritize-presentation-mvp.md)
