@@ -1208,7 +1208,8 @@ git status --short
 ## Presentation MVP critical path
 
 Status: **active; P1 complete; P2 Expected contract and non-executing create
-plan complete; fixed staging runner and adapter binding next**.
+plan complete; codegen exact context binding complete and its separated runtime
+binding next**.
 
 This section supersedes every earlier `next task` or `current-next-task` clause
 for scheduling. The preceding M4 history remains an accurate record of work and
@@ -1305,6 +1306,14 @@ semantic commands, separate run roots, and offline/non-root/read-only Docker
 not expose an executor, and no staging runner, Docker operation, profile
 Observed, or matrix update exists yet. The next task is the fixed staging runner,
 pre-session scenario/profile binding, and small sanitized result projection.
+
+Codegen binding update (2026-07-19): M2-E validates the two exact selected
+scenario/run/profile tuples and binds the selected scenario ID before manifest
+or session creation while preserving the local M2-E path. Selected execution
+remains fail closed until its separated event/tool/direct-write bindings exist.
+No Docker command, profile run, matrix update, or Observed value was produced.
+The next task is that codegen multi-root runtime binding and its small result
+projection; Vite remains unchanged.
 
 ### P3 — Minimal artifact demo
 

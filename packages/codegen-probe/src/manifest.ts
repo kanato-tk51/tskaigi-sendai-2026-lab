@@ -37,16 +37,18 @@ import {
 } from "./constants.js";
 import { AdapterError } from "./errors.js";
 import type { ScenarioVariant } from "./constants.js";
+import type { CodegenScenarioId } from "./constants.js";
 
 export function createFixedManifest(
   variant: ScenarioVariant,
   runId: string,
+  scenarioId: CodegenScenarioId = `${SCENARIO_ID_PREFIX}-${variant}`,
 ): ProbeManifest {
   const directWriteEnabled = variant === "observe";
   return {
     schemaVersion: PROBE_MANIFEST_SCHEMA_VERSION,
     runId,
-    scenarioId: `${SCENARIO_ID_PREFIX}-${variant}`,
+    scenarioId,
     route: "codegen-cli",
     phases: Object.values(PHASES),
     triggerTypes: ["explicit"],
@@ -259,8 +261,10 @@ function sameValues(
 export function validateManifestContract(
   manifest: ProbeManifest,
   variant: ScenarioVariant,
+  expectedScenarioId: CodegenScenarioId = `${SCENARIO_ID_PREFIX}-${variant}`,
 ): void {
   if (
+    manifest.scenarioId !== expectedScenarioId ||
     manifest.route !== "codegen-cli" ||
     manifest.toolName !== "codegen" ||
     manifest.toolVersion !== CODEGEN_VERSION ||

@@ -11,11 +11,20 @@ export const RUN_ID_VARIABLE = "PROBE_CANARY_M2E_RUN_ID" as const;
 export const RUN_ROOT_VARIABLE = "PROBE_CANARY_M2E_RUN_ROOT" as const;
 export const LOOPBACK_PORT_VARIABLE = "PROBE_CANARY_M2E_LOOPBACK_PORT" as const;
 export const VARIANT_VARIABLE = "PROBE_CANARY_M2E_VARIANT" as const;
+export const SCENARIO_ID_VARIABLE = "PROBE_CANARY_M2E_SCENARIO_ID" as const;
 export const ENVIRONMENT_VARIABLE = "PROBE_CANARY_M2E_ENVIRONMENT" as const;
 export const DISPOSABLE_CANARY_VALUE =
   "m2e-disposable-environment-canary" as const;
 
 export const SCENARIO_ID_PREFIX = "m2e-codegen" as const;
+export const SELECTED_PROFILE_SCENARIO_IDS = Object.freeze([
+  "codegen-observe-p",
+  "codegen-observe-c",
+] as const);
+export type SelectedProfileScenarioId =
+  (typeof SELECTED_PROFILE_SCENARIO_IDS)[number];
+export type CodegenScenarioId =
+  `${typeof SCENARIO_ID_PREFIX}-${ScenarioVariant}` | SelectedProfileScenarioId;
 export const PRODUCER_ID = "codegen-cli-producer" as const;
 export const CWD_ID = "codegen-adapter-workspace" as const;
 export const EVENT_TARGET_ID = "codegen-event-segment" as const;

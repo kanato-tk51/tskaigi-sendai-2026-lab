@@ -34,11 +34,20 @@ export async function createCliRuntime(): Promise<CliRuntime> {
     throw new AdapterError("M2E_VERSION_MISMATCH");
   }
   const inputs = readCoordinatorInputs();
+  if (inputs.profileId !== null) {
+    // The selected tuple is fixed before session creation, but its separated
+    // event/tool/direct-write bindings belong to the next P2 slice.
+    throw new AdapterError("M2E_CONTEXT_INVALID");
+  }
   const packageRoot = path.resolve(
     fileURLToPath(new URL("../", import.meta.url)),
   );
-  const manifest = createFixedManifest(inputs.variant, inputs.runId);
-  validateManifestContract(manifest, inputs.variant);
+  const manifest = createFixedManifest(
+    inputs.variant,
+    inputs.runId,
+    inputs.scenarioId,
+  );
+  validateManifestContract(manifest, inputs.variant, inputs.scenarioId);
   const validated = validateProbeConfiguration(
     manifest,
     createFixedRuntimeBindings(inputs.runRoot, inputs.loopbackPort),

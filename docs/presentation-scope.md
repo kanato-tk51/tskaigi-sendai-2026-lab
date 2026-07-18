@@ -12,8 +12,9 @@ P0 scope/workflow pivot status: **complete and root-verified**. The P1
 the gate is approved with no findings. The Docker-non-executing P2
 [codegen binding and fixed-runner contract](p2-selected-profile-contract.md) is
 complete, and its non-executing Docker create plan has static/unit coverage. The
-current next task is the fixed staging runner and adapter profile binding; no
-selected profile run or matrix Observed exists yet.
+codegen exact context binding is now fail-closed before session creation. The
+current next task is codegen's separated runtime binding and result projection;
+no selected profile run or matrix Observed exists yet.
 
 ## Purpose
 

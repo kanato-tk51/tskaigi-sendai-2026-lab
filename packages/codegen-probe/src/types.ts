@@ -1,10 +1,14 @@
 import type { ProbeEvent, ProbeManifest } from "@tskaigi-lab/probe-core";
 
 import type { ScenarioVariant } from "./constants.js";
+import type { CodegenScenarioId } from "./constants.js";
 import type { Sha256Digest } from "./hash.js";
+import type { SelectedProfileId } from "./scenario-context.js";
 
 export interface CoordinatorInputs {
   readonly runId: string;
+  readonly scenarioId: CodegenScenarioId;
+  readonly profileId: SelectedProfileId | null;
   readonly runRoot: string;
   readonly loopbackPort: number;
   readonly variant: ScenarioVariant;
