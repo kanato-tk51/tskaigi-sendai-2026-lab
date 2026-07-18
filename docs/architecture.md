@@ -355,6 +355,8 @@ Offline-build recovery implementation update (2026-07-18): recovery-only input/e
 
 Offline-build recovery independent review update (2026-07-18): [fresh review](reviews/m4-execution-profiles-offline-build-recovery.md)はvalue/brand、content non-read、single-inspect、canonical result、retention-only、ordinary dependency非到達性をacceptしたが、host backend static/unit gateをB-16/B-17でblockした。`lstat` modeのlow 9 bitsだけを比較してspecial bitsを見落とすことと、bounded close deadline後もactive childを保持したままpost-attempt identity validationを成功扱いできることがfixed metadata/process-settlement contractに反する。次は[non-executing remediation](../prompts/m4-execution-profiles-offline-build-recovery-remediation.md)であり、そのfresh re-reviewとone-time recovery execution gateより前にDockerへ進まない。
 
+Presentation-MVP architecture update (2026-07-18): [ADR-0002](decisions/0002-prioritize-presentation-mvp.md)により上記recovery trackをB-16/B-17 openのまま凍結し、[presentation scope](presentation-scope.md)をactive delivery pathとした。既存M3/M4 code/historyは削除せずappendixとして保持し、通常M4 entryはfail closedのままである。P1は既存evidenceのclass/gap inventory、P2はVite/codegenだけのsame-image fixed profile pair、P3は単一artifactのbuild-once/verify/copy/tamper pathである。Selected runnerはsource read-only、dedicated writable paths、fixed CLI/argv、non-root、bounded output/time、offline execution、no runtime-socket forwardingを維持するが、frozen recovery backendをdependencyにしない。
+
 ## Install lifecycle fixture の root workspace からの隔離
 
 - root workspace pattern は `packages/*` の allowlist とし、`experiments/npm12-install` を含めない。

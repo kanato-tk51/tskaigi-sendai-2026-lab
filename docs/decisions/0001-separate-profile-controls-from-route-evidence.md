@@ -5,6 +5,12 @@
 - 決定者: プロジェクトの human reviewer
 - 関連文書: [M4 execution profiles](../m4-execution-profiles.md)、[Threat model](../threat-model.md)、[Experiment matrix](../experiment-matrix.md)
 
+2026-07-18 addendum: [ADR-0002](0002-prioritize-presentation-mvp.md) preserves
+the evidence distinction in this decision but supersedes its delivery sequence.
+The generic profile-control/recovery track is frozen with B-16/B-17 open, and
+the presentation MVP uses only the selected fixed Vite/codegen profile pairs.
+Profile-control output still does not become route Observed automatically.
+
 ## 背景
 
 M4 では、permissive と constrained の execution boundary が、宣言した canary capability を実際に expose または deny することを示す必要がある。既存の M2 adapter run が検証するのは local host 上の adapter contract であり、profile enforcement evidence や experiment-matrix の Observed result ではない。M4 を adapter run から始めると、adapter、container、profile、collector、route evidence boundary が同時に変わるため、denial の原因を特定しにくくなる。
@@ -46,3 +52,5 @@ M4 実装は schema/static/unit test と approved-host integration run に合格
 - independent review は blocking finding なしで完了し、プロジェクトの human reviewer が 2026-07-17 にこの ADR と M4 Expected 契約を明示的に承認した。
 - M4 は承認済み `prompts/m4-execution-profiles.md` の scope 内だけで実装し、container 実行は明示的な承認が必要な別 step とする。
 - profile-control 実装が independent review に合格した後にのみ adapter/profile measurement task を選定する。
+- Historical sequencing in the two bullets above is superseded for scheduling by
+  ADR-0002; it remains a record of the original high-assurance track.
