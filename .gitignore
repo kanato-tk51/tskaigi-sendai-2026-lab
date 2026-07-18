@@ -18,6 +18,7 @@ experiments/**/node_modules/
 fixtures/**/.generated/
 results/runs/*
 !results/runs/README.md
+containers/presentation-profiles/staging/
 
 # Host-specific files
 .DS_Store

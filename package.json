@@ -64,6 +64,7 @@
     "p2:typecheck": "tsc --project containers/presentation-profiles/tsconfig.json --noEmit",
     "p2:test": "vitest run --config containers/presentation-profiles/vitest.config.ts --configLoader runner",
     "p2:verify": "npm run p2:typecheck && npm run p2:test",
+    "p2:stage:codegen": "npm run probe-core:build && npm run m2e:build && node containers/presentation-profiles/runner/codegen-staging.js",
     "m4:typecheck": "tsc --project containers/profile-control/tsconfig.json --noEmit",
     "m4:static": "node containers/profile-control/scripts/verify-static.mjs",
     "m4:test": "vitest run --config containers/profile-control/vitest.config.ts --configLoader runner",
