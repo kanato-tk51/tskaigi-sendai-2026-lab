@@ -3,7 +3,8 @@
 Status: **Expected and the non-executing four-scenario Docker create plan are
 fixed; codegen exact context, separated runtime bindings, sanitized projection,
 fixed runner source, exact staging assembly, and focused codegen review are
-complete; execution and all selected Observed remain unmeasured**.
+complete; the minimal codegen executor is implemented but independently
+unreviewed; execution and all selected Observed remain unmeasured**.
 
 Contract date: 2026-07-19
 
@@ -177,8 +178,26 @@ that path to `INTERNAL_ERROR`; it now emits the intended sanitized
 `CHILD_PROCESS_FAILURE`, with a unit test that excludes the raw error. The
 rebuilt local staging again matches all 30 fixed sources byte-for-byte.
 
-The executor must still create an empty disposable Docker config, create fresh
-UID-writable result roots, invoke only the fixed codegen plans with bounded
-output/time, verify the created container/image identity, and pass raw events
-through the existing projection. These are implementation prerequisites, not
-Observed claims and not permission to run Docker.
+## Minimal codegen executor implementation
+
+The argument-free executor now selects only `codegen-observe-p/c`. It verifies
+the 30 staged bytes, creates an empty disposable Docker config and fresh
+UID-writable run directories, then fixes the `/usr/bin/docker` sequence to
+`create`, identity/state `inspect`, attached `start`, a second `inspect`, and
+force-removal of the named disposable container. Each CLI call is bounded to 20
+seconds and 16 KiB combined output; commands inherit only `DOCKER_CONFIG`.
+
+The runner makes its exact event segment host-readable, records source
+before/after hashes, and also makes a partial segment readable on failure. The
+executor discards raw CLI stderr, parses bounded JSONL into the existing
+allowlisted projection, preserves nonzero/partial runs as `inconclusive`, and
+writes a small receipt containing fixed identities, image ID, tool versions,
+output presence/sizes, hashes, and the projection. It never copies commands,
+canary values, raw errors, contents, environment values, or absolute host paths
+into the receipt.
+
+This implementation has static/unit coverage and a successful compiled import,
+but no Docker command has been executed. A fresh independent read-only review of
+the executor and exact command sequence is required before the recorded
+`npm run p2:execute:codegen` command may be used. This is configuration intent,
+not Observed evidence.

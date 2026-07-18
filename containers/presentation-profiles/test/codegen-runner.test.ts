@@ -100,5 +100,8 @@ describe("P2 fixed codegen runner", () => {
     expect(source).toContain('const FIXED_LOOPBACK_ADDRESS = "127.0.0.1"');
     expect(source).toContain("import.meta.url ===");
     expect(source).toContain("shell: false");
+    expect(source).toContain("await chmod(FIXED_EVENT_SEGMENT, 0o444)");
+    expect(source).toContain("sourceBeforeHash");
+    expect(source).toContain("sourceAfterHash");
   });
 });

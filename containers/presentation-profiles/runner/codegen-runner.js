@@ -1,4 +1,5 @@
 import { spawn } from "node:child_process";
+import { createHash } from "node:crypto";
 import {
   chmod,
   lstat,
@@ -28,6 +29,14 @@ const FIXED_ENVIRONMENT_CANARY = "m2e-disposable-environment-canary";
 const MAX_CHILD_OUTPUT_BYTES = 8_192;
 const MAX_EVENT_SEGMENT_BYTES = 65_536;
 const CHILD_TIMEOUT_MS = 10_000;
+
+/**
+ * @param {string} value
+ * @returns {string}
+ */
+function sha256(value) {
+  return createHash("sha256").update(value).digest("hex");
+}
 
 const RUN_ID_VARIABLE = "PROBE_CANARY_M2E_RUN_ID";
 const RUN_ROOT_VARIABLE = "PROBE_CANARY_M2E_RUN_ROOT";
@@ -147,6 +156,7 @@ async function prepareFixedInputs(profileId) {
     mode: 0o600,
   });
   await chmod(FIXED_CANARY_PATH, profileId === "constrained" ? 0o000 : 0o400);
+  return sha256(snapshot);
 }
 
 /** @returns {Promise<import("node:http").Server>} */
@@ -250,6 +260,19 @@ async function verifyFixedOutput() {
   if (snapshot !== FIXED_INPUT_SNAPSHOT) {
     throw new Error("P2_SOURCE_CHANGED");
   }
+  await chmod(FIXED_EVENT_SEGMENT, 0o444);
+  return sha256(snapshot);
+}
+
+async function makeEventSegmentHostReadable() {
+  try {
+    const segment = await lstat(FIXED_EVENT_SEGMENT);
+    if (segment.isFile() && !segment.isSymbolicLink()) {
+      await chmod(FIXED_EVENT_SEGMENT, 0o444);
+    }
+  } catch {
+    // A missing or inaccessible partial segment is represented as inconclusive.
+  }
 }
 
 export async function executeFixedCodegenScenario() {
@@ -262,22 +285,29 @@ export async function executeFixedCodegenScenario() {
   }
   const definition = resolveFixedCodegenScenario(scenarioId);
   const invocation = createFixedCodegenInvocation(definition);
-  await prepareFixedInputs(definition.profileId);
+  const sourceBeforeHash = await prepareFixedInputs(definition.profileId);
+  /** @type {string | undefined} */
+  let sourceAfterHash;
   const server =
     definition.profileId === "permissive"
       ? await startFixedLoopbackServer()
       : null;
   try {
     await executeBoundedChild(invocation);
-    await verifyFixedOutput();
+    sourceAfterHash = await verifyFixedOutput();
   } finally {
     await closeServer(server);
+  }
+  if (sourceAfterHash === undefined) {
+    throw new Error("P2_RESULT_INVALID");
   }
   process.stdout.write(
     `${JSON.stringify({
       status: "completed",
       scenarioId: definition.scenarioId,
       profileId: definition.profileId,
+      sourceBeforeHash,
+      sourceAfterHash,
     })}\n`,
   );
 }
@@ -290,6 +320,7 @@ if (
   try {
     await executeFixedCodegenScenario();
   } catch {
+    await makeEventSegmentHostReadable();
     process.stderr.write('{"status":"failure","code":"P2_RUNNER_FAILED"}\n');
     process.exitCode = 1;
   }
