@@ -11,7 +11,8 @@ P0 scope/workflow pivot status: **complete and root-verified**. The P1
 [independent review](reviews/presentation-evidence-inventory.md) are complete;
 the gate is approved with no findings. The Docker-non-executing P2
 [codegen binding and fixed-runner contract](p2-selected-profile-contract.md) is
-complete. The current next task is the minimal fixed runner implementation; no
+complete, and its non-executing Docker create plan has static/unit coverage. The
+current next task is the fixed staging runner and adapter profile binding; no
 selected profile run or matrix Observed exists yet.
 
 ## Purpose
@@ -153,7 +154,8 @@ The P1 implementation is recorded in
 `docs/presentation-evidence-inventory.md`; its independent review approved the
 classification and gap inventory with no findings. P2's Docker-non-executing
 contract resolves the codegen mapping and fixes the four selected run
-boundaries. Runner implementation and execution have not started.
+boundaries. The non-executing create plan is implemented; staging, adapter
+profile binding, execution, and result projection have not started.
 
 ## Definition of done
 

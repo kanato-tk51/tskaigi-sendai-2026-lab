@@ -5,6 +5,7 @@ export default defineConfig({
     include: [
       "tests/**/*.test.ts",
       "packages/*/test/**/*.test.ts",
+      "containers/presentation-profiles/test/**/*.test.ts",
       "containers/profile-control/test/**/*.test.ts",
     ],
     passWithNoTests: false,
