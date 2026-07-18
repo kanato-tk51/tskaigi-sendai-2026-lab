@@ -4,7 +4,7 @@ Read only the documents relevant to the current task.
 
 | Task | Required documents |
 |---|---|
-| Presentation MVP scope, evidence inventory, selected profile runs, or talk data | `presentation-scope.md`, `presentation-evidence-inventory.md` and `reviews/presentation-evidence-inventory.md` when present, `product-requirements.md`, `milestones.md`, `codex-workflow.md`; add `experiment-matrix.md` for route/profile selection, `artifact-pipeline.md` for the artifact demo, and `threat-model.md` for runtime execution |
+| Presentation MVP scope, evidence inventory, selected profile runs, or talk data | `presentation-scope.md`, `presentation-evidence-inventory.md` and `reviews/presentation-evidence-inventory.md` when present, `p2-selected-profile-contract.md`, `product-requirements.md`, `milestones.md`, `codex-workflow.md`; add `experiment-matrix.md` for route/profile selection, `artifact-pipeline.md` for the artifact demo, and `threat-model.md` for runtime execution |
 | Product scope | `product-requirements.md` |
 | Probe implementation | `threat-model.md`, `experiment-protocol.md` |
 | Package or data-flow changes | `architecture.md` |
