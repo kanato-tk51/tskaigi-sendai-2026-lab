@@ -70,6 +70,11 @@ describe("P2 selected profile plan", () => {
         "no-new-privileges",
       );
       expect(command.arguments).toContain(FIXED_NODE_IMAGE);
+      const imageIndex = command.arguments.indexOf(FIXED_NODE_IMAGE);
+      expect(command.arguments.slice(imageIndex + 1, -1)).toEqual([
+        "/usr/local/bin/node",
+        "/opt/p2/input/presentation-runner.js",
+      ]);
       expect(command.arguments.at(-1)).toBe(plan.scenarioId);
       expect(Object.keys(command.environment)).toEqual(["DOCKER_CONFIG"]);
       expect(path.isAbsolute(command.environment.DOCKER_CONFIG)).toBe(true);
