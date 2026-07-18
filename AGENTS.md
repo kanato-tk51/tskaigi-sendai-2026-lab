@@ -23,14 +23,25 @@ Read `docs/index.md` and only the documents relevant to the current task.
 
 - External network access is prohibited by default. It may be used for ordinary
   documentation research or dependency acquisition only when the user
-  explicitly authorizes the exact purpose and boundary. Probe execution,
-  credential-free build, verification, and deploy simulation remain offline;
-  probe network attempts are governed by the nested instructions and manifest.
-- Remote Git operations are prohibited by default.
-- Exception: When the user explicitly requests publication and confirms the
-  target branch, pushing the current reviewed commits to that branch is allowed.
-- Do not fetch, pull, force-push, delete remote branches, or push directly to
-  the default branch unless the user explicitly requests that exact action.
+  explicitly authorizes the exact purpose and boundary. Ordinary-development
+  Remote Git operations are a separate exception described below.
+- Probe execution, install lifecycle experiments, credential-free build,
+  verification, and deploy simulation remain offline. Communication attempts
+  inside an experiment are limited to loopback or an experiment-owned Unix
+  socket as allowed by the applicable nested `AGENTS.md` and manifest.
+- Ordinary-development Remote Git operations are allowed. Agents may read
+  remote and PR state, perform a necessary fetch, push to a non-default branch,
+  create or update a PR, and inspect its checks as part of the repository's
+  normal development workflow.
+- Force-push, remote-branch deletion, direct push to the default branch, and PR
+  merge or close each require explicit user authorization for that operation;
+  authorization for an ordinary push or PR creation does not authorize them.
+- Never explore, enumerate, or display Git or hosting-service credentials.
+- The Remote Git exception applies only to the ordinary development workflow;
+  it does not permit external communication during a probe, experiment, build,
+  verification, or deploy-simulation phase. Experiment offline enforcement is
+  presentation evidence; publication confirmations are workflow safeguards
+  against unintended repository changes and are not experiment evidence.
 
 ## Engineering
 
