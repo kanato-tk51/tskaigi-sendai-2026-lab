@@ -1,8 +1,9 @@
 # P2 selected profile evidence contract
 
 Status: **Expected and the non-executing four-scenario Docker create plan are
-fixed; staging, adapter profile binding, execution, and all selected Observed
-remain unmeasured**.
+fixed; codegen exact context binding is implemented fail-closed; staging,
+profile runtime bindings, execution, and all selected Observed remain
+unmeasured**.
 
 Contract date: 2026-07-19
 
@@ -141,3 +142,10 @@ executed, and `experiment-matrix.md` remains unchanged. The next implementation
 slice is the repository-owned staging runner that binds the selected scenario
 and profile before adapter session creation and emits the small sanitized result
 projection.
+
+Codegen binding update (2026-07-19): M2-E now accepts only the exact
+`codegen-observe-p/c` scenario, run, and profile tuples recorded by this
+contract. It binds the scenario ID before manifest/session creation and keeps
+the existing local M2-E context unchanged. Selected execution deliberately
+fails closed until the separate event/tool/direct-write runtime bindings are
+implemented; therefore this update creates no profile observation.
