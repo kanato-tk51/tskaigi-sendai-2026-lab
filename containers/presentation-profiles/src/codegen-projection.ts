@@ -1,8 +1,5 @@
-import type {
-  NormalizedErrorCode,
-  Outcome,
-} from "../../../packages/probe-core/src/types.js";
-import { EXPECTED_EVENT_ORDER } from "../../../packages/codegen-probe/src/constants.js";
+import { NORMALIZED_ERROR_CODES, OUTCOMES } from "@tskaigi-lab/probe-core";
+import type { NormalizedErrorCode, Outcome } from "@tskaigi-lab/probe-core";
 
 import type { SelectedProfileId, SelectedScenarioId } from "./plan.js";
 
@@ -46,8 +43,28 @@ export interface CodegenProfileProjection {
     | "COUNT_MISMATCH"
     | "ROUTE_OR_TOOL_MISMATCH"
     | "CAPABILITY_OUTCOME_MISMATCH"
+    | "RUNTIME_SUMMARY_MISMATCH"
   )[];
 }
+
+const MAX_RAW_SEGMENT_BYTES = 65_536;
+const MAX_RAW_EVENTS = 32;
+const normalizedErrorCodes = new Set<string>(NORMALIZED_ERROR_CODES);
+const outcomes = new Set<string>(OUTCOMES);
+const EXPECTED_EVENT_ORDER = Object.freeze([
+  "route-invocation:codegen-cli-startup",
+  "route-invocation:codegen-argument-parse",
+  "route-invocation:codegen-generation-start",
+  "capability-attempt:codegen-attempt-environment",
+  "capability-attempt:codegen-attempt-file-read",
+  "capability-attempt:codegen-attempt-file-hash",
+  "capability-attempt:codegen-attempt-file-write",
+  "capability-attempt:codegen-attempt-loopback",
+  "capability-attempt:codegen-attempt-child",
+  "tool-api-change:codegen-generation-api-change",
+  "route-invocation:codegen-file-write",
+  "route-invocation:codegen-completion",
+] as const);
 
 const ATTEMPT_IDS = Object.freeze([
   "codegen-attempt-environment",
@@ -83,6 +100,62 @@ function eventOrderValue(event: SelectedEventInput): string | null {
   return event.toolApiChangeId === undefined
     ? null
     : `${event.eventKind}:${event.toolApiChangeId}`;
+}
+
+function plainRecord(value: unknown): value is Record<string, unknown> {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    return false;
+  }
+  const prototype = Object.getPrototypeOf(value);
+  return prototype === Object.prototype || prototype === null;
+}
+
+function boundedString(value: unknown): value is string {
+  return typeof value === "string" && value.length > 0 && value.length <= 128;
+}
+
+function parseSelectedEvent(value: unknown): SelectedEventInput | null {
+  if (
+    !plainRecord(value) ||
+    !["route-invocation", "capability-attempt", "tool-api-change"].includes(
+      value.eventKind as string,
+    ) ||
+    !boundedString(value.runId) ||
+    !boundedString(value.scenarioId) ||
+    !Number.isInteger(value.producerSequence) ||
+    (value.producerSequence as number) < 0 ||
+    !outcomes.has(value.outcome as string) ||
+    !(
+      value.normalizedErrorCode === null ||
+      normalizedErrorCodes.has(value.normalizedErrorCode as string)
+    )
+  ) {
+    return null;
+  }
+  const eventKind = value.eventKind as SelectedEventInput["eventKind"];
+  const id =
+    eventKind === "route-invocation"
+      ? value.routeInvocationId
+      : eventKind === "capability-attempt"
+        ? value.attemptId
+        : value.toolApiChangeId;
+  if (!boundedString(id)) {
+    return null;
+  }
+  return Object.freeze({
+    eventKind,
+    runId: value.runId,
+    scenarioId: value.scenarioId,
+    producerSequence: value.producerSequence as number,
+    outcome: value.outcome as Outcome,
+    normalizedErrorCode:
+      value.normalizedErrorCode as NormalizedErrorCode | null,
+    ...(eventKind === "route-invocation"
+      ? { routeInvocationId: id }
+      : eventKind === "capability-attempt"
+        ? { attemptId: id }
+        : { toolApiChangeId: id }),
+  });
 }
 
 function expectedCapability(
@@ -214,5 +287,41 @@ export function projectCodegenProfileEvents(input: {
       ),
     ),
     issues: Object.freeze(issues),
+  });
+}
+
+export function projectCodegenProfileSegment(input: {
+  readonly scenarioId: CodegenScenarioId;
+  readonly profileId: SelectedProfileId;
+  readonly runId: string;
+  readonly rawSegment: string;
+}): CodegenProfileProjection {
+  let events: readonly SelectedEventInput[] = [];
+  if (
+    Buffer.byteLength(input.rawSegment) <= MAX_RAW_SEGMENT_BYTES &&
+    input.rawSegment.endsWith("\n")
+  ) {
+    const lines = input.rawSegment.slice(0, -1).split("\n");
+    if (
+      lines.length <= MAX_RAW_EVENTS &&
+      lines.every((line) => line.length > 0)
+    ) {
+      try {
+        const parsed = lines.map((line) =>
+          parseSelectedEvent(JSON.parse(line)),
+        );
+        if (parsed.every((event) => event !== null)) {
+          events = parsed;
+        }
+      } catch {
+        events = [];
+      }
+    }
+  }
+  return projectCodegenProfileEvents({
+    scenarioId: input.scenarioId,
+    profileId: input.profileId,
+    runId: input.runId,
+    events,
   });
 }

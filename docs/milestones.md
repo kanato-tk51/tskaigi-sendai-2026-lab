@@ -1209,7 +1209,8 @@ git status --short
 
 Status: **active; P1 complete; P2 Expected contract and non-executing create
 plan complete; codegen binding/projection/fixed runner/staging assembly/review
-complete and its minimal executor implementation next**.
+complete; its minimal executor is implemented and an independent read-only
+executor review is next**.
 
 This section supersedes every earlier `next task` or `current-next-task` clause
 for scheduling. The preceding M4 history remains an accurate record of work and
@@ -1321,8 +1322,13 @@ Observed value was produced. A focused Docker-non-executing review confirmed the
 fixed Node 20.18.2 permission flags and 30 staged bytes, then found and fixed the
 synchronous child-denial normalization path (`ERR_ACCESS_DENIED` now becomes the
 sanitized `CHILD_PROCESS_FAILURE`). The review approves minimal codegen executor
-implementation, not execution or an Observed claim. The next task is that fixed
-executor and its static/unit tests; Vite remains unchanged.
+implementation, not execution or an Observed claim. The argument-free executor
+now implements the fixed two-scenario create/inspect/attach-start/inspect/remove
+sequence, credential-empty config and fresh result roots, bounded CLI output and
+time, raw-segment projection, source hashes, image identity, and small receipts.
+P2 typecheck/build and 27 static/unit tests pass, but no Docker command was
+called. The next task is a fresh independent read-only executor review before
+the recorded one-shot codegen execution; Vite remains unchanged.
 
 ### P3 — Minimal artifact demo
 

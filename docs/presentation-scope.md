@@ -15,8 +15,9 @@ complete, and its non-executing Docker create plan has static/unit coverage. The
 codegen exact context, separated bindings, sanitized projection, fixed runner,
 and exact staging assembly now have static/unit coverage. Its focused
 non-executing review resolved one child-denial normalization finding and approved
-minimal executor implementation. No selected profile run or matrix Observed
-exists yet.
+minimal executor implementation. That executor now has static/unit coverage but
+still requires a fresh independent read-only review. No selected profile run or
+matrix Observed exists yet.
 
 ## Purpose
 

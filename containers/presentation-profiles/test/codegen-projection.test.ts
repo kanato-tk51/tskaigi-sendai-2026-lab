@@ -8,6 +8,7 @@ import { EXPECTED_EVENT_ORDER } from "../../../packages/codegen-probe/src/consta
 
 import {
   projectCodegenProfileEvents,
+  projectCodegenProfileSegment,
   type CodegenScenarioId,
   type SelectedEventInput,
 } from "../src/codegen-projection.js";
@@ -177,5 +178,40 @@ describe("P2 codegen profile projection", () => {
     expect(JSON.stringify(result)).not.toContain("must-not-appear");
     expect(JSON.stringify(result)).not.toContain("raw-attacker-id");
     expect(result.attempts[0]?.attemptId).toBe("INVALID_ATTEMPT");
+  });
+
+  it("parses a bounded JSONL segment into the same small projection", () => {
+    const scenarioId = "codegen-observe-c";
+    const runId = "p2-codegen-observe-c-20260719-01";
+    const rawSegment = `${eventsFor(scenarioId, "constrained", runId)
+      .map((event) => JSON.stringify({ ...event, rawSecret: "discard-me" }))
+      .join("\n")}\n`;
+    const result = projectCodegenProfileSegment({
+      scenarioId,
+      profileId: "constrained",
+      runId,
+      rawSegment,
+    });
+    expect(result.validity).toBe("matches-expected");
+    expect(result.counts.total).toBe(12);
+    expect(JSON.stringify(result)).not.toContain("discard-me");
+  });
+
+  it("makes malformed or oversized raw segments inconclusive", () => {
+    for (const rawSegment of [
+      "not-json\n",
+      `${"x".repeat(65_537)}\n`,
+      JSON.stringify({ eventKind: "capability-attempt" }),
+    ]) {
+      const result = projectCodegenProfileSegment({
+        scenarioId: "codegen-observe-p",
+        profileId: "permissive",
+        runId: "p2-codegen-observe-p-20260719-01",
+        rawSegment,
+      });
+      expect(result.validity).toBe("inconclusive");
+      expect(result.runId).toBe("p2-codegen-observe-p-20260719-01");
+      expect(result.counts.total).toBe(0);
+    }
   });
 });
