@@ -1,0 +1,14 @@
+{
+  "schemaVersion": "lab-profile-image-input/v1",
+  "baseImageName": "node",
+  "baseImageDigest": "sha256:4ada13d4258db3809cbff56d605f80af8383bf1f823168d0518d8dce799e7cf0",
+  "nodeVersion": "v20.18.2",
+  "baseEnvironmentKeys": ["PATH", "NODE_VERSION", "YARN_VERSION"],
+  "stagingFiles": [
+    "Containerfile",
+    "fixture/canary.txt",
+    "fixture/control-runner.mjs",
+    "fixture/fixed-child.mjs"
+  ],
+  "stagingDigest": "sha256:81d6cfee361eee3f211f1a296626b335979281eff617319fab39a1a989146a03"
+}
