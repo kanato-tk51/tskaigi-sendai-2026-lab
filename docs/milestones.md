@@ -516,7 +516,7 @@ git status --short
 
 ## M2-B: ESLint adapter
 
-Status: implementation **complete**; independent review **approved with non-blocking follow-ups**; blockers: none. F-01 through F-06 remain open and are recorded in the [M2-B independent review record](reviews/m2-b-eslint-adapter.md). M2-B experiment-matrix Observed results remain unmeasured, and the M3 collector, global sequence, and reporting remain unimplemented.
+Status: implementation **complete**; independent review **approved with non-blocking follow-ups**; blockers: none. F-01 through F-06 remain open and are recorded in the [M2-B independent review record](reviews/m2-b-eslint-adapter.md). M2-B experiment-matrix Observed results remain unmeasured. M3 collector/global sequence/reporting is implemented with a synthetic contract fixture, but M2-B local output is not automatically ingested or promoted to matrix Observed evidence.
 
 Historical status before review closure, superseded by the current status above:
 
@@ -596,7 +596,7 @@ git status --short
 
 ## M2-C: Vitest setupFiles adapter
 
-Status: implementation **complete**; independent review **approved with non-blocking follow-ups**; blockers: none. B-01, R-B02-01, and R-B03-01 are resolved. F-01 through F-03 and M1 I-04 remain open and are recorded in the [M2-C independent review record](reviews/m2-c-vitest-setup-adapter.md). M2-C experiment-matrix Observed results remain unmeasured, permissive/constrained profile comparison has not run, and the M3 collector, global sequence, and reporting remain unimplemented. The two clean-boundary local integration runs are adapter contract checks, not matrix Observed evidence.
+Status: implementation **complete**; independent review **approved with non-blocking follow-ups**; blockers: none. B-01, R-B02-01, and R-B03-01 are resolved. F-01 through F-03 and M1 I-04 remain open and are recorded in the [M2-C independent review record](reviews/m2-c-vitest-setup-adapter.md). M2-C experiment-matrix Observed results remain unmeasured and permissive/constrained profile comparison has not run. M3 collector/global sequence/reporting is implemented with a synthetic contract fixture, but the two clean-boundary M2-C local integration runs remain adapter contract checks and are not automatically ingested or promoted to matrix Observed evidence.
 
 Historical status before exact-path empty-directory cleanup and the clean-boundary focused re-review, superseded by the current status above:
 
@@ -680,7 +680,7 @@ git status --short
 
 ## M2-D: Vite plugin adapter
 
-Status: **M2-D implementation complete; independent review approved with non-blocking follow-ups; blockers: none; experiment-matrix Observed unmeasured**. The implementation-prerequisite Expected-only docs gate remains approved with its non-blocking snapshot note; see the [M2-D Expected contract independent review record](reviews/m2-d-vite-contract-docs.md). The independent implementation review is recorded in [M2-D Vite plugin adapter independent review](reviews/m2-d-vite-plugin-adapter.md). Local adapter verification is not experiment-matrix Observed evidence: permissive/constrained profiles have not run, and M3 collector/global sequence/reporting remain unimplemented.
+Status: **M2-D implementation complete; independent review approved with non-blocking follow-ups; blockers: none; experiment-matrix Observed unmeasured**. The implementation-prerequisite Expected-only docs gate remains approved with its non-blocking snapshot note; see the [M2-D Expected contract independent review record](reviews/m2-d-vite-contract-docs.md). The independent implementation review is recorded in [M2-D Vite plugin adapter independent review](reviews/m2-d-vite-plugin-adapter.md). M3 collector/global sequence/reporting is implemented with a synthetic contract fixture, but local adapter verification is not automatically ingested or promoted to experiment-matrix Observed evidence; permissive/constrained profiles have not run.
 
 ### Goal
 
@@ -832,7 +832,7 @@ git status --short
 
 ## M2-E: explicit code-generation CLI adapter
 
-Status: **M2-E implementation complete; independent review approved with non-blocking follow-ups; blockers: none; experiment-matrix Observed unmeasured**. The Expected contract is [M2-E explicit code-generation CLI adapter](m2-e-codegen-adapter.md), and the decision is recorded in the [M2-E independent review record](reviews/m2-e-codegen-adapter.md). Local verification is not experiment-matrix Observed evidence; profile enforcement and M3 collector/reporting remain unimplemented.
+Status: **M2-E implementation complete; independent review approved with non-blocking follow-ups; blockers: none; experiment-matrix Observed unmeasured**. The Expected contract is [M2-E explicit code-generation CLI adapter](m2-e-codegen-adapter.md), and the decision is recorded in the [M2-E independent review record](reviews/m2-e-codegen-adapter.md). M3 collector/reporting is implemented with a synthetic contract fixture, but local verification is not automatically ingested or promoted to experiment-matrix Observed evidence; profile enforcement remains unimplemented.
 
 ### Goal
 
@@ -1048,3 +1048,159 @@ git status --short
 - raw segment不変性、completion snapshot、raw-to-summary/report再生成可能性
 - fixed scenario dispatchとarbitrary command/path/module拒否
 - M2 local evidence、M3 canonical run、M4 profile evidence、M6 presentation evidenceの分離
+
+## M4: permissive / constrained execution profile
+
+Standing-authorization clarification (2026-07-18): 次のgateで人に必要なのはreview済みoffline sourceからexact fixed tagをlocal runtimeへ供給または復元する外部状態変更である。その後の`continue-repository-work` invocationが新しい一回限定doctor再実行のstanding authorizationを与えるため、承認文言だけを別途要求しない。
+
+One-time registry bootstrap update (2026-07-18): project humanはM4 bootstrapに限定し、credential-empty disposable Docker configと固定`/usr/bin/docker` CLIでexact `node:20.18.2-bookworm-slim` / `linux/amd64`を1回だけpullする外部network例外を明示的に承認した。固定pullはexit 0で完了し、直後のsanitized exact-tag inspectは`linux` / `amd64`、local image ID `sha256:4ada13d4258db3809cbff56d605f80af8383bf1f823168d0518d8dce799e7cf0`、唯一のrepository digest `node@sha256:4ada13d4258db3809cbff56d605f80af8383bf1f823168d0518d8dce799e7cf0`を観測した。Disposable configは削除済みで、再pull、login、credential、別image、build、control実行は行っていない。このbootstrap observationはmissing local-tag blockerだけを解消し、doctor inventory、exact-input採用、runtime enforcement、profile-control Observedを確立しない。次のfresh `continue-repository-work` invocationは承認済みsource snapshotを再検証してfixed doctorをちょうど1回実行する。
+
+Runtime-template compatibility correction (2026-07-18): 2回の最初のstep failureは外部runtime停止ではなく、固定doctor formatがDocker 29.6.1非対応のGo-template `dict` helperを使用したことが原因だった。Credential-emptyの固定CLI診断ではclient/server `29.6.1`へ到達できた。Doctorを`json`-only canonical formatへremediateし、unit/static regressionを追加した後の一回限定実行は`runtime-version`を完了した。現在のfailureは2番目のexact local image inspectであり、`node:20.18.2-bookworm-slim`のlocal no-pull inputが利用できない。Candidate inventoryとprofile-control/matrix Observedは未取得のままである。
+
+Fresh compatibility re-review update (2026-07-18): [runtime-template compatibility independent re-review](reviews/m4-execution-profiles-runtime-template-compatibility.md)は現在の`json`-only doctor bytesをstatic/unit gateで承認した。Doctorは再実行せず、exact input、build、controls、runtime enforcement、Observedを承認していない。次のgateにはproject humanによるreview済みoffline exact local base inputの供給または復元が必要である。
+
+Post-bootstrap fixed doctor update (2026-07-18): fresh workerはreview済みaggregate/source/package/toolchain SHA-256を再検証し、`npm run m4:verify`（13 files / 115 tests）後に`continue-repository-work` standing authorizationを使用して`npm run m4:doctor`をちょうど1回実行した。これは別のhuman reviewではない。Doctorは3 stepすべてを完了して`accepted`となり、client/server `29.6.1`、exact tag `node:20.18.2-bookworm-slim`、base/local digest `sha256:4ada13d4258db3809cbff56d605f80af8383bf1f823168d0518d8dce799e7cf0`、`linux` / `amd64`、base environment keys `PATH`、`NODE_VERSION`、`YARN_VERSION`をsanitized candidate inventoryとして観測した。Environment value、stderr、raw error、host path、credentialは保存していない。Pull/build/create/start/run/controlは実行せず、entry sourceは直後に通常のfail-closed状態へ戻した。
+
+Exact-input proposal update (2026-07-18): accepted doctor candidateをversion管理された`containers/profile-control/image-input.json`へbindし、固定4 staging filesのrepository bytesからper-file SHA-256とordered aggregate `sha256:81d6cfee361eee3f211f1a296626b335979281eff617319fab39a1a989146a03`を再計算した。Exact-key/fixed-value validator、substitution negative test、fixed host-backendとoffline build後のprofile binding gate proposalを追加済みで、fresh independent read-only review待ちである。これはexact-input adoption、build approval、built-image digest、`profile.json`、runtime enforcement、Observedを確立しない。
+
+Exact-input independent review update (2026-07-18): [fresh independent review](reviews/m4-execution-profiles-exact-input-contract.md)はaccepted doctor candidateからversioned base/environment inputへのtraceと、固定4 staging filesのsize/per-file SHA-256/ordered aggregateを独立再計算してacceptした。一方、fixed host-backend/runtime contractはB-11/B-12でblockedとした。Profile pre-start inspectがDocker `29.6.1`で利用できない`dict` helperを残し、pre-build version stepがserver-only outputのpayloadを検証せずexit 0だけでbuildへ進めるためである。Exact-input adoption、image build、`profile.json`、controls、runtime enforcement、Observedは引き続き未承認・未実行である。
+
+状態: **Expected-only contract と ADR-0001 承認済み。B-03/B-04/B-07は独立read-only re-reviewでclosureし、static/unit implementation gateは承認済み。固定doctor remediationの独立re-reviewはB-08/B-10をclosureし、canonical-byte remediationのfresh独立read-only re-reviewはB-09をclosureした。Runtime-template compatibility correctionもfresh独立read-only re-reviewで承認され、現在のfixed doctor static/unit gateは承認済み。Post-bootstrap fixed doctorはreview済みbytesでaccepted candidate inventoryを取得済み。Exact-input proposalは実装済み・fresh independent read-only review待ちで、adoption、image build、controls、runtime enforcementは未承認・未実行、profile-control Observedは未実測、experiment-matrix route Observedは変更なし**。プロジェクトの human reviewer が 2026-07-17 に contract を明示的に承認した。contract は [M4 execution profiles](m4-execution-profiles.md)、exact-input proposalは[M4 exact-input proposal](m4-execution-profiles-exact-input.md)、承認判断は [M4 contract independent review](reviews/m4-execution-profiles-contract.md)、元の実装review判断は [M4 implementation independent review](reviews/m4-execution-profiles.md)、B-01〜B-06 remediation判断は[M4 remediation independent re-review](reviews/m4-execution-profiles-remediation.md)、現在のstatic/unit gate判断は[M4 input-binding remediation independent re-review](reviews/m4-execution-profiles-input-binding-remediation.md)、元のdoctor gate判断とremediation handoffは[fixed doctor boundary independent review](reviews/m4-execution-profiles-doctor-boundary.md)、B-08/B-10判断は[doctor remediation independent re-review](reviews/m4-execution-profiles-doctor-boundary-remediation.md)、B-09判断とdoctor実行履歴は[canonical-byte remediation independent re-review](reviews/m4-execution-profiles-doctor-canonical-bytes-remediation.md)、現在のdoctor bytesとpost-review execution handoffは[runtime-template compatibility independent re-review](reviews/m4-execution-profiles-runtime-template-compatibility.md)、control/route を恒久的に分離する判断は [ADR-0001](decisions/0001-separate-profile-controls-from-route-evidence.md)に記録している。Doctorはfixed 3 command、pull/build/create/start/runなし、通常時のDocker access前`M4_EXECUTION_NOT_APPROVED`、step 2/3 identity cross-binding、structured key-only framing、original-byte canonical comparisonを維持する。`continue-repository-work`のstanding authorizationを一回限定実行の承認に使用したが、これは別のhuman reviewが行われたことを意味しない。次のtaskは`prompts/reviews/m4-execution-profiles-exact-input-contract-review.md`に従うfresh independent read-only reviewである。Image buildとcontainer control実行はそれぞれさらに後続の明示的承認を必要とする。
+
+Current exact-input status (supersedes the exact-input pending/next-task clauses in the preceding status paragraph): **base/environment trace and repository staging bytes independently accepted; B-11/B-12 closed for static/unit; base/staging/fixed-backend contract approved; exact-input production adoption, production backend, image build, controls, runtime enforcement, and all profile-control/route Observed remain unapproved or unmeasured**. [Fresh independent read-only re-review](reviews/m4-execution-profiles-exact-input-backend-remediation.md)はDockerを実行せず、新しいblocking findingなしでこの判断を記録した。次のtaskはreview済みsnapshotとfixed command planだけへbindするproduction offline-build backendのnon-executing implementation contractと独立review promptを作ることである。Production backend実装・review・別途記録するexecution gateより前にimage buildを実行せず、profile bindingとcontainer control実行も後続gateのままとする。
+
+Offline-build backend contract handoff (2026-07-18; supersedes the current-next-task clause above): [`prompts/m4-execution-profiles-offline-build-backend.md`](../prompts/m4-execution-profiles-offline-build-backend.md)は、accepted snapshot、branded layout、fixed 3-command image build planだけを受けるbuild-only executorとproduction host backendのnon-executing implementation boundaryを固定した。通常entryは`M4_EXECUTION_NOT_APPROVED`を維持し、production backendをimport/construct/exportしない。独立review scopeは[`prompts/reviews/m4-execution-profiles-offline-build-backend-review.md`](../prompts/reviews/m4-execution-profiles-offline-build-backend-review.md)に固定済みである。次のtaskはimplementation promptに従うstatic/unit実装であり、Docker、image build、profile binding、control executionは実行しない。
+
+Offline-build backend implementation update (2026-07-18; supersedes the current-next-task clause above): accepted snapshot、branded fixed layout、review済み3-command planだけへbindしたbuild-only executor、canonical sanitized build result、production host filesystem/process/cleanup backendをnon-executing static/unit境界で実装した。通常entry/package rootはbackendをimport/construct/exportせず、`M4_EXECUTION_NOT_APPROVED`を維持する。Docker、image build、profile binding、control executionは実行していない。次のtaskは[`prompts/reviews/m4-execution-profiles-offline-build-backend-review.md`](../prompts/reviews/m4-execution-profiles-offline-build-backend-review.md)に従うfresh independent read-only reviewである。Offline build execution、built-image digest、`profile.json`、controls、runtime enforcement、Observedは別gateのままである。
+
+Offline-build backend independent review update (2026-07-18; supersedes the current-next-task clause above): [fresh independent read-only review](reviews/m4-execution-profiles-offline-build-backend.md)はaccepted input/fixed plan不変性とbuild-only filesystem/activation boundaryをacceptしたが、production backend static/unit gateをB-13〜B-15でblockした。Known synthetic built-image placeholderの受理、canonical resultのfailure/step不整合受理、production process failure flagsの非monotonicなevent-orderがblockerである。次のtaskは[`prompts/m4-execution-profiles-offline-build-result-remediation.md`](../prompts/m4-execution-profiles-offline-build-result-remediation.md)に従うDocker非実行のresult/process-order remediationである。そのfresh independent re-reviewと別途記録するexecution gateより前にoffline buildを実行せず、built-image/profile bindingとcontrol executionも後続gateのままとする。
+
+Offline-build result remediation implementation update (2026-07-18; supersedes the current-next-task clause above): B-13のknown synthetic digest rejection、B-14のfailure/completed-step/version/digest exact matrix、B-15のmonotonic process first-failure latchとcontradictory backend framing rejectionをDocker非実行のstatic/unit境界で実装した。Accepted base/staging input、fixed plan、通常の`M4_EXECUTION_NOT_APPROVED`境界は変更していない。次のtaskは[`prompts/reviews/m4-execution-profiles-offline-build-result-remediation-review.md`](../prompts/reviews/m4-execution-profiles-offline-build-result-remediation-review.md)に従うfresh independent read-only re-reviewである。そのreviewと別途記録するexecution gateより前にoffline buildを実行せず、built-image/profile bindingとcontrol executionも後続gateのままとする。
+
+Offline-build result remediation re-review update (2026-07-18; supersedes the current-next-task clause above): [fresh independent read-only re-review](reviews/m4-execution-profiles-offline-build-result-remediation.md)はB-13/B-14/B-15をstatic/unit境界でclosureし、production offline-build backend static/unit gateを新しいblocking findingなしで承認した。Docker、offline build、built-image digest、profile binding、controls、runtime enforcement、Observedは実行・承認していない。次のtaskはreview済みsource snapshot、exact run ID/layout/plan、side-effect/cleanup境界、sanitized result、post-run restoration/verificationを固定する一回限定offline-build execution gateの作成であり、そのtask自体ではDockerを実行しない。
+
+Offline-build execution-gate definition update (2026-07-18; supersedes the current-next-task clause above): [`prompts/m4-execution-profiles-offline-build-execution.md`](../prompts/m4-execution-profiles-offline-build-execution.md)はreview済みsource manifest、fixed run ID `m4-offline-build-20260718-01`、exact repository-owned layout/tag/plan、review対象temporary activation source、standing authorizationで実行するexact command 1回、sanitized result、tag/owned-state limitation、ordinary source/compiled output restorationを固定した。Activation sourceはDocker非実行でtypecheck/compileされ、hash確認後にordinary fail-closed entryへ戻した。Gate candidateは未承認・未実行である。次のtaskは[`prompts/reviews/m4-execution-profiles-offline-build-execution-gate-review.md`](../prompts/reviews/m4-execution-profiles-offline-build-execution-gate-review.md)に従うfresh independent read-only reviewである。そのreviewより前にtemporary activation、Docker、offline buildへ進まず、profile bindingとcontrolsも後続gateのままとする。
+
+Offline-build execution-gate independent review update (2026-07-18; supersedes the current-next-task clause above): [fresh independent read-only review](reviews/m4-execution-profiles-offline-build-execution-gate.md)はreview済みsource/staging/activation/restoration hashes、fixed run/layout/tag、accepted snapshot/plan/backend identity、3-command side-effect/cleanup、canonical result、one-time/no-retry semanticsを独立照合し、新しいblocking findingなしでexact one-time execution gateを承認した。Reviewはtemporary activation、Docker、offline buildを実行していない。次のtaskはfresh workerが[`prompts/m4-execution-profiles-offline-build-execution.md`](../prompts/m4-execution-profiles-offline-build-execution.md)に従い、snapshotとfixed run-root absenceを再検証してstanding authorizationで`npm run --silent m4:build`をちょうど1回実行し、ordinary source/compiled outputを即時復元してcanonical sanitized resultを記録することである。これは別human reviewを意味しない。Profile binding、controls、runtime enforcement、Observedは後続gateのままである。
+
+One-time offline-build execution follow-up (2026-07-18; supersedes the current-next-task clause above): fresh workerはreview済みsnapshotとrun-root absenceを再検証し、`continue-repository-work` standing authorizationを使用して`npm run --silent m4:build`をちょうど1回実行した。これは別human reviewを意味しない。Commandはexit 1、canonical resultは`inconclusive / CLEANUP_FAILURE`で、`stage-build-context`、`doctor`、`build`、`inspect-image`の4 step、client/server `29.6.1`を記録したが、`builtImageDigest`は`null`である。Fixed planにimage removalはなく、inspect済みfixed tagは後続recovery gateへ残した。Post-run Docker commandやretryは実行していない。Fixed run rootは残り、`staging`と`docker-config/config.json`はなく、`docker-config`にruntime-created buildx/token-seed stateが残った。Ordinary source/compiled outputはreview済みhashへ即時復元し、post-restoration `m4:verify`（17 files / 176 tests）とroot `check`（84 files / 507 tests）は成功した。次のtaskはexisting fixed tagとretained run rootだけへbindし、exact digest inspect最大1回とidentity-checked owned-state treatmentを固定するDocker非実行のpost-cleanup-failure recovery contractと独立review promptを作ることである。Profile binding、controls、runtime enforcement、Observedは引き続き未確立である。
+
+Offline-build recovery contract handoff (2026-07-18; supersedes the current-next-task clause above): [`prompts/m4-execution-profiles-offline-build-recovery.md`](../prompts/m4-execution-profiles-offline-build-recovery.md)と[`prompts/reviews/m4-execution-profiles-offline-build-recovery-review.md`](../prompts/reviews/m4-execution-profiles-offline-build-recovery-review.md)を作成した。Recoveryはrecorded `CLEANUP_FAILURE`、fixed run ID/tag、retained exact treeに限定し、exact local image-ID inspectを最大1回だけ許す。Runtime-created stateのcontentsはread/hashせず、pre/post identityをprivateに検証して全outcomeで保持する。次のtaskはrecovery-only executor/result/production host backendのDocker非実行static/unit実装である。そのfresh independent reviewと別途記録するone-time recovery execution gateより前にDockerへ進まず、state deletion、profile binding、controls、runtime enforcement、Observedも行わない。
+
+Offline-build recovery implementation update (2026-07-18; supersedes the current-next-task clause above): exact recorded `CLEANUP_FAILURE`、fixed run ID/tag、retained tree inventoryへbindしたrecovery-only executor、canonical `lab-profile-offline-build-recovery-result/v1`、read-only pre/post identity validator、single-inspect production host backendをDocker非実行のstatic/unit境界で実装した。Runtime-created file contentsはread/hash/serializeせず、stateは全outcomeで`retained`のままにする。通常entry/package rootはproduction recovery backendをimport/construct/exportせず、Docker、state deletion、profile binding、controls、runtime enforcement、Observedは実行・確立していない。次のtaskは[`prompts/reviews/m4-execution-profiles-offline-build-recovery-review.md`](../prompts/reviews/m4-execution-profiles-offline-build-recovery-review.md)に従うfresh independent read-only reviewである。そのreviewと別途記録するone-time recovery execution gateより前にDockerへ進まない。
+
+Offline-build recovery independent review update (2026-07-18; supersedes the current-next-task clause above): [fresh independent read-only review](reviews/m4-execution-profiles-offline-build-recovery.md)はrecorded failed-build/run/tag binding、retained content non-read/retention-only treatment、single-inspect/digest/result、ordinary activation boundaryをacceptしたが、production recovery backend static/unit gateをB-16/B-17でblockした。Exact mode checkがsetuid/setgid/sticky bitsを無視することと、close未観測のactive childが残るabnormal-close pathでpost-attempt identity validationを成功扱いできることがblockerである。次のtaskは[`prompts/m4-execution-profiles-offline-build-recovery-remediation.md`](../prompts/m4-execution-profiles-offline-build-recovery-remediation.md)に従うDocker非実行のexact-mode/process-settlement remediationである。そのfresh independent re-reviewと別途記録するone-time recovery execution gateより前にDockerへ進まず、retained state deletion、built-image/profile binding、controls、runtime enforcement、Observedも後続gateのままとする。
+
+### Goal
+
+同一のimmutable container inputとharmless control fixtureをpermissive/constrainedの固定runtime policyで実行し、environment、file、write、fixed loopback、fixed child、result channelのexposure/denialをhost inspectionとcontainer内evidenceの両方で検証する。Profile controlをadapter route、experiment-matrix route Observed、presentation evidenceへ昇格しない。
+
+### Prerequisites
+
+- M1、対象となるM1 schema、M3 collector/report gateがindependent review approved
+- [M4 execution profiles](m4-execution-profiles.md)と[ADR-0001](decisions/0001-separate-profile-controls-from-route-evidence.md)がhuman review approved
+- root `npm run check` success
+- approved host orchestrator、固定Docker CLI boundary、locally available digest-pinned base inputが明示される
+- Expected profile/control manifestsを実験前にversion controlし、Observed欄を未実測のままにする
+
+### Read first
+
+- root `AGENTS.md`、[index.md](index.md)、このM4定義、[codex-workflow.md](codex-workflow.md)
+- [M4 execution profiles](m4-execution-profiles.md)、[threat-model.md](threat-model.md)、[architecture.md](architecture.md)、[experiment-matrix.md](experiment-matrix.md)
+
+### Fixed control and output contract
+
+- Control IDsは`m4-profile-control-p`と`m4-profile-control-c`だけで、versioned `lab-profile-control-manifest/v1`を使う
+- Profile schemaは`lab-execution-profile/v1`、control evidenceは`lab-profile-control-evidence/v1`
+- 両profileは同じimage digest、Node.js version、fixture/control bytes、timeout、resource limit、control orderを使う
+- 差分はreview済みenvironment、canary file exposure、scratch write、loopback service、child runtime policyだけに限定する
+- 両profileともnon-root、read-only root、capability drop all、no-new-privileges、external networkなし、host home/credential/agent/runtime socket mountなしを維持する
+- Host inspection、immutable control input、canonical control evidence、completion、Expected/Observed comparisonをrunごとの別directoryに保存する
+
+### In scope
+
+- `profiles/**`
+- `containers/profile-control/**`、`containers/permissive/**`、`containers/constrained/**`
+- fixed host orchestrator、profile/control schema validator、static/unit/integration tests
+- profile control専用のignored `results/runs/m4-profile-controls/**` contractと必要最小限のroot script/config
+- fixed Docker create/inspect/start/copy-or-result/cleanup command construction
+- exact mount/environment/user/network/capability/security/resource/command inspection
+- canonical bounded control evidence、completion、Expected/Observed comparison
+
+### Out of scope
+
+- M2 adapter sourceまたはM1/M3 event/schemaの変更
+- npm lifecycle fixtureの実行、M2-A evidence-transfer boundaryの回避
+- adapter/profile route run、baseline、experiment-matrix route Observed更新
+- external network/image pull/package install、real credential、host home、SSH agent、runtime socket exposure
+- arbitrary image/command/argv/mount/environment/path/runtime option
+- M5 artifact pipeline、M6 sanitized examples/evidence map、publication
+
+### Expected outcome contract
+
+- Permissive: environment canary、canary file、disposable scratch write、fixed loopback protocol、fixed child Node.jsがsuccess
+- Constrained: environmentはabsent、canary fileはabsent、scratch writeはpermission/runtime boundaryでfailure、fixed loopback targetはunreachable、fixed childはNode/runtime policyでfailure
+- Source mutation controlは両profileでdenied、result/evidence writeは両profileでsuccess
+- Constrained childが実enforcementできなければExpected mismatchのまま残し、`manifest-skip`へ事後変更しない
+- Access failureはvalid observationになり得るが、missing inspection/evidence、schema/transfer/completion errorはinconclusive
+
+### Deliverables
+
+- approved `prompts/m4-execution-profiles.md`と後続独立review prompt
+- versioned permissive/constrained profile definitionsとexact-key validators
+- same-image profile-control fixture/container inputとfixed host orchestrator
+- static policy tests、schema/unit negative tests、approved-host integration tests
+- bounded canonical control evidence、host inspection projection、comparison、run validity
+- documentation/status update。Matrix route Observedとpresentation evidenceは変更しない
+
+### Acceptance criteria
+
+- Profile/control/evidence inputはunknown key、Proxy、accessor、custom prototype、duplicate、invalid limit、raw path/valueをfail closedに拒否する
+- Fixed orchestratorはuser指定image、command、argv、cwd、mount、environment、path、Docker optionを受け付けない
+- Docker CLI configはdisposableでhost registry credentialを読まず、build/runはexternal networkなし、runtimeは`--pull never`相当である
+- Start前のfull inspectがexact image digest、command、non-root user、read-only root、network、mount、environment、capability、security option、resource limitを検証する
+- Host home、repository、SSH agent、credential store、Docker/runtime socket、device、host PID/network namespaceをmount/forwardしない
+- 両profileがsame image/control digestを使い、別run IDと別writable stateを持つ
+- Expected tableの全controlが順番どおり1回観測され、raw canary/file/child/loopback payloadを保存しない
+- Constrainedのscratch/child denialはoperationを実行したfailureとして観測し、manifest skipまたは未実行をruntime denialに数えない
+- Permissiveもsource writeとexternal networkを許可せず、profile名をhost-wide accessと表現しない
+- Host inspectionとcontainer controlの片方だけではcompleteにせず、missing/invalid/timeout/transfer failureをinconclusiveにする
+- Expected mismatchを保持し、profile、control fixture、Expected、Observedを自動補正しない
+- Control evidenceをadapter route Observed、matrix route Observed、M6 presentation evidenceへ登録しない
+- Static/unit/integration testsとroot regressionが成功し、independent reviewがcomplete runtime evidenceを確認する
+
+### Planned implementation verification commands
+
+M4 implementationはroot `package.json`に次のexact scriptを追加してから実行する。`doctor`、`build`、`run:controls`はapproved host orchestratorとlocally available pinned inputがない環境では実行せず、M4 gateをpending/blockedのままにする。
+
+```sh
+npm run m4:typecheck
+npm run m4:static
+npm run m4:test
+npm run m4:verify
+npm run m4:doctor
+npm run m4:build
+npm run m4:run:controls
+npm run m4:verify:evidence
+npm run check
+git diff --check
+git status --short
+```
+
+### Risks
+
+- Separate image/input driftをprofile differenceと誤認する
+- Container option、manifest skip、target absenceをruntime enforcementと誤認する
+- Result mount、Docker socket、host credential/configをcontainerへ過剰公開する
+- Permissiveをhost-wide privilege、constrainedをcomplete sandboxと表現する
+- Child/loopbackの単一controlを一般的なprocess/network isolationへ過剰一般化する
+- Unit/static test passだけでruntime enforcementをapproveする
+
+### Human review points
+
+- Proposed ADR、same-image requirement、profile/control schemaとExpected table
+- Fixed Docker argument constructionとdisposable CLI config
+- Image staging、base digest、offline build、mount/environment inventory
+- Start前inspectとcontainer内control evidenceの独立性
+- Node/runtime child denial、read-only write denial、loopback target absenceの正確な表現
+- Raw-data policy、transfer/completion、inconclusive semantics、control/route evidence分離
