@@ -1,4 +1,5 @@
-import { spawn } from "node:child_process";
+import { spawn, type ChildProcessByStdio } from "node:child_process";
+import type { Readable } from "node:stream";
 
 import type { FixedChildTarget } from "../types.js";
 import type { AttemptExecutionResult } from "./types.js";
@@ -13,16 +14,35 @@ export function executeFixedChildAttempt(
   },
 ): Promise<AttemptExecutionResult> {
   return new Promise((resolve) => {
-    const child = spawn(
-      trustedRuntime.nodeExecutable,
-      [trustedRuntime.fixedChildScriptPath],
-      {
-        shell: false,
-        env: {},
-        stdio: ["ignore", "pipe", "pipe"],
-        windowsHide: true,
-      },
-    );
+    let child: ChildProcessByStdio<null, Readable, Readable>;
+    try {
+      child = spawn(
+        trustedRuntime.nodeExecutable,
+        [trustedRuntime.fixedChildScriptPath],
+        {
+          shell: false,
+          env: {},
+          stdio: ["ignore", "pipe", "pipe"],
+          windowsHide: true,
+        },
+      );
+    } catch {
+      resolve({
+        outcome: "failure",
+        normalizedErrorCode: "CHILD_PROCESS_FAILURE",
+        beforeHash: null,
+        afterHash: null,
+        details: {
+          kind: "child",
+          exitCode: null,
+          timedOut: false,
+          responseVerified: false,
+          stdoutBytes: 0,
+          stderrBytes: 0,
+        },
+      });
+      return;
+    }
     const stdoutChunks: Buffer[] = [];
     let stdoutBytes = 0;
     let stderrBytes = 0;
