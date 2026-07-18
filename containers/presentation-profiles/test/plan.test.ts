@@ -94,7 +94,7 @@ describe("P2 selected profile plan", () => {
       expect(mounts.slice(1)).toEqual([
         `type=bind,src=${path.join(plan.resultRoot, "result")},dst=/tmp/p2-result`,
         `type=bind,src=${path.join(plan.resultRoot, "tool")},dst=/tmp/p2-tool`,
-        `type=bind,src=${path.join(plan.resultRoot, "direct-write")},dst=/tmp/p2-direct-write`,
+        `type=bind,src=${path.join(plan.resultRoot, "direct-write")},dst=/tmp/p2-direct-write${plan.profileId === "constrained" ? ",readonly" : ""}`,
       ]);
     }
   });

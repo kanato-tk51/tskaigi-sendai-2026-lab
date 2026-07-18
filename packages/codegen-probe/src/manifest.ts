@@ -12,6 +12,7 @@ import {
   ARTIFACT_TARGET_ID,
   ATTEMPT_IDS,
   ATTEMPT_TIMEOUT_MS,
+  CANARY_RELATIVE_PATH,
   CANARY_FILE_TARGET_ID,
   CWD_ID,
   ENVIRONMENT_TARGET_ID,
@@ -236,6 +237,48 @@ export function createFixedRuntimeBindings(
         kind: "path",
         rootPath: runRoot,
         relativePath: "probe-output/direct-write-marker.json",
+      },
+      {
+        targetId: LOOPBACK_TARGET_ID,
+        kind: "loopback-http",
+        address: "127.0.0.1",
+        port: loopbackPort,
+      },
+      { targetId: CHILD_TARGET_ID, kind: "fixed-child" },
+    ],
+  };
+}
+
+export function createSelectedProfileRuntimeBindings(
+  loopbackPort: number,
+): ProbeRuntimeBindings {
+  return {
+    schemaVersion: PROBE_RUNTIME_BINDINGS_SCHEMA_VERSION,
+    bindings: [
+      {
+        targetId: EVENT_TARGET_ID,
+        kind: "path",
+        rootPath: "/tmp/p2-result",
+        relativePath: SEGMENT_RELATIVE_PATH,
+      },
+      { targetId: ENVIRONMENT_TARGET_ID, kind: "environment" },
+      {
+        targetId: CANARY_FILE_TARGET_ID,
+        kind: "path",
+        rootPath: "/tmp/p2-tool",
+        relativePath: CANARY_RELATIVE_PATH,
+      },
+      {
+        targetId: SOURCE_HASH_TARGET_ID,
+        kind: "path",
+        rootPath: "/opt/p2/input",
+        relativePath: INPUT_SNAPSHOT_RELATIVE_PATH,
+      },
+      {
+        targetId: DIRECT_OUTPUT_TARGET_ID,
+        kind: "path",
+        rootPath: "/tmp/p2-direct-write",
+        relativePath: "direct-write-marker.json",
       },
       {
         targetId: LOOPBACK_TARGET_ID,

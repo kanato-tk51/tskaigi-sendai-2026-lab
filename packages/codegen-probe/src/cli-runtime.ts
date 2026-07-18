@@ -14,6 +14,7 @@ import { AdapterError } from "./errors.js";
 import {
   createFixedManifest,
   createFixedRuntimeBindings,
+  createSelectedProfileRuntimeBindings,
   validateManifestContract,
 } from "./manifest.js";
 import type { CoordinatorInputs } from "./types.js";
@@ -34,11 +35,6 @@ export async function createCliRuntime(): Promise<CliRuntime> {
     throw new AdapterError("M2E_VERSION_MISMATCH");
   }
   const inputs = readCoordinatorInputs();
-  if (inputs.profileId !== null) {
-    // The selected tuple is fixed before session creation, but its separated
-    // event/tool/direct-write bindings belong to the next P2 slice.
-    throw new AdapterError("M2E_CONTEXT_INVALID");
-  }
   const packageRoot = path.resolve(
     fileURLToPath(new URL("../", import.meta.url)),
   );
@@ -50,7 +46,9 @@ export async function createCliRuntime(): Promise<CliRuntime> {
   validateManifestContract(manifest, inputs.variant, inputs.scenarioId);
   const validated = validateProbeConfiguration(
     manifest,
-    createFixedRuntimeBindings(inputs.runRoot, inputs.loopbackPort),
+    inputs.profileId === null
+      ? createFixedRuntimeBindings(inputs.runRoot, inputs.loopbackPort)
+      : createSelectedProfileRuntimeBindings(inputs.loopbackPort),
   );
   const prepared = await prepareProbeConfiguration(validated);
   const session = await createProbeSession(prepared);

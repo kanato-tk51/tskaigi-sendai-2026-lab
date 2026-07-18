@@ -54,7 +54,10 @@ export function readCoordinatorInputs(): CoordinatorInputs {
     runRoot,
     loopbackPort,
     variant: variant as CoordinatorInputs["variant"],
-    outDir: path.join(runRoot, path.dirname(OUTPUT_RELATIVE_PATH)),
+    outDir:
+      scenarioContext.profileId === null
+        ? path.join(runRoot, path.dirname(OUTPUT_RELATIVE_PATH))
+        : "/tmp/p2-tool/out",
   });
 }
 

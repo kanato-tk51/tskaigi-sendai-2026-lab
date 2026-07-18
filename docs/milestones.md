@@ -1208,8 +1208,8 @@ git status --short
 ## Presentation MVP critical path
 
 Status: **active; P1 complete; P2 Expected contract and non-executing create
-plan complete; codegen exact context binding complete and its separated runtime
-binding next**.
+plan complete; codegen binding/projection complete and its fixed staging runner
+next**.
 
 This section supersedes every earlier `next task` or `current-next-task` clause
 for scheduling. The preceding M4 history remains an accurate record of work and
@@ -1309,11 +1309,13 @@ pre-session scenario/profile binding, and small sanitized result projection.
 
 Codegen binding update (2026-07-19): M2-E validates the two exact selected
 scenario/run/profile tuples and binds the selected scenario ID before manifest
-or session creation while preserving the local M2-E path. Selected execution
-remains fail closed until its separated event/tool/direct-write bindings exist.
-No Docker command, profile run, matrix update, or Observed value was produced.
-The next task is that codegen multi-root runtime binding and its small result
-projection; Vite remains unchanged.
+or session creation while preserving the local M2-E path. Its selected bindings
+separate event, tool/canary, read-only source snapshot, and direct-write roots;
+the constrained plan makes the last root read-only. The small sanitized
+projection validates the exact tuple/order/counts and preserves mismatch or
+inconclusive state. No Docker command, profile run, matrix update, or Observed
+value was produced. The next task is the fixed codegen staging runner; Vite
+remains unchanged.
 
 ### P3 — Minimal artifact demo
 

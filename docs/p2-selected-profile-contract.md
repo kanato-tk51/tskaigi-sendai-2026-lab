@@ -1,9 +1,9 @@
 # P2 selected profile evidence contract
 
 Status: **Expected and the non-executing four-scenario Docker create plan are
-fixed; codegen exact context binding is implemented fail-closed; staging,
-profile runtime bindings, execution, and all selected Observed remain
-unmeasured**.
+fixed; codegen exact context, separated runtime bindings, and sanitized
+projection are implemented; staging, execution, and all selected Observed
+remain unmeasured**.
 
 Contract date: 2026-07-19
 
@@ -143,9 +143,12 @@ slice is the repository-owned staging runner that binds the selected scenario
 and profile before adapter session creation and emits the small sanitized result
 projection.
 
-Codegen binding update (2026-07-19): M2-E now accepts only the exact
+Codegen binding update (2026-07-19): M2-E accepts only the exact
 `codegen-observe-p/c` scenario, run, and profile tuples recorded by this
 contract. It binds the scenario ID before manifest/session creation and keeps
-the existing local M2-E context unchanged. Selected execution deliberately
-fails closed until the separate event/tool/direct-write runtime bindings are
-implemented; therefore this update creates no profile observation.
+the existing local M2-E context unchanged. Its selected runtime binding now
+separates the event, tool/canary, read-only source snapshot, and direct-write
+roots; the constrained Docker plan mounts the direct-write root read-only. A
+small projection retains exact identity/order/counts and separates expected
+matches, mismatches, and inconclusive streams without raw fields. The staging
+runner and executor remain absent, so this update creates no profile observation.
