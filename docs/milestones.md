@@ -1207,8 +1207,8 @@ git status --short
 
 ## Presentation MVP critical path
 
-Status: **active; P1 evidence inventory complete and independently approved;
-P2 contract next**.
+Status: **active; P1 complete; P2 Expected contract complete and minimal runner
+implementation next**.
 
 This section supersedes every earlier `next task` or `current-next-task` clause
 for scheduling. The preceding M4 history remains an accurate record of work and
@@ -1283,15 +1283,16 @@ static/unit results to matrix/profile Observed.
 
 ### P2 — Selected profile evidence
 
-After P1 review, create a Docker-non-executing exact contract that resolves the
-codegen adapter-to-scenario mismatch without filtering observed events and fixes
-the four selected run boundaries. Then implement the smallest fixed runner,
-review the exact implementation/runtime operation, and run only
-`vite-observe-p/c` and `codegen-observe-p/c`. Each pair must use identical image
-and fixture bytes, fixed commands/arguments, non-root execution, read-only
-source, dedicated writable result paths, bounded time/output, offline runtime,
-and no runtime-socket forwarding. Record environment/file/write/loopback/child
-attempts separately and preserve mismatch or unavailable enforcement.
+The Docker-non-executing
+[`P2 selected profile evidence Expected contract`](p2-selected-profile-contract.md)
+resolves the codegen adapter-to-scenario mismatch by binding the complete
+reviewed `5 / 6 / 1 / 12` producer before execution. Implement the smallest
+fixed runner, perform one focused non-executing review of its exact command,
+then run only `vite-observe-p/c` and `codegen-observe-p/c`. Each pair uses
+identical image and fixture bytes, fixed commands/arguments, non-root execution,
+read-only source, dedicated writable result paths, bounded time/output, offline
+runtime, and no runtime-socket forwarding. Record environment/file/write/
+loopback/child attempts separately and preserve mismatches.
 
 Do not add other matrix rows, watch/cache/parallel variants, or a generic M4
 recovery dependency to this task.
