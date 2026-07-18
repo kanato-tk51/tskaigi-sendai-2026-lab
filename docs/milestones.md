@@ -1207,8 +1207,8 @@ git status --short
 
 ## Presentation MVP critical path
 
-Status: **active; P1 complete; P2 Expected contract complete and minimal runner
-implementation next**.
+Status: **active; P1 complete; P2 Expected contract and non-executing create
+plan complete; fixed staging runner and adapter binding next**.
 
 This section supersedes every earlier `next task` or `current-next-task` clause
 for scheduling. The preceding M4 history remains an accurate record of work and
@@ -1296,6 +1296,15 @@ loopback/child attempts separately and preserve mismatches.
 
 Do not add other matrix rows, watch/cache/parallel variants, or a generic M4
 recovery dependency to this task.
+
+Implementation update (2026-07-19):
+`containers/presentation-profiles/src/plan.ts` fixes an argument-free ordered
+four-scenario plan, the pinned local image reference, pair-identical staging and
+semantic commands, separate run roots, and offline/non-root/read-only Docker
+`create` arguments. Dedicated typecheck and five unit tests pass. The plan does
+not expose an executor, and no staging runner, Docker operation, profile
+Observed, or matrix update exists yet. The next task is the fixed staging runner,
+pre-session scenario/profile binding, and small sanitized result projection.
 
 ### P3 — Minimal artifact demo
 

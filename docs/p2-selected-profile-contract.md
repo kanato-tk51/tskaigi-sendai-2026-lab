@@ -1,7 +1,8 @@
 # P2 selected profile evidence contract
 
-Status: **Expected fixed; runner implementation and all selected Observed remain
-unmeasured**.
+Status: **Expected and the non-executing four-scenario Docker create plan are
+fixed; staging, adapter profile binding, execution, and all selected Observed
+remain unmeasured**.
 
 Contract date: 2026-07-19
 
@@ -125,3 +126,18 @@ Next implementation scope is limited to the fixed scenario binding, runner,
 small result projection, and relevant tests. Generic collectors, offline image
 builders, cleanup-recovery state machines, retained M4 state, P3 artifacts, and
 P4 evidence-map work are out of scope.
+
+## Implementation status
+
+`containers/presentation-profiles/src/plan.ts` now provides an argument-free,
+immutable four-scenario plan. Static/unit verification fixes the local image
+reference, pair-identical staging roots and semantic commands, separate run
+roots, and Docker `create` arguments for offline, non-root, read-only execution
+without a runtime-socket mount.
+
+This is configuration intent, not runtime evidence. The referenced staging
+runner and directories do not exist yet, no Docker command is exposed or
+executed, and `experiment-matrix.md` remains unchanged. The next implementation
+slice is the repository-owned staging runner that binds the selected scenario
+and profile before adapter session creation and emits the small sanitized result
+projection.
