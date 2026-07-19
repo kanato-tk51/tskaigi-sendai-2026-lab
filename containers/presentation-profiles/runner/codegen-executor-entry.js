@@ -8,6 +8,14 @@ import { pathToFileURL } from "node:url";
  *   profileId: string,
  *   projection: Readonly<{validity: string}>,
  * }>} EntryReceipt
+ * @typedef {Readonly<{
+ *   projection: Readonly<{
+ *     validity: "same-image" | "inconclusive",
+ *     imageId: string | null,
+ *     issues: readonly string[],
+ *   }>,
+ *   receipts: readonly EntryReceipt[],
+ * }>} EntryPair
  */
 
 export async function executeFixedCodegenEntry() {
@@ -16,13 +24,17 @@ export async function executeFixedCodegenEntry() {
   }
   const executorModulePath = "../dist/codegen-executor.js";
   const { executeFixedCodegenProfiles } = /** @type {Readonly<{
-    executeFixedCodegenProfiles(): Promise<readonly EntryReceipt[]>
+    executeFixedCodegenProfiles(): Promise<EntryPair>
   }>} */ (await import(executorModulePath));
-  const receipts = await executeFixedCodegenProfiles();
+  const pair = await executeFixedCodegenProfiles();
   process.stdout.write(
     `${JSON.stringify({
-      status: "completed",
-      scenarios: receipts.map((receipt) => ({
+      status:
+        pair.projection.validity === "same-image"
+          ? "completed"
+          : "inconclusive",
+      pair: pair.projection,
+      scenarios: pair.receipts.map((receipt) => ({
         scenarioId: receipt.scenarioId,
         profileId: receipt.profileId,
         validity: receipt.projection.validity,
