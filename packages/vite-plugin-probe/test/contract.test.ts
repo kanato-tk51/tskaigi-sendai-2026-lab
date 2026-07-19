@@ -15,7 +15,10 @@ import {
   ROUTE_IDS,
   TOOL_CHANGE_IDS,
 } from "../src/constants.js";
-import { createFixedManifest } from "../src/manifest.js";
+import {
+  createFixedManifest,
+  createSelectedProfileRuntimeBindings,
+} from "../src/manifest.js";
 import { FIXED_ADAPTER_ROOT } from "../src/paths.js";
 import { assertFixedVersionValues } from "../src/version-contract.js";
 
@@ -71,6 +74,44 @@ describe("M2-D public and fixed contract", () => {
     ).toEqual(Object.values(TOOL_CHANGE_IDS));
     expect(manifest.toolApiChanges.every((value) => value.enabled)).toBe(true);
     expect(manifest.workerId).toBeNull();
+  });
+
+  it("separates selected event, tool, source, and direct-write roots", () => {
+    const bindings = createSelectedProfileRuntimeBindings(4321).bindings;
+    expect(bindings).toEqual([
+      {
+        targetId: "vite-event-segment",
+        kind: "path",
+        rootPath: "/tmp/p2-result",
+        relativePath: "vite-coordinator.jsonl",
+      },
+      { targetId: "vite-environment-canary", kind: "environment" },
+      {
+        targetId: "vite-file-canary",
+        kind: "path",
+        rootPath: "/tmp/p2-tool",
+        relativePath: "canary/input.txt",
+      },
+      {
+        targetId: "vite-source-snapshot",
+        kind: "path",
+        rootPath: "/opt/p2/input/packages/vite-plugin-probe",
+        relativePath: "fixture/designated.ts",
+      },
+      {
+        targetId: "vite-direct-output",
+        kind: "path",
+        rootPath: "/tmp/p2-direct-write",
+        relativePath: "direct-write-marker.json",
+      },
+      {
+        targetId: "vite-loopback",
+        kind: "loopback-http",
+        address: "127.0.0.1",
+        port: 4321,
+      },
+      { targetId: "vite-fixed-child", kind: "fixed-child" },
+    ]);
   });
 
   it("rejects every exact version mismatch", () => {

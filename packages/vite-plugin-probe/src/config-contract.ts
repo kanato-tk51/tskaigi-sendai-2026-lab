@@ -133,9 +133,9 @@ export async function validateResolvedViteConfig(
     throw new AdapterError("M2D_CONFIG_INVALID");
   }
   await Promise.all([
-    assertOwnedDirectory(inputs.toolTempRoot, inputs.runRoot),
-    assertOwnedDirectory(inputs.cacheDir, inputs.runRoot),
-    assertOwnedDirectory(inputs.outDir, inputs.runRoot),
+    assertOwnedDirectory(inputs.toolTempRoot, inputs.toolRoot),
+    assertOwnedDirectory(inputs.cacheDir, inputs.toolRoot),
+    assertOwnedDirectory(inputs.outDir, inputs.toolRoot),
   ]);
 }
 
