@@ -22,6 +22,7 @@
 | P2 | Codegen観測 (`codegen-observe-p/c`) | 完了（selected-profile Observed） | `docs/p2-selected-profile-codegen-receipts.md`, `reviews/p2-selected-profile-codegen-receipts.md` | 1-shotで同一fixture同一画像、same-imageペアを受理。 |
 | P2 | Vite観測（`vite-observe-p/c`） | 条件付き完了（不可逆Inconclusive履歴） | `docs/p2-vite-completion.md`, `docs/presentation-scope.md`, `reviews/p2-vite-diagnostic-result.md` | `20260719-01`〜`20260719-03`を全て固定。`20260719-03`は`attached-start`タイムアウト由来の境界付与で、`selected Vite Observed`不成立。既存3件は更新対象外・再試行不可。 |
 | P2 | Vite追加再試行（新runID） | 完了（再試行境界明示付き） | `docs/p2-vite-completion.md`, `docs/p2-selected-profile-vite-observed.md`, `milestones.md` | `P2-V08`〜`P2-V11`の再検証は完了。再試行はADR-0002/`continue-repository-work`下で新runIDのみ許可し、`run-id`切替えと`1回のみ`実行境界は既に明示済み。 |
+| P2 | Vite独立測定世代 `20260720-01` | 完了（第4のimmutable Inconclusiveとして受容） | `p2-vite-new-measurement-diagnosis.md`, `reviews/p2-vite-new-measurement-result.md` | exact commandはstanding authorizationで1回だけ実行しexit 1、retryなし。fresh result reviewはpermissive v3 attemptと`child-launched`までのvalid progress prefixを受容したが、receipt/constrained root/Observed昇格は不成立。 |
 | P2 | Vite executionにおける残留不整合 | 完了（受容） | `reviews/p2-vite-diagnostic-remediation.md`, `reviews/p2-selected-profile-vite-observed.md` | 既知制約（`inconclusive`の明示）を残したまま、再編集・再試行を停止。 |
 | P3 | artifact demo（1回ビルド/検証/コピー/1byte改ざん拒否） | 完了 | `p3-artifact-demo.md`, `reviews/p3-artifact-demo-result.md` | `C-06/C-07`として受容済み。署名・OSegress証明の一般化はしない。 |
 | P4 | evidence-map生成と最終レビュー | 完了 | `docs/evidence-map.md`, `reviews/p4-evidence-map.md` | 3つの表、証拠境界、制限事項を固定。 |
@@ -31,12 +32,24 @@
 
 ## 次アクション（B方針）
 
+2026-07-20 update: Presentation MVP baselineとM4 bounded continuationの完了状態は
+維持する一方、ユーザー指示によりselected Viteだけを新しい`20260720-01`測定世代として
+再開した。既存3回はimmutable Inconclusiveでありretryしない。Docker-free原因診断と
+測定契約、そのfresh independent Docker-free review、後続のDocker非実行
+P2-V12/P2-V13実装、およびfresh independent execution-gate reviewは完了した。
+gate reviewはfindingなしでexact argument-free command 1回だけを承認し、retryや
+Observed昇格は承認していない。その後のfresh workerはapproved preflightを再現し、
+standing authorizationでexact commandを1回だけ実行した。exit 1のInconclusiveで、
+canonical permissive v3 attemptのみを生成し、retryしなかった。fresh Docker-free result
+reviewはこれを第4のimmutable Inconclusive attemptとして受容し、tracked presentation
+projectionだけを4件へ更新した。selected Viteとexperiment-matrix Observedは変更していない。
+
 1. ここでの状態を保守し、実行再開時は本台帳と`milestones.md`の「Frozen research track」を照合して判断する。
 2. 新規タスク開始前に、上表の状態が更新されているか確認し、
    - `完了`が`条件付き完了`へ降格されないこと
    - `条件付き保留`の項目は、再開条件と境界が台帳に記載されていること
    を明記する。
-3. 発表資料更新時は、Viteが`selected profile Observed`ではない点（3回Inconclusive）を削除せず維持する。
+3. 発表資料更新時は、Viteが`selected profile Observed`ではない点（4回Inconclusive）を削除せず維持する。
 4. 条件付き/保留項目は、GitHub Issueへ分解して
    個別完了条件を持たせる。
 
@@ -51,6 +64,7 @@
 - [ISSUE-39: M4: offline-build recovery trail更新と control-binding/runtime handoff](https://github.com/kanato-tk51/tskaigi-sendai-2026-lab/issues/39)（ローカル台帳上完了）
 - [ISSUE-40: M4: profile-control run:controls runtime enforcement gate を一回限定で定義](https://github.com/kanato-tk51/tskaigi-sendai-2026-lab/issues/40)（one-shot実行完了。exact pairは`inconclusive / COMMAND_FAILURE`で再実行不可）
 - [ISSUE-41: M4: profile-control 証拠境界の最終整合（Observed化条件を明記）](https://github.com/kanato-tk51/tskaigi-sendai-2026-lab/issues/41)（ローカル台帳上完了。profile-control非Observed、experiment-matrix route非昇格を固定）
+- [ISSUE-54: P2 Vite: selected-profile Observedを完成する（明示再開時のみ）](https://github.com/kanato-tk51/tskaigi-sendai-2026-lab/issues/54)（凍結。第4のimmutable Inconclusiveまで受容済み。新世代は明示再開とfresh gateが必要）
 
 ## 免責
 
@@ -60,6 +74,6 @@
   再検査・削除、route昇格はこの完了記録では承認しない。
 
 M4のbounded continuationはInconclusive結果と非昇格境界を受容して完了した。Presentation MVPの
-完了状態およびViteの3回Inconclusive limitationは変更していない。
+完了状態およびViteの4回Inconclusive limitationは変更していない。
 
 Next: none.

@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 import {
   closeFixedViteServerWithBackendForTest,
   createFixedViteInvocation,
+  createFixedViteProgressLineForTest,
   executeBoundedViteChildWithBackendForTest,
   executeFixedViteLifecycleWithBackendForTest,
   FixedViteRunnerError,
@@ -122,12 +123,12 @@ describe("P2 fixed Vite runner", () => {
     expect(resolveFixedViteScenario("vite-observe-p")).toEqual({
       scenarioId: "vite-observe-p",
       profileId: "permissive",
-      runId: "p2-vite-observe-p-20260719-11",
+      runId: "p2-vite-observe-p-20260720-01",
     });
     expect(resolveFixedViteScenario("vite-observe-c")).toEqual({
       scenarioId: "vite-observe-c",
       profileId: "constrained",
-      runId: "p2-vite-observe-c-20260719-11",
+      runId: "p2-vite-observe-c-20260720-01",
     });
     expect(() => resolveFixedViteScenario("codegen-observe-p")).toThrow(
       "P2_SCENARIO_INVALID",
@@ -228,6 +229,37 @@ describe("P2 fixed Vite runner", () => {
     expect(source).toContain("shell: false");
   });
 
+  it("emits only canonical bounded progress identities", () => {
+    const definition = resolveFixedViteScenario("vite-observe-p");
+    const lines = Array.from({ length: 7 }, (_, sequence) =>
+      createFixedViteProgressLineForTest(definition, sequence),
+    );
+    expect(lines.map((line) => JSON.parse(line))).toEqual(
+      [
+        "runner-entered",
+        "inputs-prepared",
+        "service-ready",
+        "child-launched",
+        "child-settled",
+        "service-settled",
+        "output-exported",
+      ].map((stage, sequence) => ({
+        schemaVersion: "p2-vite-progress/v1",
+        expectedRevision: "p2-vite-expected-20260720-01",
+        scenarioId: "vite-observe-p",
+        profileId: "permissive",
+        runId: "p2-vite-observe-p-20260720-01",
+        sequence,
+        stage,
+      })),
+    );
+    expect(lines.every((line) => Buffer.byteLength(line) <= 1_024)).toBe(true);
+    expect(Buffer.byteLength(lines.join(""))).toBeLessThanOrEqual(4_096);
+    expect(JSON.stringify(lines)).not.toMatch(
+      /path|command|environment|canary|timestamp|duration|raw/u,
+    );
+  });
+
   it("accepts normal close only after the process group is absent", async () => {
     const process = new FakeViteProcess();
     const backend = new FakeViteProcessBackend(process, false);
@@ -241,7 +273,7 @@ describe("P2 fixed Vite runner", () => {
     expect(backend.trace).toEqual(["launch", "group-exists"]);
   });
 
-  it("accepts force-settled residue after a successful coordinator close", async () => {
+  it("rejects force-settled residue after a successful coordinator close", async () => {
     const process = new FakeViteProcess();
     const processBackend = new FakeViteProcessBackend(process);
     processBackend.signalHandler = (signal) => {
@@ -274,7 +306,10 @@ describe("P2 fixed Vite runner", () => {
           processBackend.trace.push("partial-chmod");
         },
       }),
-    ).resolves.toBe("unexpected");
+    ).rejects.toMatchObject({
+      failureCode: "P2_CHILD_FAILED",
+      settlement: "known",
+    });
     expect(processBackend.trace).toEqual([
       "child",
       "launch",
@@ -282,7 +317,7 @@ describe("P2 fixed Vite runner", () => {
       "SIGKILL",
       "wait-group",
       "server-close",
-      "verify",
+      "partial-chmod",
     ]);
   });
 
@@ -552,7 +587,7 @@ describe("P2 fixed Vite runner", () => {
         },
       }),
     ).rejects.toBe(failure);
-    expect(trace).toEqual(["child", "server-close"]);
+    expect(trace).toEqual(["child"]);
   });
 
   it("preserves first failure and suppresses chmod when server settlement is unknown", async () => {

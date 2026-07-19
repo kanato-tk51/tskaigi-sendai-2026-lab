@@ -5,7 +5,7 @@ These three JSON files are the tracked, talk-facing inputs for P4:
 - `routes.json`: the five-route trigger/phase/count projection accepted by the
   P1 inventory review;
 - `profiles.json`: the accepted one-local-pair codegen observations and all
-  three exhausted Vite attempts' explicit `not-inspected` / `missing`
+  four exhausted Vite attempts' explicit `not-inspected` / `missing`
   limitation; and
 - `artifact.json`: the accepted one-local-run P3 build/verify/copy/tamper
   projection.
@@ -26,4 +26,7 @@ deployment operation. The
 [`focused final review`](../../../docs/reviews/p4-evidence-map.md) approved the
 P4 baseline, and the later
 [`selected Vite result review`](../../../docs/reviews/p2-vite-diagnostic-result.md)
-accepted the three-attempt projection without promoting selected Vite Observed.
+accepted the first three-attempt projection, and the later
+[`20260720-01` result review](../../../docs/reviews/p2-vite-new-measurement-result.md)
+accepted the fourth Inconclusive attempt and its bounded progress prefix without
+promoting selected Vite Observed.

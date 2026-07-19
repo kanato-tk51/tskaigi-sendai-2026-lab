@@ -2301,3 +2301,71 @@ Next: none.
   mutation is rejected.
 - No claim relies on AGENTS instructions or container configuration alone as
   runtime enforcement evidence.
+
+### Selected Vite post-MVP measurement addendum (active 2026-07-20)
+
+The completed P1-P4 baseline is unchanged. The user explicitly resumed only a
+new selected Vite measurement generation for presentation value. The three
+`20260719-*` Inconclusive attempts remain immutable and are not retries. The new
+generation is `20260720-01`; its exact one-shot gate and fresh Docker-free
+result review are complete, and the canonical permissive result is accepted
+only as the fourth immutable Inconclusive attempt.
+
+The Docker-free
+[`20260720-01` diagnosis and measurement contract](p2-vite-new-measurement-diagnosis.md)
+is complete. It keeps the lower-level `-03` runtime cause unresolved, records
+the current tracked P2-V12 settlement/cleanup regression and P2-V13
+terminal-only progress gap, and blocks an unchanged fourth replay. Its bounded
+contract requires restoration of the accepted fail-closed runner boundary,
+sanitized phase-prefix diagnostics without increasing timeouts, and only the
+exact new identities. Docker, retained state, Observed promotion, implementation,
+and execution remained prohibited.
+
+The
+[`fresh independent Docker-free review`](reviews/p2-vite-new-measurement-diagnosis.md)
+reproduced the three evidence classes, accepted `20260719-03` tracked source
+identity, both current runner regressions, fixed limits, reserved-identity
+absence, and protected evidence non-change. It found no blocking or
+non-blocking finding and approved only one later Docker-non-executing
+implementation task. It did not access runtime/staging state, use standing
+authorization, or approve execution.
+
+The approved Docker-free implementation is complete. It restores P2-V12,
+implements the bounded seven-stage P2-V13 progress protocol and v3
+attempt/receipt/pair handling, cross-binds only `20260720-01`, adds the focused
+fail-closed regressions, and rebuilds the exact 128-file fixed staging tree.
+Static/unit evidence does not open an execution gate or change Observed.
+
+The
+[`fresh independent Docker-free execution-gate review`](reviews/p2-vite-new-measurement-execution-gate.md)
+reproduced the exact candidate hashes, 128-file staging identity and manifest,
+fixed package script, protected codegen/P3/P4/M4 non-change, and absence of only
+the two exact new roots. It found no blocking or non-blocking finding and
+approved only one later argument-free `npm run p2:execute:vite` pair attempt
+with no retry. The review did not run Docker or use standing authorization.
+
+The exact one-shot execution is complete. A fresh worker reproduced all
+seventeen approved hashes, the exact 128-file source-equal fixed-mode
+`43d74ca7...` staging identity, fixed versions and package script, and both
+absent exact roots, then used the `continue-repository-work` standing
+authorization for the reviewed argument-free command once. This was not a
+separate human review. The command exited 1 and was not retried. It produced
+only a canonical permissive `p2-vite-attempt/v3` Inconclusive record with
+primary `attached-start / P2_EXECUTOR_DOCKER_TIMEOUT`, known Docker settlement,
+completed cleanup, no receipt, and a valid progress prefix through
+`child-launched`. The exact summary and constrained root are absent. Selected
+Vite and experiment-matrix Observed remain unmeasured.
+
+The
+[`fresh Docker-free result review`](reviews/p2-vite-new-measurement-result.md)
+reproduced all seventeen approved source identities, the exact non-symlink
+`0700`/`0600` fixed paths, canonical 823-byte SHA-256 `9175487c...` attempt,
+absent summary/constrained root, and the pure v3 pair/entry projection. It found
+no blocking or non-blocking finding and accepted only the Inconclusive
+classification. The four-stage progress prefix remains diagnostic secondary
+state and cannot establish child settlement, authorize evidence access, create
+a receipt, manufacture the constrained outcome, or promote a capability cell.
+The tracked talk projection retains all four attempts in exactly three tables;
+selected Vite and experiment-matrix Observed remain unmeasured.
+
+Next: none.

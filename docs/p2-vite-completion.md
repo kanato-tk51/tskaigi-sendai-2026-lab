@@ -1,15 +1,16 @@
 # P2 Vite completion addendum
 
-Status: **the fixed `-03` one-shot pair is exhausted and accepted only as the
-third immutable Inconclusive attempt. A later unsupported selected-profile
-promotion was blocked on P2-V08 through P2-V11; its Docker-free restoration
-candidate has now passed a fresh independent re-review. No retry or new
-execution gate is approved.**
+Status: **the fixed `-03` one-shot pair remains the third immutable
+Inconclusive attempt, and the completed presentation baseline is unchanged.
+The independent `20260720-01` diagnosis, contract review, Docker-free
+P2-V12/P2-V13 implementation, execution-gate review, exact one-shot execution,
+and fresh Docker-free result review are complete. The new outcome is accepted
+only as the fourth immutable Inconclusive attempt.**
 
 This addendum reopens only the selected Vite permissive/constrained comparison.
 The accepted codegen pair, P3 result, P4 projections, frozen M4 track, and the
-two exhausted Vite attempts remain unchanged until a fresh result review accepts
-new evidence.
+four exhausted Vite attempts remain explicit without changing selected Vite or
+experiment-matrix Observed.
 
 ## Diagnosis
 
@@ -464,5 +465,83 @@ gate is open.
 
 Selected Vite Observed remains unmeasured, the updated talk projection retains
 the explicit three-attempt gap, and no retry or runtime recovery is authorized.
+
+Next: none.
+
+## `20260720-01` independent measurement generation (active; 2026-07-20)
+
+The user explicitly resumed only the selected Vite presentation addendum and
+authorized a new measurement generation. This does not reopen, retry, reuse,
+rewrite, inspect, or repair any `20260719-01`, `20260719-02`, or `20260719-03`
+result/container identity. Those three accepted Inconclusive attempts remain
+immutable presentation history, and the completed P1-P4 baseline remains
+complete.
+
+The fourth generation reserves these exact new identities:
+
+- Expected revision: `p2-vite-expected-20260720-01` (identity revision only;
+  event order, counts, and outcomes are not changed by this decision)
+- permissive run/root: `p2-vite-observe-p-20260720-01`
+- constrained run/root: `p2-vite-observe-c-20260720-01`
+- permissive container: `tskaigi-p2-vite-observe-p-20260720-01`
+- constrained container: `tskaigi-p2-vite-observe-c-20260720-01`
+
+The separately reviewed exact one-shot execution gate was opened only for the
+fixed boundary below and is now exhausted. It did not reopen any historical
+identity or change the three immutable Inconclusive attempts.
+
+Ordered completion path:
+
+1. **Complete:** the Docker-free
+   [`20260720-01` diagnosis and measurement contract](p2-vite-new-measurement-diagnosis.md)
+   found no demonstrated lower-level cause for the `-03` timeout. It found the
+   current tracked P2-V12 runner settlement/cleanup regression and P2-V13
+   terminal-only progress gap, blocks an unchanged fourth replay, and defines a
+   bounded v3 progress/identity contract without increasing timeouts.
+2. **Complete:** the
+   [`fresh independent Docker-free review`](reviews/p2-vite-new-measurement-diagnosis.md)
+   reproduced the accepted historical source/records and current regressions,
+   found no blocking or non-blocking finding, and approved only one later
+   non-executing implementation task.
+3. **Complete:** the exact bounded P2-V12/P2-V13 remediation, v3 progress
+   handling, `20260720-01` bindings, focused regressions, and exact 128-file
+   fixed staging rebuild are implemented with Docker-free static/unit evidence.
+4. **Complete:** the
+   [`fresh independent Docker-free execution-gate review`](reviews/p2-vite-new-measurement-execution-gate.md)
+   reproduced candidate bytes, staging, command boundary, protected evidence
+   non-change, and only the two exact new-root absence checks, found no finding,
+   and approved exactly one later execution.
+5. **Complete:** a fresh worker revalidated the approved identities, staging,
+   fixed script, and both absent roots, then used standing authorization for
+   the argument-free `npm run p2:execute:vite` exactly once. The command exited
+   1 with one canonical permissive Inconclusive v3 attempt and was not retried.
+6. **Complete:** the fresh Docker-free result review independently accepted the
+   exact canonical result only as a fourth immutable Inconclusive attempt and
+   updated the tracked presentation projection without changing selected Vite
+   or experiment-matrix Observed.
+
+The bounded pair projection is `p2-vite-pair/v3` Inconclusive with
+`PAIR_IDENTITY_MISMATCH` and only the permissive scenario. The exact permissive
+root is a non-symlink mode `0700` directory. Its canonical non-symlink mode
+`0600`, 823-byte `attempt.json` has SHA-256
+`9175487c2ed92eb8265e9047c362bc1d0a42d79e1911ba951fcf235530f6eada`
+and records primary `attached-start / P2_EXECUTOR_DOCKER_TIMEOUT`, the approved
+image ID, null exit, known Docker settlement, runner settlement
+`not-established`, completed cleanup, null runner, and output `not-inspected`.
+The diagnostic progress is a valid exact prefix through `child-launched`; it
+does not establish child settlement or a capability result. The exact summary
+and constrained root are absent. Standing authorization was used for only the
+reviewed one-shot command and does not mean a separate human review occurred.
+
+The
+[`fresh Docker-free result review`](reviews/p2-vite-new-measurement-result.md)
+reproduced all seventeen approved source identities, the exact canonical
+attempt bytes/mode/hash and fixed root states, and the pure v3 pair/entry
+projection. It accepted the valid prefix only as diagnostic secondary state:
+child settlement, the lower-level timeout cause, evidence access, a receipt,
+the constrained outcome, and a capability observation remain unestablished.
+The tracked talk projection now retains all four attempts side by side and
+keeps exactly three talk tables. No Docker command, retry, retained-state
+mutation, Expected change, Observed promotion, or matrix change was used.
 
 Next: none.

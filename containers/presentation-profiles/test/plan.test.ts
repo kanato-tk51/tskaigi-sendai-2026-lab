@@ -30,16 +30,16 @@ describe("P2 selected profile plan", () => {
       "codegen-observe-c",
     ]);
     expect(plans.map((plan) => plan.runId)).toEqual([
-      "p2-vite-observe-p-20260719-11",
-      "p2-vite-observe-c-20260719-11",
+      "p2-vite-observe-p-20260720-01",
+      "p2-vite-observe-c-20260720-01",
       "p2-codegen-observe-p-20260719-01",
       "p2-codegen-observe-c-20260719-01",
     ]);
     expect(
       plans.map((plan) => argumentValue(plan.create.arguments, "--name")),
     ).toEqual([
-      "tskaigi-p2-vite-observe-p-20260719-11",
-      "tskaigi-p2-vite-observe-c-20260719-11",
+      "tskaigi-p2-vite-observe-p-20260720-01",
+      "tskaigi-p2-vite-observe-c-20260720-01",
       "tskaigi-p2-codegen-observe-p",
       "tskaigi-p2-codegen-observe-c",
     ]);
@@ -84,7 +84,7 @@ describe("P2 selected profile plan", () => {
       expect(command.arguments[0]).toBe("create");
       expect(argumentValue(command.arguments, "--name")).toBe(
         plan.adapterId === "vite"
-          ? `tskaigi-p2-${plan.scenarioId}-20260719-11`
+          ? `tskaigi-p2-${plan.scenarioId}-20260720-01`
           : `tskaigi-p2-${plan.scenarioId}`,
       );
       expect(argumentValue(command.arguments, "--pull")).toBe("never");

@@ -36,6 +36,8 @@ export const FIXED_VITE_EXECUTOR_LIMITS = Object.freeze({
   dockerSettlementMs: 1_000,
 });
 const DOCKER_OUTPUT_BYTES = 16_384;
+const PROGRESS_LINE_BYTES = 1_024;
+const PROGRESS_TOTAL_BYTES = 4_096;
 const EVENT_SEGMENT_BYTES = 65_536;
 const OUTPUT_FILE_BYTES = 65_536;
 const EVENT_SEGMENT = "vite-coordinator.jsonl";
@@ -49,6 +51,15 @@ const ROLLUP_VERSION = "4.62.2";
 const ESBUILD_VERSION = "0.25.12";
 const INSPECT_FORMAT =
   "{{.Id}}|{{.Image}}|{{.Config.Image}}|{{.State.Status}}|{{.State.ExitCode}}";
+const FIXED_VITE_PROGRESS_STAGES = Object.freeze([
+  "runner-entered",
+  "inputs-prepared",
+  "service-ready",
+  "child-launched",
+  "child-settled",
+  "service-settled",
+  "output-exported",
+] as const);
 
 type ViteSelectedPlan = SelectedScenarioPlan & {
   readonly scenarioId: ViteScenarioId;
@@ -73,6 +84,15 @@ interface ViteRunnerSummary {
   readonly entryOutputBytes: number;
 }
 
+export type ViteRunnerProgressStage =
+  (typeof FIXED_VITE_PROGRESS_STAGES)[number];
+
+export interface ViteRunnerProgressProjection {
+  readonly schemaVersion: "p2-vite-progress/v1";
+  readonly validity: "not-established" | "valid-prefix" | "invalid";
+  readonly stages: readonly ViteRunnerProgressStage[];
+}
+
 export interface ViteRunnerDisposition {
   readonly status: "completed" | "failure";
   readonly failureCode: ViteRunnerFailureCode | null;
@@ -93,6 +113,7 @@ export interface FixedViteCommandResult {
   readonly exitCode: number;
   readonly stdout: string;
   readonly stderr: string;
+  readonly runnerProgress?: ViteRunnerProgressProjection;
 }
 
 export interface FixedViteLifecycleResult {
@@ -100,6 +121,7 @@ export interface FixedViteLifecycleResult {
   readonly containerExitCode: number;
   readonly runner: ViteRunnerDisposition;
   readonly runnerSummary: ViteRunnerSummary | null;
+  readonly runnerProgress: ViteRunnerProgressProjection;
   readonly cleanup: "completed" | "suppressed-runner-settlement-unknown";
 }
 
@@ -130,12 +152,13 @@ type ViteAttemptIssueCode =
   | "P2_ATTEMPT_DOCKER_LIFECYCLE_FAILED"
   | "P2_ATTEMPT_DOCKER_SETTLEMENT_UNKNOWN"
   | "P2_ATTEMPT_OUTPUT_NOT_INSPECTED"
+  | "P2_ATTEMPT_RUNNER_PROGRESS_INVALID"
   | "P2_ATTEMPT_RUNNER_DISPOSITION_INVALID"
   | "P2_ATTEMPT_RUNNER_FAILED"
   | "P2_ATTEMPT_RUNNER_SETTLEMENT_UNKNOWN";
 
 export interface ViteExecutionAttemptRecord {
-  readonly schemaVersion: "p2-vite-attempt/v2";
+  readonly schemaVersion: "p2-vite-attempt/v3";
   readonly scenarioId: ViteScenarioId;
   readonly profileId: "permissive" | "constrained";
   readonly runId: string;
@@ -149,12 +172,13 @@ export interface ViteExecutionAttemptRecord {
   readonly runnerSettlement: "known" | "not-established" | "unknown";
   readonly cleanupDisposition: ViteAttemptCleanupDisposition;
   readonly runner: ViteRunnerDisposition | null;
+  readonly runnerProgress: ViteRunnerProgressProjection;
   readonly outputAvailability: "fixed-paths-exported" | "not-inspected";
   readonly issues: readonly ViteAttemptIssueCode[];
 }
 
 export interface ViteExecutionReceipt {
-  readonly schemaVersion: "p2-vite-execution/v2";
+  readonly schemaVersion: "p2-vite-execution/v3";
   readonly scenarioId: ViteScenarioId;
   readonly profileId: "permissive" | "constrained";
   readonly runId: string;
@@ -182,7 +206,7 @@ export interface ViteExecutionReceipt {
 }
 
 export interface ViteExecutionPairProjection {
-  readonly schemaVersion: "p2-vite-pair/v2";
+  readonly schemaVersion: "p2-vite-pair/v3";
   readonly expectedRevision: typeof FIXED_VITE_EXPECTED_REVISION;
   readonly validity: "same-image" | "inconclusive";
   readonly imageId: string | null;
@@ -240,6 +264,7 @@ export class FixedViteCommandError extends Error {
     readonly failureCode: FixedCommandFailureCode,
     readonly settlement: "closed" | "unknown",
     readonly signalAccepted: boolean | null,
+    readonly runnerProgress: ViteRunnerProgressProjection = notEstablishedRunnerProgress(),
   ) {
     super(failureCode);
     this.name = "FixedViteCommandError";
@@ -318,6 +343,7 @@ interface FixedViteLifecycleAttempt {
   readonly cleanupFailed: boolean;
   readonly primaryFailureStage: VitePrimaryLifecycleStage | null;
   readonly primaryFailureCode: VitePrimaryFailureCode | null;
+  readonly runnerProgress: ViteRunnerProgressProjection;
 }
 
 interface FixedViteEvidence {
@@ -342,6 +368,168 @@ interface FixedViteFinalizationBackend {
   writeReceipt(receipt: ViteExecutionReceipt): Promise<void>;
 }
 
+interface FixedViteProgressCollector {
+  accept(chunk: Buffer): void;
+  invalidate(): void;
+  finish(): Readonly<{
+    projection: ViteRunnerProgressProjection;
+    terminalStdout: string;
+  }>;
+}
+
+const NOT_ESTABLISHED_RUNNER_PROGRESS: ViteRunnerProgressProjection =
+  Object.freeze({
+    schemaVersion: "p2-vite-progress/v1",
+    validity: "not-established",
+    stages: Object.freeze([]),
+  });
+
+function notEstablishedRunnerProgress(): ViteRunnerProgressProjection {
+  return NOT_ESTABLISHED_RUNNER_PROGRESS;
+}
+
+function runnerProgressProjection(
+  validity: ViteRunnerProgressProjection["validity"],
+  stages: readonly ViteRunnerProgressStage[],
+): ViteRunnerProgressProjection {
+  return Object.freeze({
+    schemaVersion: "p2-vite-progress/v1",
+    validity,
+    stages: Object.freeze([...stages]),
+  });
+}
+
+function validRunnerProgressProjection(
+  value: ViteRunnerProgressProjection,
+): boolean {
+  if (
+    value.schemaVersion !== "p2-vite-progress/v1" ||
+    !["not-established", "valid-prefix", "invalid"].includes(value.validity) ||
+    !Array.isArray(value.stages) ||
+    value.stages.length > FIXED_VITE_PROGRESS_STAGES.length ||
+    value.stages.some(
+      (stage, index) => stage !== FIXED_VITE_PROGRESS_STAGES[index],
+    )
+  ) {
+    return false;
+  }
+  return value.validity === "not-established"
+    ? value.stages.length === 0
+    : value.validity === "valid-prefix"
+      ? value.stages.length > 0
+      : true;
+}
+
+function completeRunnerProgress(value: ViteRunnerProgressProjection): boolean {
+  return (
+    validRunnerProgressProjection(value) &&
+    value.validity === "valid-prefix" &&
+    value.stages.length === FIXED_VITE_PROGRESS_STAGES.length
+  );
+}
+
+function createFixedViteProgressCollector(
+  selected: ViteSelectedPlan,
+): FixedViteProgressCollector {
+  let pending = Buffer.alloc(0);
+  let progressBytes = 0;
+  let invalid = false;
+  let terminalStdout = "";
+  let terminalSeen = false;
+  let finished = false;
+  const stages: ViteRunnerProgressStage[] = [];
+
+  const invalidate = (): void => {
+    invalid = true;
+  };
+  const acceptLine = (line: Buffer): void => {
+    const lineText = line.subarray(0, -1).toString("utf8");
+    let value: unknown;
+    try {
+      value = JSON.parse(lineText);
+    } catch {
+      invalidate();
+      return;
+    }
+    if (plainRecord(value) && value.status === "completed") {
+      if (terminalSeen || stages.length !== FIXED_VITE_PROGRESS_STAGES.length) {
+        invalidate();
+      }
+      terminalSeen = true;
+      terminalStdout = line.toString("utf8");
+      return;
+    }
+    if (terminalSeen || invalid || line.byteLength > PROGRESS_LINE_BYTES) {
+      invalidate();
+      return;
+    }
+    const sequence = stages.length;
+    const stage = FIXED_VITE_PROGRESS_STAGES[sequence];
+    const canonical = {
+      schemaVersion: "p2-vite-progress/v1",
+      expectedRevision: FIXED_VITE_EXPECTED_REVISION,
+      scenarioId: selected.scenarioId,
+      profileId: selected.profileId,
+      runId: selected.runId,
+      sequence,
+      stage,
+    };
+    if (
+      stage === undefined ||
+      !plainRecord(value) ||
+      !exactKeys(value, [
+        "expectedRevision",
+        "profileId",
+        "runId",
+        "scenarioId",
+        "schemaVersion",
+        "sequence",
+        "stage",
+      ]) ||
+      JSON.stringify(value) !== JSON.stringify(canonical) ||
+      progressBytes + line.byteLength > PROGRESS_TOTAL_BYTES
+    ) {
+      invalidate();
+      return;
+    }
+    progressBytes += line.byteLength;
+    stages.push(stage);
+  };
+
+  return Object.freeze({
+    accept(chunk: Buffer) {
+      if (finished || invalid) return;
+      pending = Buffer.concat([pending, Buffer.from(chunk)]);
+      let newline = pending.indexOf(0x0a);
+      while (newline >= 0) {
+        const line = pending.subarray(0, newline + 1);
+        pending = pending.subarray(newline + 1);
+        acceptLine(line);
+        newline = pending.indexOf(0x0a);
+      }
+    },
+    invalidate,
+    finish() {
+      if (!finished) {
+        finished = true;
+        if (pending.byteLength > 0) invalidate();
+        pending = Buffer.alloc(0);
+      }
+      return Object.freeze({
+        projection: runnerProgressProjection(
+          invalid
+            ? "invalid"
+            : stages.length === 0
+              ? "not-established"
+              : "valid-prefix",
+          stages,
+        ),
+        terminalStdout,
+      });
+    },
+  });
+}
+
 function fixedDockerCommand(
   environment: FixedDockerCommand["environment"],
   arguments_: readonly string[],
@@ -362,8 +550,8 @@ function isVitePlan(plan: SelectedScenarioPlan): plan is ViteSelectedPlan {
 }
 
 const FIXED_VITE_CONTAINER_NAMES = Object.freeze({
-  "vite-observe-p": "tskaigi-p2-vite-observe-p-20260719-11",
-  "vite-observe-c": "tskaigi-p2-vite-observe-c-20260719-11",
+  "vite-observe-p": "tskaigi-p2-vite-observe-p-20260720-01",
+  "vite-observe-c": "tskaigi-p2-vite-observe-c-20260720-01",
 } as const);
 
 function fixedViteContainerName(selected: ViteSelectedPlan): string {
@@ -545,6 +733,7 @@ function runBoundedFixedDockerCommand(
     settlementMs: number;
     outputBytes: number;
   }>,
+  selected?: ViteSelectedPlan,
 ): Promise<FixedViteCommandResult> {
   return new Promise((resolve, reject) => {
     let child: FixedProcessHandle;
@@ -558,6 +747,10 @@ function runBoundedFixedDockerCommand(
     }
     const stdout: Buffer[] = [];
     const stderr: Buffer[] = [];
+    const progressCollector =
+      selected === undefined
+        ? null
+        : createFixedViteProgressCollector(selected);
     let outputBytes = 0;
     let primaryFailure: FixedCommandFailureCode | null = null;
     let signalAccepted: boolean | null = null;
@@ -584,21 +777,28 @@ function runBoundedFixedDockerCommand(
             primaryFailure ?? failureCode,
             "unknown",
             signalAccepted,
+            progressCollector?.finish().projection,
           ),
         );
       }, limits.settlementMs);
     };
-    const count = (target: Buffer[], chunk: Buffer): void => {
+    const count = (
+      target: Buffer[],
+      chunk: Buffer,
+      runnerStdout: boolean,
+    ): void => {
       if (settled || primaryFailure !== null) return;
+      if (runnerStdout) progressCollector?.accept(chunk);
       outputBytes += chunk.byteLength;
       if (outputBytes > limits.outputBytes) {
+        progressCollector?.invalidate();
         beginFailure("P2_EXECUTOR_DOCKER_OUTPUT");
         return;
       }
       target.push(Buffer.from(chunk));
     };
-    child.onStdout((chunk) => count(stdout, chunk));
-    child.onStderr((chunk) => count(stderr, chunk));
+    child.onStdout((chunk) => count(stdout, chunk, true));
+    child.onStderr((chunk) => count(stderr, chunk, false));
     child.onceError(() => beginFailure("P2_EXECUTOR_DOCKER_FAILED"));
     child.onceClose((exitCode, signalCode) => {
       if (settled) return;
@@ -614,6 +814,7 @@ function runBoundedFixedDockerCommand(
             primaryFailure,
             acceptedDisposition ? "closed" : "unknown",
             signalAccepted,
+            progressCollector?.finish().projection,
           ),
         );
         return;
@@ -624,14 +825,20 @@ function runBoundedFixedDockerCommand(
             "P2_EXECUTOR_DOCKER_FAILED",
             "closed",
             null,
+            progressCollector?.finish().projection,
           ),
         );
         return;
       }
+      const progress = progressCollector?.finish();
       resolve({
         exitCode,
-        stdout: Buffer.concat(stdout).toString("utf8"),
+        stdout:
+          progress?.terminalStdout ?? Buffer.concat(stdout).toString("utf8"),
         stderr: Buffer.concat(stderr).toString("utf8"),
+        ...(progress === undefined
+          ? {}
+          : { runnerProgress: progress.projection }),
       });
     });
     commandTimer = setTimeout(
@@ -664,6 +871,7 @@ function runFixedDockerCommand(
       settlementMs: FIXED_VITE_EXECUTOR_LIMITS.dockerSettlementMs,
       outputBytes: DOCKER_OUTPUT_BYTES,
     },
+    command === plan.start ? plan.selected : undefined,
   );
 }
 
@@ -675,8 +883,9 @@ export function runFixedViteDockerCommandWithProcessForTest(
     settlementMs: number;
     outputBytes: number;
   }>,
+  selected?: ViteSelectedPlan,
 ): Promise<FixedViteCommandResult> {
-  return runBoundedFixedDockerCommand(command, launch, limits);
+  return runBoundedFixedDockerCommand(command, launch, limits, selected);
 }
 
 function requireSuccessfulCommand(result: FixedViteCommandResult): void {
@@ -754,17 +963,38 @@ function exactKeys(
   );
 }
 
+function runnerProgressConsistentWithFailure(
+  progress: ViteRunnerProgressProjection,
+  settlement: "known" | "unknown",
+  settlementCode: ViteRunnerSettlementCode | null,
+): boolean {
+  if (
+    !validRunnerProgressProjection(progress) ||
+    progress.validity === "invalid" ||
+    progress.stages.includes("output-exported")
+  ) {
+    return false;
+  }
+  if (settlement === "known") return true;
+  const maximumLength =
+    settlementCode === "P2_CHILD_SETTLEMENT_UNKNOWN" ? 4 : 5;
+  return progress.stages.length <= maximumLength;
+}
+
 function parseRunnerOutput(
   result: FixedViteCommandResult,
   plan: ViteSelectedPlan,
 ): Readonly<{
   disposition: ViteRunnerDisposition;
   summary: ViteRunnerSummary | null;
+  progress: ViteRunnerProgressProjection;
 }> {
+  const progress = result.runnerProgress ?? notEstablishedRunnerProgress();
   if (result.exitCode === 0 && result.stderr === "") {
     try {
       const value: unknown = JSON.parse(result.stdout);
       if (
+        !completeRunnerProgress(progress) ||
         !plainRecord(value) ||
         !exactKeys(value, [
           "outputFiles",
@@ -804,6 +1034,7 @@ function parseRunnerOutput(
           sourceAfterHash: value.sourceAfterHash,
           entryOutputBytes: value.outputFiles[0].bytes as number,
         }),
+        progress,
       });
     } catch (error) {
       if (error instanceof FixedViteRunnerBoundaryError) throw error;
@@ -866,6 +1097,11 @@ function parseRunnerOutput(
                 serverSettlementFailureCodes.has(
                   value.failureCode as ViteRunnerFailureCode,
                 ))))
+        ) ||
+        !runnerProgressConsistentWithFailure(
+          progress,
+          value.settlement as "known" | "unknown",
+          value.settlementCode as ViteRunnerSettlementCode | null,
         )
       ) {
         throw new FixedViteRunnerBoundaryError();
@@ -879,6 +1115,7 @@ function parseRunnerOutput(
             value.settlementCode as ViteRunnerSettlementCode | null,
         }),
         summary: null,
+        progress,
       });
     } catch (error) {
       if (error instanceof FixedViteRunnerBoundaryError) throw error;
@@ -912,6 +1149,7 @@ export function validateFixedViteLifecycle(input: {
     containerExitCode: after.exitCode,
     runner: runner.disposition,
     runnerSummary: runner.summary,
+    runnerProgress: runner.progress,
   });
 }
 
@@ -1169,6 +1407,7 @@ function buildReceipt(
     lifecycle.containerExitCode === 0 &&
     lifecycle.cleanup === "completed" &&
     lifecycle.runner.status === "completed" &&
+    completeRunnerProgress(lifecycle.runnerProgress) &&
     lifecycle.runnerSummary !== null &&
     lifecycle.runnerSummary.sourceBeforeHash ===
       lifecycle.runnerSummary.sourceAfterHash &&
@@ -1189,7 +1428,7 @@ function buildReceipt(
         ]),
       });
   return Object.freeze({
-    schemaVersion: "p2-vite-execution/v2",
+    schemaVersion: "p2-vite-execution/v3",
     scenarioId: plan.selected.scenarioId,
     profileId: plan.selected.profileId,
     runId: plan.selected.runId,
@@ -1295,6 +1534,7 @@ async function executeFixedViteLifecycleAttempt(
   };
   let primaryFailureStage: VitePrimaryLifecycleStage | null = null;
   let primaryFailureCode: VitePrimaryFailureCode | null = null;
+  let runnerProgress = notEstablishedRunnerProgress();
   const retainPrimaryDiagnostic = (
     stage: VitePrimaryLifecycleStage,
     code: VitePrimaryFailureCode,
@@ -1330,6 +1570,12 @@ async function executeFixedViteLifecycleAttempt(
     try {
       return await runCommand(command);
     } catch (error) {
+      if (
+        stage === "attached-start" &&
+        error instanceof FixedViteCommandError
+      ) {
+        runnerProgress = error.runnerProgress;
+      }
       retainPrimaryFailure(stage, error, true);
       return null;
     }
@@ -1363,6 +1609,9 @@ async function executeFixedViteLifecycleAttempt(
   let start: FixedViteCommandResult | null = null;
   if (primaryFailure === undefined) {
     start = await runStageCommand("attached-start", plan.start);
+    if (start !== null) {
+      runnerProgress = start.runnerProgress ?? notEstablishedRunnerProgress();
+    }
   }
 
   if (
@@ -1411,6 +1660,7 @@ async function executeFixedViteLifecycleAttempt(
             containerExitCode: after.exitCode,
             runner: runner.disposition,
             runnerSummary: runner.summary,
+            runnerProgress: runner.progress,
           });
           if (
             runner.disposition.status === "failure" &&
@@ -1513,6 +1763,7 @@ async function executeFixedViteLifecycleAttempt(
     cleanupFailed: cleanupFailure !== undefined,
     primaryFailureStage,
     primaryFailureCode,
+    runnerProgress,
   });
 }
 
@@ -1534,8 +1785,11 @@ function buildAttemptRecord(
 ): ViteExecutionAttemptRecord {
   const { lifecycle, failure } = lifecycleAttempt;
   const runner = lifecycle?.runner ?? null;
+  const runnerProgress = lifecycleAttempt.runnerProgress;
   const outputAvailability =
-    runner?.status === "completed" && runner.settlement === "known"
+    runner?.status === "completed" &&
+    runner.settlement === "known" &&
+    completeRunnerProgress(runnerProgress)
       ? "fixed-paths-exported"
       : "not-inspected";
   const receiptPending =
@@ -1545,6 +1799,7 @@ function buildAttemptRecord(
     lifecycle.cleanup === "completed" &&
     runner?.status === "completed" &&
     runner.settlement === "known" &&
+    completeRunnerProgress(runnerProgress) &&
     lifecycle.runnerSummary !== null;
   const issues: ViteAttemptIssueCode[] = [];
   if (failure !== null) {
@@ -1569,11 +1824,14 @@ function buildAttemptRecord(
   if (lifecycleAttempt.cleanupFailed) {
     issues.push("P2_ATTEMPT_CLEANUP_FAILED");
   }
+  if (runnerProgress.validity === "invalid") {
+    issues.push("P2_ATTEMPT_RUNNER_PROGRESS_INVALID");
+  }
   if (outputAvailability === "not-inspected") {
     issues.push("P2_ATTEMPT_OUTPUT_NOT_INSPECTED");
   }
   return Object.freeze({
-    schemaVersion: "p2-vite-attempt/v2",
+    schemaVersion: "p2-vite-attempt/v3",
     scenarioId: plan.selected.scenarioId,
     profileId: plan.selected.profileId,
     runId: plan.selected.runId,
@@ -1591,6 +1849,7 @@ function buildAttemptRecord(
         : "not-established"),
     cleanupDisposition: lifecycleAttempt.cleanupDisposition,
     runner,
+    runnerProgress,
     outputAvailability,
     issues: Object.freeze(issues),
   });
@@ -1710,6 +1969,7 @@ export function finalizeFixedViteLifecycleWithBackendForTest(
       primaryFailureStage:
         lifecycle.runner.status === "failure" ? "runner-disposition" : null,
       primaryFailureCode: lifecycle.runner.failureCode,
+      runnerProgress: lifecycle.runnerProgress,
     }),
     backend,
   );
@@ -1781,7 +2041,7 @@ export function projectFixedViteExecutionPair(
     if (!executionComplete) issues.push("PAIR_EXECUTION_INCOMPLETE");
   }
   return Object.freeze({
-    schemaVersion: "p2-vite-pair/v2",
+    schemaVersion: "p2-vite-pair/v3",
     expectedRevision: FIXED_VITE_EXPECTED_REVISION,
     validity: imageMatches && executionComplete ? "same-image" : "inconclusive",
     imageId: imageMatches ? (receipts[0]?.imageId ?? null) : null,
@@ -1789,12 +2049,13 @@ export function projectFixedViteExecutionPair(
   });
 }
 
-export async function executeFixedViteProfiles(): Promise<ViteExecutionPair> {
-  await verifyFixedStaging();
+async function executeFixedVitePlanSequence(
+  executePlan: (plan: FixedViteExecutionPlan) => Promise<ViteExecutionOutcome>,
+): Promise<ViteExecutionPair> {
   const receipts: ViteExecutionReceipt[] = [];
   const outcomes: ViteExecutionOutcome[] = [];
   for (const plan of createFixedViteExecutionPlans()) {
-    const outcome = await executeOne(plan);
+    const outcome = await executePlan(plan);
     outcomes.push(outcome);
     if (outcome.receipt !== null) receipts.push(outcome.receipt);
     if (outcome.completion !== "complete") break;
@@ -1804,6 +2065,17 @@ export async function executeFixedViteProfiles(): Promise<ViteExecutionPair> {
     receipts: Object.freeze(receipts),
     outcomes: Object.freeze(outcomes),
   });
+}
+
+export function executeFixedVitePlanSequenceWithBackendForTest(
+  executePlan: (plan: FixedViteExecutionPlan) => Promise<ViteExecutionOutcome>,
+): Promise<ViteExecutionPair> {
+  return executeFixedVitePlanSequence(executePlan);
+}
+
+export async function executeFixedViteProfiles(): Promise<ViteExecutionPair> {
+  await verifyFixedStaging();
+  return executeFixedVitePlanSequence(executeOne);
 }
 
 export function projectFixedViteEntryResult(

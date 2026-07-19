@@ -1224,3 +1224,25 @@ further safe Vite execution/recovery action remains. The next task is the
 Docker-non-executing P3 minimal artifact-demo implementation and focused tests;
 the fixed artifact must not be built until its exact one-build boundary is
 review-ready.
+
+## Post-MVP selected Vite measurement result
+
+Update date: 2026-07-20. State: **the separately reviewed `20260720-01`
+one-shot gate is exhausted and its fresh Docker-free result review accepts the
+outcome only as the fourth immutable Inconclusive attempt**.
+
+The canonical v3 permissive attempt retains primary
+`attached-start / P2_EXECUTOR_DOCKER_TIMEOUT`, known Docker CLI settlement,
+completed cleanup, no runner settlement, no inspected output, no receipt, and a
+valid bounded progress prefix through `child-launched`. The constrained root is
+absent. The accepted progress narrows the diagnostic history but establishes no
+child settlement, lower-level timeout cause, capability outcome, constrained
+attempt, or same-image pair. The tracked talk projection lists all four
+attempts; selected Vite and experiment-matrix Observed remain unmeasured.
+
+The exact result decision and fixed-path/hash evidence are recorded in
+[`reviews/p2-vite-new-measurement-result.md`](reviews/p2-vite-new-measurement-result.md).
+No retry, runtime-state recovery, or further selected Vite execution is
+authorized.
+
+Next: none.

@@ -107,17 +107,17 @@ export function validatePresentationEvidence({ routes, profiles, artifact }) {
   );
   assert(
     profiles.pairs?.vite?.evidenceClass ===
-      "three observed Inconclusive execution attempts only",
-    "Vite three-attempt evidence scope",
+      "four observed Inconclusive execution attempts only",
+    "Vite four-attempt evidence scope",
   );
   const viteAttempts = profiles.pairs?.vite?.attempts;
   assert(
-    Array.isArray(viteAttempts) && viteAttempts.length === 3,
-    "three Vite attempts",
+    Array.isArray(viteAttempts) && viteAttempts.length === 4,
+    "four Vite attempts",
   );
   assert(
     viteAttempts.map(({ attemptId }) => attemptId).join(",") ===
-      "20260719-01,20260719-02,20260719-03",
+      "20260719-01,20260719-02,20260719-03,20260720-01",
     "fixed Vite attempt order",
   );
   assert(
@@ -133,6 +133,15 @@ export function validatePresentationEvidence({ routes, profiles, artifact }) {
     viteAttempts[2]?.primaryDiagnostic ===
       "attached-start / P2_EXECUTOR_DOCKER_TIMEOUT",
     "Vite v2 primary diagnostic",
+  );
+  assert(
+    viteAttempts[3]?.canonicalRecord ===
+      "p2-vite-attempt/v3 / SHA-256 9175487c2ed92eb8265e9047c362bc1d0a42d79e1911ba951fcf235530f6eada" &&
+      viteAttempts[3]?.primaryDiagnostic ===
+        "attached-start / P2_EXECUTOR_DOCKER_TIMEOUT" &&
+      viteAttempts[3]?.diagnosticProgress ===
+        "valid-prefix: runner-entered > inputs-prepared > service-ready > child-launched",
+    "Vite v3 diagnostic identity and progress",
   );
   assert(
     Array.isArray(profiles.capabilities) && profiles.capabilities.length === 5,
@@ -266,7 +275,7 @@ export function renderEvidenceMap(evidence) {
   const viteAttemptHistory = profiles.pairs.vite.attempts
     .map(
       (attempt) =>
-        `\`${attempt.attemptId}\` — ${attempt.canonicalRecord}; ${attempt.primaryDiagnostic}; ${attempt.retainedConclusion}`,
+        `\`${attempt.attemptId}\` — ${attempt.canonicalRecord}; ${attempt.primaryDiagnostic}; progress ${attempt.diagnosticProgress}; ${attempt.retainedConclusion}`,
     )
     .join(" | ");
 
@@ -284,7 +293,7 @@ Docker, network, or deployment operation.
 The evidence classes below are deliberate. M0 remains overall **Inconclusive**
 with scenario-level Observed marker counts; the four adapter rows are **reviewed
 local adapter evidence**; the codegen pair is selected-profile **Observed** only
-at one-local-pair scope; all three Vite pair attempts are observed
+at one-local-pair scope; all four Vite pair attempts are observed
 **Inconclusive attempts**, not capability results; and P3 is **Observed** only
 at one-local-run scope.
 
@@ -303,12 +312,12 @@ ${profileTable}
 [\`profiles.json\`](../results/examples/presentation-mvp/profiles.json) preserves
 five capabilities and keeps the separate source-hash integrity attempt out of
 their denominator. The codegen cells come from the independently accepted exact
-same-image pair. The three exhausted Vite attempts have no receipt or
+same-image pair. The four exhausted Vite attempts have no receipt or
 constrained run:
 \`not-inspected\` and \`missing\` are displayed rather than converted to zero,
 denial, or success.
 
-All three immutable attempts remain side by side in the tracked projection:
+All four immutable attempts remain side by side in the tracked projection:
 ${viteAttemptHistory}.
 
 ## Talk table 3 — build once, verify, copy, reject
@@ -358,8 +367,8 @@ are not OS-level egress-enforcement evidence.
 - Limitation: same-image and pair-identical staging have the narrow bindings in
   the [codegen receipt review](reviews/p2-selected-profile-codegen-receipts.md);
   they do not prove a general sandbox or repeated-run reproducibility. The
-  [latest Vite result review](reviews/p2-vite-diagnostic-result.md) accepts only
-  three Inconclusive attempts, so the selected Vite comparison is explicitly
+  [latest Vite result review](reviews/p2-vite-new-measurement-result.md) accepts
+  only four Inconclusive attempts, so the selected Vite comparison is explicitly
   missing.
 
 ### C-05 — direct writes differ from official tool API changes
@@ -394,7 +403,7 @@ are not OS-level egress-enforcement evidence.
 - \`npm run p4:generate\` deterministically renders only this tracked document
   from the three tracked JSON files.
 - \`npm run p4:verify\` validates fixed route/capability counts, codegen
-  \`same-image\`, the ordered three-attempt Vite history and its
+  \`same-image\`, the ordered four-attempt Vite history and its
   \`not-inspected\` / \`missing\` boundary, artifact build count 1, zero
   deployment builds, one-byte rejection, source-record boundaries, and exact
   document regeneration.

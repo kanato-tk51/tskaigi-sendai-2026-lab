@@ -136,6 +136,15 @@ now retains `20260719-01`, `20260719-02`, and `20260719-03` side by side without
 promoting selected Vite or experiment-matrix Observed. No Vite retry or runtime
 recovery remains.
 
+The later independent `20260720-01` generation is also exhausted. Its fresh
+Docker-free
+[result review](reviews/p2-vite-new-measurement-result.md) accepted the exact
+canonical v3 permissive attempt only as the fourth immutable Inconclusive
+attempt. The bounded progress prefix reaches `child-launched`, but establishes
+neither child settlement nor a capability result. The tracked talk projection
+now retains all four attempts while selected Vite and experiment-matrix
+Observed remain unmeasured.
+
 ## Purpose
 
 The repository has accumulated a reusable high-assurance lab track, especially
@@ -345,6 +354,11 @@ complete. The subsequent selected Vite addendum's
 Inconclusive attempt and refreshed the tracked three-table projection while
 retaining all three immutable Vite attempts and the same explicit capability
 gap.
+The later
+[`20260720-01` result review](reviews/p2-vite-new-measurement-result.md)
+accepted the exact v3 attempt only as the fourth immutable Inconclusive attempt
+and refreshed the same three-table projection with its bounded progress prefix;
+the capability gap and non-Observed boundary are unchanged.
 `experiment-matrix.md` has not been hand-edited or promoted.
 
 ## Definition of done
