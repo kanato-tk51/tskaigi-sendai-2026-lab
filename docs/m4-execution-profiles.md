@@ -1,5 +1,44 @@
 # M4 execution profile Expected 契約
 
+Issue #41 evidence-class alignment update (2026-07-20; supersedes older
+run-controls status clauses below): the reviewed one-shot pair is exhausted.
+The prior execution worker used `continue-repository-work` standing
+authorization for the exact fixed command once; this was not a separate human
+review. The pair, permissive, and constrained results are all
+`inconclusive / COMMAND_FAILURE`, with no completed step, host inspection,
+container control evidence, completion, or comparison. The ordinary entry was
+restored to its reviewed fail-closed bytes. No retry, replacement run ID, or
+new execution gate remains.
+
+## Profile-control Observed acceptance boundary
+
+- A profile-control result may be classified as Observed only when both fixed
+  profile runs are `complete` and retain canonical immutable input, full host
+  inspection, canonical in-container control evidence, completion, and
+  Expected/Observed comparison for the same reviewed image/control pair.
+- An attempted capability outcome of `failure` is a valid observation when the
+  complete evidence chain proves that the operation ran. An Expected mismatch
+  is retained as an Observed mismatch inside an otherwise complete run; it does
+  not establish that the intended enforcement matched Expected. Expected is
+  never edited to fit the result.
+- Any `inconclusive` validity or command, timeout, output, inspection,
+  transfer, evidence, immutable-input, or cleanup failure is not
+  profile-control Observed. Manifest skip, an unattempted operation, static/unit
+  evidence, profile configuration, or host inspection alone is also
+  insufficient.
+- Even complete profile-control Observed is control-fixture evidence only. It
+  never becomes adapter evidence, experiment-matrix route Observed, or
+  presentation evidence without a separately reviewed adapter/profile scenario
+  and its own complete route run.
+
+The exhausted pair satisfies none of the profile-control Observed acceptance
+conditions because it stopped before the first completed step and produced no
+inspection, control evidence, completion, or comparison. It therefore
+establishes neither runtime enforcement nor profile-control Observed. In
+accordance with ADR-0001, `experiment-matrix.md` remains unchanged and no route
+is promoted. Issue #41 and the bounded #37 continuation are complete with this
+explicit Inconclusive limitation.
+
 ## 状態と責任範囲
 
 状態: **Expected-only 契約は independent review 済みで、2026-07-17 にプロジェクトの human reviewer が明示的に承認済み。B-03/B-04/B-07は独立read-only re-reviewでclosureし、static/unit implementation gateは承認済み。固定doctor remediationの独立re-reviewはB-08/B-10をclosureし、canonical-byte remediationのfresh独立read-only re-reviewはB-09をclosureした。Runtime-template compatibility correctionもfresh独立read-only re-reviewで承認され、現在のfixed doctor static/unit gateは承認済み。Post-bootstrap fixed doctorはreview済みbytesでaccepted candidate inventoryを取得済み。Exact-input proposalは実装済み・fresh independent read-only review待ちで、adoption、image build、controls、runtime enforcementは未承認・未実行、Observed は未実測**。契約の承認判断は[契約の独立レビュー記録](reviews/m4-execution-profiles-contract.md)、exact-input proposalは[M4 exact-input proposal](m4-execution-profiles-exact-input.md)、元の実装gate判断は[実装の独立レビュー記録](reviews/m4-execution-profiles.md)、B-01〜B-06 remediation判断は[remediation re-review記録](reviews/m4-execution-profiles-remediation.md)、現在のstatic/unit gate判断は[input-binding remediation re-review記録](reviews/m4-execution-profiles-input-binding-remediation.md)、元のdoctor gate判断は[fixed doctor boundary independent review](reviews/m4-execution-profiles-doctor-boundary.md)、B-08/B-10判断は[doctor remediation independent re-review](reviews/m4-execution-profiles-doctor-boundary-remediation.md)、B-09判断とdoctor実行履歴は[canonical-byte remediation independent re-review](reviews/m4-execution-profiles-doctor-canonical-bytes-remediation.md)、現在のdoctor bytesとpost-review execution handoffは[runtime-template compatibility independent re-review](reviews/m4-execution-profiles-runtime-template-compatibility.md)に残している。Doctorはfixed 3 command、pull/build/create/start/runなし、通常時のDocker access前`M4_EXECUTION_NOT_APPROVED`、step 2/3 identity cross-binding、structured key-only framing、original-byte canonical comparisonを維持する。`continue-repository-work`のstanding authorizationを一回限定実行の承認に使用したが、これは別のhuman reviewが行われたことを意味しない。Doctor後はorchestrator sourceを通常のfail-closed状態へ戻した。次のtaskは`prompts/reviews/m4-execution-profiles-exact-input-contract-review.md`に従うfresh independent read-only reviewである。Image buildとcontrol実行はさらに別の後続gateである。
@@ -136,14 +175,17 @@ static/unit phase では、read-only input、host-owned inspection/completion、
 
 ## 現在の制約
 
-- Final profile-control container image digest はまだbuildも観測もしていない。Docker client/server `29.6.1`、exact local base tagのidentity、base environment key inventoryはpost-bootstrap fixed doctorでaccepted candidateとして観測され、version管理されたexact-input proposalへbind済みだが、fresh independent review前なので未採用である。
-- 上記exact-input pending記述はfresh reviewで更新され、base/staging/fixed-backend contractはstatic/unit境界でacceptされた。B-11/B-12はclosureしたが、exact-inputのproduction採用、production backend、build execution gateは引き続き未承認・未実行である。
-- Doctor remediationの独立re-reviewはB-08/B-10をclosureし、canonical-byte remediationのfresh独立read-only re-reviewはB-09をclosureした。後続診断でDocker 29.6.1非対応の`dict` template helperが最初のstepを壊していたことを特定し、fixed `json`-only formatと再発防止checkへremediateした。Fresh compatibility re-reviewは現在のdoctor bytesをstatic/unit gateで承認した。One-time registry bootstrap後の一回限定doctorは全3 stepを完了してaccepted candidate inventoryを得た。Candidateはexact-input proposalへbind済みで、次はそのfresh independent read-only reviewである。
-- version管理されたimage-input proposal、B-11/B-12 backend remediation、production offline-build backendのB-13〜B-15 remediationはstatic/unit review済みで、production offline-build backend static/unit gateは承認済みである。Production adoption、activation、一回限定build execution gateは未承認・未実行である。Permissive/constrained `profile.json`はoffline buildでbuilt-image digestを観測するまで意図的に存在しない。Syntheticな非0 SHA-256値はtest dataにすぎず、build resultではexact known placeholderを拒否する。
-- Base/staging/fixed-backend contractはreview済みだがproduction採用、production backend、buildは未承認・未実行である。Permissive/constrained `profile.json`が存在しない境界は変わらない。
-- 固定 command plan は実装済みだが、別工程のレビューと実行承認より前に orchestrator が Docker を呼び出すことは意図的にできない。
+- Recoveryでfinal built-image digestを取得し、canonical permissive/constrained
+  `profile.json`とexact run pairへbind済みである。このidentity/configuration
+  chainはruntime enforcement evidenceではない。
+- Review済みone-shot control pairは最初のcommand failureでexhaustedとなり、
+  inspection、control evidence、completion、comparisonを生成していない。
+  Retry、別run ID、replacement gateはない。通常entryはfail closedである。
 - Node permission-model による child denial は Expected implementation mechanism であり、Observed fact ではない。
 - fixed loopback-service が存在しないことで証明できるのは、指定 target に到達できないことだけである。
 - container は kernel/runtime vulnerability や container escape への耐性を証明しない。
-- profile-control Expected catalog は dependency-route experiment matrix と分離している。今後の adapter/profile task では、実行前に独自の Expected-only matrix review が必要である。
-- adapter/profile route measurement、matrix Observed result、presentation claim は未実測のままである。
+- profile-control Expected catalogはdependency-route experiment matrixと分離している。
+  将来新たなadapter/profile measurementを行うには、独自のExpected-only matrix reviewと
+  complete route evidenceが必要であり、この完了記録はその新しいgateを承認しない。
+- Runtime enforcement、profile-control Observed、adapter/profile route measurement、
+  matrix Observed result、presentation claimは未確立のままである。

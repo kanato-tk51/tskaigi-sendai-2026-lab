@@ -37,6 +37,8 @@ const [
   versionedImageInputSource,
   permissiveReadme,
   constrainedReadme,
+  permissiveProfileSource,
+  constrainedProfileSource,
   milestoneSource,
   contractSource,
   exactInputContractSource,
@@ -62,6 +64,8 @@ const [
   offlineBuildResultRemediationReviewPrompt,
   offlineBuildRecoveryPrompt,
   offlineBuildRecoveryReviewPrompt,
+  runControlsRemediationPrompt,
+  runControlsRemediationReviewPrompt,
 ] = await Promise.all([
   readFile(path.join(repositoryRoot, "package.json"), "utf8"),
   readFile(path.join(repositoryRoot, "tsconfig.json"), "utf8"),
@@ -72,6 +76,14 @@ const [
   text("image-input.json"),
   readFile(path.join(repositoryRoot, "profiles/permissive/README.md"), "utf8"),
   readFile(path.join(repositoryRoot, "profiles/constrained/README.md"), "utf8"),
+  readFile(
+    path.join(repositoryRoot, "profiles/permissive/profile.json"),
+    "utf8",
+  ),
+  readFile(
+    path.join(repositoryRoot, "profiles/constrained/profile.json"),
+    "utf8",
+  ),
   readFile(path.join(repositoryRoot, "docs/milestones.md"), "utf8"),
   readFile(path.join(repositoryRoot, "docs/m4-execution-profiles.md"), "utf8"),
   readFile(
@@ -226,6 +238,20 @@ const [
     path.join(
       repositoryRoot,
       "prompts/reviews/m4-execution-profiles-offline-build-recovery-review.md",
+    ),
+    "utf8",
+  ),
+  readFile(
+    path.join(
+      repositoryRoot,
+      "prompts/m4-execution-profiles-run-controls-remediation.md",
+    ),
+    "utf8",
+  ),
+  readFile(
+    path.join(
+      repositoryRoot,
+      "prompts/reviews/m4-execution-profiles-run-controls-remediation-review.md",
     ),
     "utf8",
   ),
@@ -398,14 +424,89 @@ const offlineBuildProcess = sources["offline-build-process.ts"] ?? "";
 const offlineBuildRecovery = sources["offline-build-recovery.ts"] ?? "";
 const offlineBuildRecoveryHostBackend =
   sources["offline-build-recovery-host-backend.ts"] ?? "";
+const controlHostBackend = sources["control-host-backend.ts"] ?? "";
+const profileInput = sources["profile-input.ts"] ?? "";
+const runControls = sources["run-controls.ts"] ?? "";
 for (const [sourceName, source] of sourceEntries) {
   if (
     sourceName !== "doctor-host-backend.ts" &&
     sourceName !== "offline-build-host-backend.ts" &&
     sourceName !== "offline-build-recovery-host-backend.ts" &&
+    sourceName !== "control-host-backend.ts" &&
     source.includes('from "node:child_process"')
   ) {
     fail(`unexpected host child-process source ${sourceName}`);
+  }
+}
+for (const required of [
+  "FIXED_CONTROL_IMAGE_DIGEST",
+  "FIXED_PERMISSIVE_RUN_ID",
+  "FIXED_CONSTRAINED_RUN_ID",
+  "parseCanonicalExecutionProfileBytes",
+  "serializeCanonicalExecutionProfile",
+  "createFixedProductionControlDefinition",
+  "createFixedControlHostBackend",
+  "executeFixedExistingImageProfilePair",
+]) {
+  if (!runControls.includes(required) && !profileInput.includes(required)) {
+    fail(`run-controls binding marker ${required}`);
+  }
+}
+for (const forbidden of [
+  "executeFixedProfilePair(",
+  "createImageBuildPlan",
+  "stageBuildContext",
+  "readBuildContext",
+  '"doctor"',
+  '"build"',
+  '"inspect-image"',
+]) {
+  if (runControls.includes(forbidden)) {
+    fail(`run-controls rebuild marker ${forbidden}`);
+  }
+}
+for (const required of [
+  'import { spawn, type ChildProcessByStdio } from "node:child_process"',
+  "createFixedControlHostBackend",
+  "createControlHostBackend",
+  "requireAbsent(input.permissiveLayout.runRoot)",
+  "requireAbsent(input.constrainedLayout.runRoot)",
+  "command !== expectedCommand",
+  "command.executable !== FIXED_DOCKER_EXECUTABLE",
+  "env: Object.freeze({",
+  "DOCKER_CONFIG: command.environment.DOCKER_CONFIG",
+  "shell: false",
+  'stdio: ["ignore", "pipe", "pipe"]',
+  'child.kill("SIGKILL")',
+  "this.activeChildren.size !== 0",
+  "constants.O_NOFOLLOW",
+  "serializeCanonicalControlManifest",
+  '"cp"',
+  '"/result/control-evidence.json"',
+  '"/result/result-marker.txt"',
+  '"/scratch/scratch-marker.txt"',
+  'flag: "wx"',
+  '"control-evidence.json"',
+  '"host-inspection.json"',
+  '"completion.json"',
+  '"comparison.json"',
+]) {
+  if (!controlHostBackend.includes(required)) {
+    fail(`control host backend marker ${required}`);
+  }
+}
+for (const forbidden of [
+  "process.env",
+  "HOME",
+  "DOCKER_HOST",
+  "/var/run/docker.sock",
+  '"build"',
+  '"image"',
+  '"version"',
+  "FIXED_OFFLINE_BUILD_RECOVERY_RUN_ID",
+]) {
+  if (controlHostBackend.includes(forbidden)) {
+    fail(`control host backend forbidden marker ${forbidden}`);
   }
 }
 for (const required of [
@@ -732,6 +833,10 @@ for (const [sourceName, source, requiredMarkers] of [
       'failStep("OUTPUT_LIMIT")',
       'failStep("IMMUTABLE_INPUT_CHANGED")',
       'primaryFailure = "CLEANUP_FAILURE"',
+      "executeFixedExistingImageProfilePair",
+      "validateExistingImageExecutionPlan",
+      "recordProfileResult",
+      "await input.backend.cleanup()",
     ],
   ],
 ]) {
@@ -746,26 +851,44 @@ if (
   orchestrator.includes("process.argv") ||
   orchestrator.includes("doctor-host-backend") ||
   orchestrator.includes("offline-build") ||
+  orchestrator.includes("control-host-backend") ||
+  orchestrator.includes("run-controls.js") ||
   indexSource.includes("doctor-host-backend") ||
-  indexSource.includes("offline-build")
+  indexSource.includes("offline-build") ||
+  indexSource.includes("control-host-backend") ||
+  indexSource.includes("run-controls.js")
 ) {
   fail("fixed orchestrator gate");
 }
 
-for (const profileReadme of [permissiveReadme, constrainedReadme]) {
+const fixedControlDigest =
+  "sha256:20ba341937bfaee4fe8d1adc722aed4c7dc96d055371bf7b48ba3cd12e15e3dd";
+for (const [profileId, profileReadme, profileSource] of [
+  ["permissive", permissiveReadme, permissiveProfileSource],
+  ["constrained", constrainedReadme, constrainedProfileSource],
+]) {
+  const profile = JSON.parse(profileSource);
   if (
-    !profileReadme.includes("`profile.json` は意図的に未作成") ||
-    !profileReadme.includes("built-image digest") ||
+    profileSource !== `${JSON.stringify(profile)}\n` ||
+    profile.schemaVersion !== "lab-execution-profile/v1" ||
+    profile.profileId !== profileId ||
+    profile.containerImageDigest !== fixedControlDigest ||
+    !profileReadme.includes("`profile.json` は") ||
+    !profileReadme.includes(fixedControlDigest) ||
+    !profileReadme.includes("fresh independent") ||
     profileReadme.includes("Observed enforcement result が存在する")
   ) {
-    fail("unconfigured profile status");
+    fail(`fixed ${profileId} profile input`);
   }
 }
 for (const profileId of ["permissive", "constrained"]) {
   const entries = await readdir(
     path.join(repositoryRoot, "profiles", profileId),
   );
-  if (JSON.stringify(entries.sort()) !== JSON.stringify(["README.md"])) {
+  if (
+    JSON.stringify(entries.sort()) !==
+    JSON.stringify(["README.md", "profile.json"])
+  ) {
     fail(`unexpected ${profileId} profile input`);
   }
 }
@@ -817,7 +940,11 @@ if (
   !offlineBuildRecoveryPrompt.includes("# Goal") ||
   !offlineBuildRecoveryPrompt.includes("# Completion report") ||
   !offlineBuildRecoveryReviewPrompt.includes("# Goal") ||
-  !offlineBuildRecoveryReviewPrompt.includes("# Completion report")
+  !offlineBuildRecoveryReviewPrompt.includes("# Completion report") ||
+  !runControlsRemediationPrompt.includes("# Goal") ||
+  !runControlsRemediationPrompt.includes("# Completion report") ||
+  !runControlsRemediationReviewPrompt.includes("# Goal") ||
+  !runControlsRemediationReviewPrompt.includes("# Completion report")
 ) {
   fail("approved documentation/prompt boundary");
 }

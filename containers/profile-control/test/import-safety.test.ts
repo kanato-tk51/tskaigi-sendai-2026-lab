@@ -15,6 +15,8 @@ describe("M4 profile-control module root", () => {
       const recovery = await import("../src/offline-build-recovery.js");
       const recoveryHostBackend =
         await import("../src/offline-build-recovery-host-backend.js");
+      const controlHostBackend = await import("../src/control-host-backend.js");
+      const runControls = await import("../src/run-controls.js");
       expect(module.createExecutionProfile).toBeTypeOf("function");
       expect(module.validateControlEvidence).toBeTypeOf("function");
       expect(hostBackend.createFixedDoctorHostBackend).toBeTypeOf("function");
@@ -26,12 +28,18 @@ describe("M4 profile-control module root", () => {
       expect(
         recoveryHostBackend.createFixedOfflineBuildRecoveryHostBackend,
       ).toBeTypeOf("function");
+      expect(controlHostBackend.createFixedControlHostBackend).toBeTypeOf(
+        "function",
+      );
+      expect(runControls.runFixedProductionControls).toBeTypeOf("function");
       expect("executeFixedOfflineBuild" in module).toBe(false);
       expect("createFixedOfflineBuildHostBackend" in module).toBe(false);
       expect("executeFixedOfflineBuildRecovery" in module).toBe(false);
       expect("createFixedOfflineBuildRecoveryHostBackend" in module).toBe(
         false,
       );
+      expect("createFixedControlHostBackend" in module).toBe(false);
+      expect("runFixedProductionControls" in module).toBe(false);
       expect(await readdir(root)).toEqual(before);
     } finally {
       await rm(root, { recursive: true, force: true });

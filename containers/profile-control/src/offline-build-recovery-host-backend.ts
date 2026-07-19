@@ -189,7 +189,7 @@ async function captureExactRetainedState(
     const entry = await lstat(target);
     if (
       entry.isSymbolicLink() ||
-      (entry.mode & 0o777) !== specification.mode ||
+      (entry.mode & 0o7777) !== specification.mode ||
       (await realpath(target)) !== target ||
       (specification.type === "directory" && !entry.isDirectory()) ||
       (specification.type === "file" &&
@@ -245,7 +245,8 @@ class FixedOfflineBuildRecoveryHostBackend implements FixedOfflineBuildRecoveryB
     if (
       (this.validationCount === 0 && this.inspectAttempted) ||
       (this.validationCount === 1 && !this.inspectAttempted) ||
-      this.validationCount > 1
+      this.validationCount > 1 ||
+      this.activeChild
     ) {
       throw new Error("M4_OFFLINE_BUILD_RECOVERY_SEQUENCE");
     }

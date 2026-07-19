@@ -41,6 +41,12 @@ export const FIXED_RESULT_DESTINATION = "/result" as const;
 export const FIXED_SCRATCH_DESTINATION = "/scratch" as const;
 export const FIXED_ENVIRONMENT_KEY = "PROBE_CANARY_M4_CONTROL" as const;
 export const FIXED_CONTAINER_RUNTIME = "runc" as const;
+export const FIXED_CONTROL_IMAGE_DIGEST =
+  "sha256:20ba341937bfaee4fe8d1adc722aed4c7dc96d055371bf7b48ba3cd12e15e3dd" as const;
+export const FIXED_PERMISSIVE_RUN_ID =
+  "m4-profile-control-p-20260720-01" as const;
+export const FIXED_CONSTRAINED_RUN_ID =
+  "m4-profile-control-c-20260720-01" as const;
 
 export const FIXED_STAGING_FILES = Object.freeze([
   "Containerfile",

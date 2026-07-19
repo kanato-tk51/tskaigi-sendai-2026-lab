@@ -1,5 +1,19 @@
 # M4 exact-input proposal
 
+Issue #41 evidence-class alignment update (2026-07-20; supersedes older
+control-execution status clauses below): the recovered digest, canonical
+profiles, exact run IDs, existing-image executor, and production backend passed
+their static/unit gate, and the reviewed one-shot command was later executed
+exactly once under `continue-repository-work` standing authorization. This was
+not a separate human review. The fixed pair is exhausted as
+`inconclusive / COMMAND_FAILURE` with no completed step, inspection, control
+evidence, completion, or comparison. Exact input and profile binding remain
+configuration/Expected evidence, not runtime enforcement. The ordinary entry
+is restored to fail closed, no retry or replacement gate remains, and neither
+profile-control nor experiment-matrix route Observed was established. The
+authoritative acceptance boundary is recorded in
+[M4 execution profiles](m4-execution-profiles.md#profile-control-observed-acceptance-boundary).
+
 ## State and boundary
 
 State: **doctor-to-input trace and repository staging bytes accepted; B-11/B-12
@@ -253,42 +267,43 @@ continues to return `M4_EXECUTION_NOT_APPROVED` before constructing a production
 backend. Static/unit tests use only the fake backend and do not establish host
 filesystem behavior or runtime enforcement.
 
-## Build and profile binding gates
+## Completed build and profile binding gates
 
-The remaining sequence is deliberately split:
+The split gate sequence completed as follows:
 
-1. The fresh read-only review accepted this base/staging/fixed-backend contract
-   for static/unit. It did not run Docker or enable a production backend.
-2. Only after that decision and a separately recorded execution gate may one
-   offline build use these reviewed inputs. That step records a sanitized built
-   image digest and does not run controls.
-3. A separate task creates
-   `profiles/permissive/profile.json` and
-   `profiles/constrained/profile.json` with the same observed built-image
-   digest, the already approved policy values, and no placeholder. A fresh
-   read-only review binds both profiles to the build result.
-4. Control execution requires another gate. Only complete host inspection plus
-   canonical in-container evidence may become profile-control Observed; it is
-   not adapter route or experiment-matrix route Observed.
+1. Fresh read-only review accepted the base/staging/fixed-backend contract for
+   static/unit without running Docker or enabling the production backend.
+2. The fixed offline build ended Inconclusive on cleanup, and the separately
+   reviewed one-time recovery later recorded built-image digest
+   `sha256:20ba341937bfaee4fe8d1adc722aed4c7dc96d055371bf7b48ba3cd12e15e3dd`.
+3. `profiles/permissive/profile.json` and
+   `profiles/constrained/profile.json` bind that same recovered digest, exact
+   policy values, and distinct reviewed run IDs. Fresh remediation re-review
+   accepted the binding and existing-image backend at the static/unit boundary.
+4. The separately reviewed control gate was used once. It exhausted as
+   `inconclusive / COMMAND_FAILURE` before any completed step, inspection,
+   control evidence, completion, or comparison. It did not become
+   profile-control Observed and cannot be retried.
 
-The two `profile.json` files and built-image digest are intentionally absent
-now because no offline build has occurred. A synthetic digest, the base-image
-digest, the M0 Node.js 24 digest, or a guessed future image digest must not be
-used in their place.
+The versioned profiles and recovered digest are fixed inputs, not proof of
+runtime enforcement. A synthetic, base-image, M0, or guessed digest remains
+invalid. The complete acceptance and route-separation rules are recorded in
+[M4 execution profiles](m4-execution-profiles.md#profile-control-observed-acceptance-boundary).
 
 ## Remaining limitations
 
 - B-11/B-12 are closed and the base/staging/fixed-backend contract is approved
-  for static/unit. Static/unit evidence is not exact-input production adoption,
-  build approval, or runtime evidence.
+  for static/unit. Static/unit and exact-input evidence are not runtime
+  enforcement evidence.
 - Local availability was observed only by the recorded doctor attempt; this
   proposal does not re-inspect or enumerate runtime state.
-- The production offline-build backend and its B-13 through B-15 remediation are
-  independently approved for static/unit. It is not enabled or runtime-reviewed;
-  a separately recorded one-time execution gate must be defined before any
-  offline build. The control backend remains unimplemented.
-- Built-image identity, Node permission-model child denial, scratch/source
-  enforcement, loopback behavior, inspection representation, evidence
-  transfer, and cleanup are unmeasured.
-- Expected outcomes and ADR-0001 are unchanged. Profile-control Observed remains
-  unmeasured, and experiment-matrix route Observed remains unchanged.
+- The production offline-build, recovery, and existing-image control backends
+  retain their independently reviewed fixed boundaries. The ordinary entry is
+  restored to fail closed; no further control execution gate is open.
+- Built-image identity is recorded, but Node permission-model child denial,
+  scratch/source enforcement, loopback behavior, inspection representation,
+  evidence transfer, and control cleanup were not observed because the pair
+  stopped before its first completed step.
+- Expected outcomes and ADR-0001 are unchanged. Runtime enforcement and
+  profile-control Observed remain unestablished, and experiment-matrix route
+  Observed remains unchanged.

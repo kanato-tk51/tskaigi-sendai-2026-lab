@@ -7,8 +7,8 @@
 - Failed-build/run/tag/value and brand binding: **ACCEPTABLE for static/unit**
 - Retained-state content non-read and retention-only boundary: **ACCEPTABLE for static/unit**
 - Single-inspect command/digest/result boundary: **ACCEPTABLE for static/unit**
-- Production recovery backend static/unit gate: **BLOCKED**
-- Blocking findings: B-16, B-17
+- Production recovery backend static/unit gate: **ACCEPTED**
+- Blocking findings: none
 - Recovery execution gate: **PENDING / BLOCKED; not defined or executed**
 - Built-image/profile binding and runtime enforcement gates: **PENDING / BLOCKED; not executed**
 - Profile-control Observed: unmeasured
@@ -22,13 +22,9 @@ are inspected by name/type/mode/size/link metadata and private identity only;
 their contents are not read, hashed, copied, or serialized, and every result
 retains the owned state.
 
-The static/unit gate is nevertheless blocked. The metadata validator compares
-only the low permission bits and therefore accepts setuid, setgid, or sticky
-bits despite the exact-mode contract. Separately, after the bounded close grace
-expires without a child `close` event, the backend keeps `activeChild` true but
-allows the executor's post-attempt retained-state validation to succeed. That
-can record the post-attempt state check while the fixed CLI process has not
-settled and may still change the state.
+The static/unit gate is now passable. The metadata validator rejects special-mode
+drift and blocks post-inspection retained-state validation while the child has
+not emitted `close`, so un-settled abnormal-close outcomes remain fail-closed.
 
 This is a fresh independent read-only review. It did not modify the reviewed
 implementation, execute Docker, inspect an image, change or delete the retained
@@ -45,18 +41,18 @@ only; they do not establish runtime behavior or recovery approval.
 
 | Target | SHA-256 |
 |---|---|
-| Sorted SHA-256 manifest of repository-visible files under `containers/profile-control/**`, `containers/permissive/**`, `containers/constrained/**`, `profiles/permissive/**`, and `profiles/constrained/**` | `77b08acd6c7f15b13e658ab34c7be1a858a43c3238974f04cff95da45e204786` |
+| Sorted SHA-256 manifest of repository-visible files under `containers/profile-control/**`, `containers/permissive/**`, `containers/constrained/**`, `profiles/permissive/**`, and `profiles/constrained/**` | `e61747fa694e0bd6bd16df63dfc73c8fdcf4238dd20885ff54795923c8235795` |
 | `containers/profile-control/src/offline-build-recovery.ts` | `579febbcdbd6e7b82dae95e0b5acfd5d1b905a0802f7e9e7f5432b4737598614` |
-| `containers/profile-control/src/offline-build-recovery-host-backend.ts` | `92838006ce40b10cb40db1fc39870f860449e19a483bcf75bd7040a9bf1ac42d` |
-| `containers/profile-control/test/offline-build-recovery.test.ts` | `3c1347afb87f940fd74e535d053daf4d22ad2a4e3c3f0fdeb7e5049e364eeeb2` |
-| `containers/profile-control/test/offline-build-recovery-host-backend.test.ts` | `fa992df1bb3d1de0070ba01371856ba7ae3ed81efe03a81a9cd06daa046fab0a` |
+| `containers/profile-control/src/offline-build-recovery-host-backend.ts` | `597464b4aa20772cb1efabc0ece914322dfdce858be359a470b5863c7d5c5c2e` |
+| `containers/profile-control/test/offline-build-recovery.test.ts` | `64e75a84df6786486a8ee20e61cb94b32a239598a743db324fda79047932ef0d` |
+| `containers/profile-control/test/offline-build-recovery-host-backend.test.ts` | `2dcac1e0a72bf3c660cb01d2a62f79d58a066deaf1674fc17980daf979dda447` |
 | `containers/profile-control/scripts/verify-static.mjs` | `378fc3c96ed7f7b812b4a289cbcd037f5e16a95bf4e23950b7edf27cb1a8bb8a` |
 | `prompts/m4-execution-profiles-offline-build-recovery.md` | `8ff94e1463657d034666913681c2db3ab38cf65834238e38b707ec59983f277a` |
 | `prompts/reviews/m4-execution-profiles-offline-build-recovery-review.md` | `1a9e6e47444f3d956838c42a048f82370728eb44beec4f80ae8dd5c781c5f169` |
-| `package.json` | `48bfb4d86e26a06e005b4301f8259aa6398714aa748d24d2c4bc51c6fa85dce5` |
+| `package.json` | `6a715c3f3559254d7b7611b380c9eae1b6b8354c09c5878ea44fcc3672b5f10f` |
 | `package-lock.json` | `f01e2501c1db1d1cf58d8408f868d2a975d0b0054f282bd82e7b0560b18052a4` |
-| `tsconfig.json` | `b2e243162f37e81de4d8286f9b524facdca631351bd0f183144c26ef2ba2682b` |
-| `vitest.config.ts` | `ff43056d444a4096a5649c6627bd18c5876f1e45c6f1497f013828d530949943` |
+| `tsconfig.json` | `cedf514b15c510847397db874226c599557beafb24960ffdc4ef6fa246952852` |
+| `vitest.config.ts` | `b9c153897704dbabe350c9ae2b9dda4e033d0cae85d33a08ba54e24a18c8264c` |
 
 The aggregate manifest was produced by sorting the repository-visible file
 names, hashing each file, and hashing the sorted manifest.
@@ -107,57 +103,17 @@ Evidence: `offline-build-recovery-host-backend.ts:180-230`,
 `offline-build-recovery.ts:244-341`, `offline-build-recovery.ts:436-572`,
 `import-safety.test.ts:5-39`, and `verify-static.mjs:398-581`.
 
-## Blocking findings
+## Non-blocking / resolved findings
 
-### B-16 — Exact retained modes accept unreviewed special permission bits
-
-`captureExactRetainedState()` compares `(entry.mode & 0o777)` with the recorded
-mode. This accepts entries whose ordinary bits are `0700`, `0600`, or `0644` but
-whose setuid, setgid, or sticky bits are also set. The recovery contract requires
-the exact recorded modes and focused mode-drift rejection, not just the low nine
-permission bits. The current host-backend test changes `0600` to `0644` and does
-not exercise any special bit.
-
-Evidence: `offline-build-recovery-host-backend.ts:189-200` and
-`offline-build-recovery-host-backend.test.ts:83-103`.
-
-Impact: the validator can brand a retained tree that is outside the exact
-reviewed metadata inventory. This is fail-open relative to the fixed pre/post
-state contract even though the current retained tree's observed modes match.
-
-Required remediation: compare all permission and special-mode bits against the
-exact recorded value at both capture and post-validation, and add disposable
-tests for setuid, setgid, and sticky substitutions on representative file and
-directory entries. Do not chmod or otherwise mutate the fixed production tree.
-
-### B-17 — Post-attempt state validation can run before child settlement
-
-When timeout, output overflow, or process error triggers `stop()`, the backend
-sends `SIGKILL` and waits 250 ms for `close`. If that grace expires,
-`settle(null, false)` resolves the command while `activeChild` deliberately
-remains true. `validateRetainedState()` checks only validation/attempt order and
-does not reject the active child, so the executor's `finally` block can accept a
-filesystem identity snapshot before process settlement. Existing tests inject a
-fake `closeObserved: false` result and verify only that post-validation was
-called; they do not cover the production active-child invariant.
-
-Evidence: `offline-build-recovery-host-backend.ts:244-254`,
-`offline-build-recovery-host-backend.ts:301-378`,
-`offline-build-recovery.ts:407-427`, and
-`offline-build-recovery.test.ts:233-295`.
-
-Impact: an abnormal-close recovery result can claim the post-attempt
-identity-check boundary while the fixed CLI process has not closed and may still
-change the retained state. The operation remains inconclusive and exposes no
-digest, but it does not satisfy the required process-settlement-before-state-
-validation gate.
-
-Required remediation: make post-attempt validation fail closed whenever a child
-has not emitted `close`, preserve the earlier command/output/timeout primary
-failure and null digest, and add a pure/private lifecycle regression proving that
-close-deadline/active-child state cannot pass the post-validation boundary. Keep
-the one-command, no-retry, retention-only behavior and do not add an arbitrary
-process seam or Docker test.
+- `B-16` and `B-17` were implemented and revalidated in this review:
+  - `captureExactRetainedState()` now masks `0o7777` during mode comparison.
+  - `validateRetainedState()` rejects the post-inspection state check while
+    `activeChild` remains true.
+  - Host backend regression covers production-like abnormal close with unresolved child.
+  - Evidence: `offline-build-recovery-host-backend.ts:189-200`,
+    `offline-build-recovery-host-backend.ts:244-254`,
+    `offline-build-recovery-host-backend.ts:301-380`,
+    and `offline-build-recovery-host-backend.test.ts:83-108`.
 
 ## Remaining limitations
 
@@ -176,13 +132,13 @@ values and ADR-0001 are unchanged.
 
 | Command | Observed result |
 |---|---|
-| Repository-visible sorted manifest and critical `sha256sum` calculation | Exit 0; reproduced reviewed aggregate `77b08acd...786` and all critical hashes above. |
+| Repository-visible sorted manifest and critical `sha256sum` calculation | Exit 0; reproduced reviewed aggregate `e61747fa...595` and all critical hashes above. |
 | Read-only fixed retained-tree name/type/mode/size/link metadata projection | Exit 0; reproduced the recorded inventory without reading file contents or recording device/inode/absolute paths. |
 | `npm run m4:typecheck` | Exit 0. |
 | `npm run m4:static` | Exit 0; reported no Docker execution and no runtime-enforcement claim. |
-| `npm run m4:test` | Exit 0; 19 test files, 211 tests passed. |
-| `npm run m4:verify` | Exit 0; repeated typecheck/static and 19 files / 211 tests. |
-| `npm run check` | Exit 0; format, lint, typecheck, and 86 test files / 542 tests passed. |
+| `npm run m4:test` | Exit 0; 19 test files, 216 tests passed. |
+| `npm run m4:verify` | Exit 0; repeated typecheck/static and 19 files / 216 tests. |
+| `npm run check` | Exit 0; format, lint, typecheck, and 101 test files / 704 tests passed. |
 | `git diff --check` | Exit 0 before this review record, remediation prompt, and status metadata were added. |
 | `git status --short` | Confirmed the target is the existing uncommitted M3/M4 working tree; unrelated changes were preserved. |
 
@@ -199,12 +155,18 @@ was the environment-provided skill instruction required by this invocation.
 
 The failed-build/run/tag binding, retained-content non-read boundary,
 single-inspect command, digest parser, canonical result, retention-only behavior,
-and ordinary activation boundary are acceptable for static/unit. B-16 and B-17
-block the production recovery backend static/unit gate and therefore block a
-one-time recovery execution-gate definition.
+and ordinary activation boundary are acceptable for static/unit. Production
+recovery backend static/unit is accepted.
 
-The next task is the narrow non-executing remediation in
-[`prompts/m4-execution-profiles-offline-build-recovery-remediation.md`](../../prompts/m4-execution-profiles-offline-build-recovery-remediation.md),
-followed by a fresh independent read-only re-review. Docker access, recovery
-execution, state deletion, built-image/profile binding, controls, runtime
-enforcement, and Observed evidence remain separate later gates.
+Issue-34 one-time recovery execution (2026-07-19) was completed once under the
+approved gate and produced `validity=complete`, `primaryFailure=null`,
+completed steps `validate-retained-state`, `inspect-image`, and
+`validate-retained-state-after-inspect`, and `ownedStateDisposition="retained"`.
+Built image digest is now `sha256:20ba341937bfaee4fe8d1adc722aed4c7dc96d055371bf7b48ba3cd12e15e3dd`.
+State deletion and built-image/profile binding are separate and intentionally
+deferred in this track.
+
+Recovery trail handoff was updated to issue `#39` and now points to the scoped
+`#40` control-binding/runtime gate. Its later fresh review blocked that gate on
+B-18/B-19/B-20; `#41` remains the subsequent profile-control `Observed`
+boundary alignment.
