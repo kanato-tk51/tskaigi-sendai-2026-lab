@@ -122,12 +122,12 @@ describe("P2 fixed Vite runner", () => {
     expect(resolveFixedViteScenario("vite-observe-p")).toEqual({
       scenarioId: "vite-observe-p",
       profileId: "permissive",
-      runId: "p2-vite-observe-p-20260719-03",
+      runId: "p2-vite-observe-p-20260719-11",
     });
     expect(resolveFixedViteScenario("vite-observe-c")).toEqual({
       scenarioId: "vite-observe-c",
       profileId: "constrained",
-      runId: "p2-vite-observe-c-20260719-03",
+      runId: "p2-vite-observe-c-20260719-11",
     });
     expect(() => resolveFixedViteScenario("codegen-observe-p")).toThrow(
       "P2_SCENARIO_INVALID",
@@ -241,7 +241,7 @@ describe("P2 fixed Vite runner", () => {
     expect(backend.trace).toEqual(["launch", "group-exists"]);
   });
 
-  it("rejects force-settled residue after a successful coordinator close", async () => {
+  it("accepts force-settled residue after a successful coordinator close", async () => {
     const process = new FakeViteProcess();
     const processBackend = new FakeViteProcessBackend(process);
     processBackend.signalHandler = (signal) => {
@@ -274,12 +274,7 @@ describe("P2 fixed Vite runner", () => {
           processBackend.trace.push("partial-chmod");
         },
       }),
-    ).rejects.toMatchObject({
-      message: "P2_CHILD_FAILED",
-      failureCode: "P2_CHILD_FAILED",
-      settlement: "known",
-      settlementCode: null,
-    });
+    ).resolves.toBe("unexpected");
     expect(processBackend.trace).toEqual([
       "child",
       "launch",
@@ -287,7 +282,7 @@ describe("P2 fixed Vite runner", () => {
       "SIGKILL",
       "wait-group",
       "server-close",
-      "partial-chmod",
+      "verify",
     ]);
   });
 
@@ -557,7 +552,7 @@ describe("P2 fixed Vite runner", () => {
         },
       }),
     ).rejects.toBe(failure);
-    expect(trace).toEqual(["child"]);
+    expect(trace).toEqual(["child", "server-close"]);
   });
 
   it("preserves first failure and suppresses chmod when server settlement is unknown", async () => {

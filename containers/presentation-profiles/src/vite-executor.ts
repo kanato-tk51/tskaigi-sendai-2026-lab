@@ -362,8 +362,8 @@ function isVitePlan(plan: SelectedScenarioPlan): plan is ViteSelectedPlan {
 }
 
 const FIXED_VITE_CONTAINER_NAMES = Object.freeze({
-  "vite-observe-p": "tskaigi-p2-vite-observe-p-20260719-03",
-  "vite-observe-c": "tskaigi-p2-vite-observe-c-20260719-03",
+  "vite-observe-p": "tskaigi-p2-vite-observe-p-20260719-11",
+  "vite-observe-c": "tskaigi-p2-vite-observe-c-20260719-11",
 } as const);
 
 function fixedViteContainerName(selected: ViteSelectedPlan): string {
@@ -447,12 +447,14 @@ async function listStagedFiles(
   return files;
 }
 
-async function verifyFixedStaging(): Promise<void> {
+async function verifyFixedStaging(
+  stagingRoot = createFixedViteStagingPlan().stagingRoot,
+): Promise<void> {
   const staging = createFixedViteStagingPlan();
   const expectedTargets = staging.entries
     .map((entry) => entry.targetPath)
     .sort((left, right) => left.localeCompare(right));
-  const actualTargets = [...(await listStagedFiles(staging.stagingRoot))].sort(
+  const actualTargets = [...(await listStagedFiles(stagingRoot))].sort(
     (left, right) => left.localeCompare(right),
   );
   if (
@@ -462,7 +464,7 @@ async function verifyFixedStaging(): Promise<void> {
     throw new Error("P2_EXECUTOR_STAGING_INVALID");
   }
   for (const entry of staging.entries) {
-    const targetPath = path.join(staging.stagingRoot, entry.targetPath);
+    const targetPath = path.join(stagingRoot, entry.targetPath);
     const [source, target, sourceStat, targetStat] = await Promise.all([
       readFile(entry.sourcePath),
       readFile(targetPath),
@@ -482,8 +484,10 @@ async function verifyFixedStaging(): Promise<void> {
   }
 }
 
-export function verifyFixedViteStagingForTest(): Promise<void> {
-  return verifyFixedStaging();
+export function verifyFixedViteStagingForTest(
+  stagingRoot: string,
+): Promise<void> {
+  return verifyFixedStaging(stagingRoot);
 }
 
 async function prepareFixedRunRoot(plan: ViteSelectedPlan): Promise<void> {

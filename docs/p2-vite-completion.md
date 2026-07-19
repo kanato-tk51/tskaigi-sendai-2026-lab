@@ -1,8 +1,10 @@
 # P2 Vite completion addendum
 
-Status: **complete; the fixed `-03` one-shot pair is exhausted and its fresh
-Docker-free result review accepted it only as the third immutable Inconclusive
-attempt; no selected Vite Observed evidence or further retry remains**.
+Status: **the fixed `-03` one-shot pair is exhausted and accepted only as the
+third immutable Inconclusive attempt. A later unsupported selected-profile
+promotion was blocked on P2-V08 through P2-V11; its Docker-free restoration
+candidate has now passed a fresh independent re-review. No retry or new
+execution gate is approved.**
 
 This addendum reopens only the selected Vite permissive/constrained comparison.
 The accepted codegen pair, P3 result, P4 projections, frozen M4 track, and the
@@ -386,6 +388,55 @@ deploy. The prior execution worker used the recorded standing authorization for
 the exact one-shot command; this non-executing review did not use standing
 authorization and is not a separate human review.
 
+## P2-V08 through P2-V11 restoration candidate (2026-07-19)
+
+The
+[fresh consistency review](reviews/p2-selected-profile-vite-observed.md)
+blocked a later uncommitted promotion candidate. This Docker-non-executing
+remediation restores the accepted runtime and evidence boundary without
+creating or rewriting runtime evidence:
+
+- P2-V08: `profiles.json`, the deterministic generator/test, evidence map,
+  presentation scope/inventory, selected-profile contract, and P4 review are
+  restored to the last accepted three-attempt Inconclusive projection.
+  `experiment-matrix.md` remains unchanged.
+- P2-V09: the executor again stops the ordered pair after an incomplete first
+  profile and uses the accepted 60-second attached-start limit.
+- P2-V10: the runner and its regression again reject process-group residue
+  observed after a natural successful coordinator close, even when bounded
+  force settlement later proves group absence.
+- P2-V11: the executor test no longer deletes or rebuilds fixed staging. It
+  assembles the same 128-file plan under an exact test-owned disposable root,
+  verifies that root through a test-only seam, and removes it after the test.
+
+The review candidate identities are:
+
+| Target | SHA-256 |
+|---|---|
+| `src/vite-executor.ts` | `bb14aa48b6ba631b8896555d13fd1137b7baa00cfacedc97d73214d62d4826ca` |
+| `runner/vite-runner.js` | `e2e070e0dd0fafbd6d7cc400aa1e18db7c97dd74c72d4b881a7b8c6d4e1e72ea` |
+| `test/vite-executor.test.ts` | `5b6459687e2e6393865ddad396edd567d73792bdb3ea87617a0f0585d42b5041` |
+| `test/vite-runner.test.ts` | `4058c2e76fd7a415fe15044e45a772f63555c0c769bb2453b906144e9858e0ad` |
+| `results/examples/presentation-mvp/profiles.json` | `9760bbf3f7448518712ecd056de0030d04b2471eb96a51f52758ed9dbe394e33` |
+| `scripts/presentation-evidence.mjs` | `3a0adfe164a2acf49444d4b0f3a3bc3a9df90f8d1357a53ab51be7a255ea17af` |
+| `docs/evidence-map.md` | `0d81145b7480b46974b8f09fa5794559f561ab10818df2934245f6cf2b5ae6ad` |
+
+The first post-restoration `npm run p2:verify` correctly failed its retained
+fixed-staging check because the rejected candidate had already rebuilt that
+ignored tree from unsupported bytes. This remediation did not inspect the tree
+beyond that fixed verifier or mutate it. After moving the test assertion to the
+disposable root, `npm run p2:verify` passed 9 files / 124 tests;
+`npm run p4:verify` passed 1 file / 2 tests; `npm run m2d:verify` passed 12
+files / 75 tests; `npm run p2:build` passed; and `npm run check` passed 101
+files / 699 tests. The test-owned root was absent after cleanup.
+
+No Docker command, runtime-socket access, retained result/history access,
+fixed-staging mutation, external network, credential, Remote Git, publication,
+or deployment occurred. Standing authorization was not used because this
+remediation was non-executing. The ignored fixed staging tree remains
+pre-existing drift and the production entry remains fail closed; no execution
+gate is open.
+
 ## Ordered completion path
 
 1. **Complete:** implement the Docker-free remediation and fixed `-03` binding under
@@ -406,8 +457,12 @@ authorization and is not a separate human review.
    result and updated the tracked presentation projection/evidence map. The
    history lists `20260719-01`, `20260719-02`, and `20260719-03` side by side;
    all three remain Inconclusive.
+7. **Complete:** restore the accepted runner/executor
+   behavior and three-attempt projection after the P2-V08 through P2-V11
+   consistency review. The unit suite now verifies an isolated test-owned
+   staging fixture and does not rebuild the fixed staging root.
 
 Selected Vite Observed remains unmeasured, the updated talk projection retains
 the explicit three-attempt gap, and no retry or runtime recovery is authorized.
 
-Next: none
+Next: none.

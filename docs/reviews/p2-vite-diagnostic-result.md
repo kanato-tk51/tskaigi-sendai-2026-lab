@@ -1,5 +1,11 @@
 # P2 Vite `20260719-03` result independent review
 
+Update (2026-07-19): this file preserves the accepted result decision for the
+`20260719-03` run. A later unsupported selected-profile promotion and its
+Docker-free restoration boundary are recorded in
+[`p2-selected-profile-vite-observed.md`](p2-selected-profile-vite-observed.md);
+they do not revise this run into a complete pair.
+
 ## Review target and decision
 
 - Target: the exhausted `20260719-03` one-shot Vite attempt, its exact
