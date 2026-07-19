@@ -1,0 +1,48 @@
+{
+  "schemaVersion": "presentation-artifact-result-table/v1",
+  "title": "Build-once artifact result",
+  "sourceRecords": [
+    "docs/p3-artifact-demo.md",
+    "docs/reviews/p3-artifact-demo-result.md"
+  ],
+  "sourceBuildId": "artifact-mvp-build-once-20260719-01",
+  "evidenceClass": "Observed at the exact one-local-run scope",
+  "artifactSha256": "sha256:e3a5bc0808db5a4c706c35cc53616350c5ff84b662c071880ccca8b4982525c3",
+  "receiptSha256": "sha256:0cbc174bebb1e1570500cbcfb384ffa1d60e8f02d151e5e1336ab2c8eeddd84a",
+  "resultSha256": "sha256:011a0ce10d02ff76d0319903a8a03a35abb1ae94de4fa3c1fe804e27e2b4edd3",
+  "steps": [
+    {
+      "stepId": "build",
+      "stage": "Build",
+      "observedDisposition": "completed",
+      "buildEvidence": "build invocation count 1",
+      "identityOrBoundary": "fixed source and lockfile recorded; canonical artifact SHA-256 emitted"
+    },
+    {
+      "stepId": "verify",
+      "stage": "Verify",
+      "observedDisposition": "verified",
+      "buildEvidence": "build count remained 1",
+      "identityOrBoundary": "digest recomputed in a separate verification directory"
+    },
+    {
+      "stepId": "copy",
+      "stage": "Copy",
+      "observedDisposition": "copied",
+      "buildEvidence": "deployment build invocations 0",
+      "identityOrBoundary": "handoff, verification, and deployment artifact bytes are identical"
+    },
+    {
+      "stepId": "tamper",
+      "stage": "One-byte tamper",
+      "observedDisposition": "rejected-before-copy",
+      "buildEvidence": "no rebuild; deployStarted false",
+      "identityOrBoundary": "exactly 1 byte changed; P3_ARTIFACT_DIGEST_MISMATCH"
+    }
+  ],
+  "limitations": [
+    "Digest and local provenance establish byte identity and recorded inputs, not semantic harmlessness.",
+    "The unsigned local receipt does not establish authenticity if artifact and receipt are replaced together.",
+    "The empty child environment and fixed code path are not OS-level egress enforcement evidence; cross-machine reproducibility is unmeasured."
+  ]
+}

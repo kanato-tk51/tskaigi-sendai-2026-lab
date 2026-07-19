@@ -4,13 +4,14 @@ Read only the documents relevant to the current task.
 
 | Task | Required documents |
 |---|---|
-| Presentation MVP scope, evidence inventory, selected profile runs, or talk data | `presentation-scope.md`, `presentation-evidence-inventory.md` and `reviews/presentation-evidence-inventory.md` when present, `p2-selected-profile-contract.md`, `product-requirements.md`, `milestones.md`, `codex-workflow.md`; add `experiment-matrix.md` for route/profile selection, `artifact-pipeline.md` for the artifact demo, and `threat-model.md` for runtime execution |
+| Presentation MVP scope, evidence inventory, selected profile runs, or talk data | `presentation-scope.md`, `presentation-evidence-inventory.md` and `reviews/presentation-evidence-inventory.md` when present, `p2-selected-profile-contract.md`, `reviews/p2-selected-profile-executor.md`, `reviews/p2-selected-profile-codegen-receipts.md`, `reviews/p2-selected-profile-vite-runner.md`, `reviews/p2-selected-profile-vite-executor.md`, `reviews/p2-selected-profile-vite-failure.md`, and `reviews/p2-selected-profile-vite-new-run-gate.md` when present, `product-requirements.md`, `milestones.md`, `codex-workflow.md`; for the Vite new-run gate also read `../prompts/p2-selected-profile-vite-new-run-gate.md` and `../prompts/reviews/p2-selected-profile-vite-new-run-gate-review.md`; add `experiment-matrix.md` for route/profile selection, `artifact-pipeline.md` for the artifact demo, and `threat-model.md` for runtime execution |
 | Product scope | `product-requirements.md` |
 | Probe implementation | `threat-model.md`, `experiment-protocol.md` |
 | Package or data-flow changes | `architecture.md` |
 | Event contract or dependency direction | `experiment-protocol.md`, `architecture.md` |
 | Experiment changes | `experiment-protocol.md`, `experiment-matrix.md` |
 | Starting a milestone | `milestones.md` and related documents |
+| P3 minimal artifact demo implementation, review, execution, or result review | `presentation-scope.md`, `presentation-evidence-inventory.md`, `product-requirements.md`, `milestones.md`, `codex-workflow.md`, `artifact-pipeline.md`, `threat-model.md`, `architecture.md`, `p3-artifact-demo.md`, `../prompts/p3-artifact-demo.md`, and `../prompts/reviews/p3-artifact-demo-review.md`; add `reviews/p3-artifact-demo.md` when present; for post-execution result review also read `../prompts/reviews/p3-artifact-demo-result-review.md` and `reviews/p3-artifact-demo-result.md` when present |
 | M1 closure or independent review decision | `milestones.md`, `reviews/m1-independent-review.md` |
 | M2-A npm lifecycle adapter implementation or review | `milestones.md`, `m2-a-npm-lifecycle-adapter.md`, `spike-npm12.md`, `experiment-protocol.md`, `architecture.md`, `experiment-matrix.md`, `threat-model.md` |
 | M2-B ESLint adapter implementation or review | `milestones.md`, `m2-b-eslint-adapter.md`, `reviews/m2-b-eslint-adapter.md`, `experiment-protocol.md`, `architecture.md`, `experiment-matrix.md` |
@@ -25,8 +26,8 @@ Read only the documents relevant to the current task.
 | M4 approved one-time offline-build execution | 上記gate-review文書一式、`reviews/m4-execution-profiles-offline-build-execution-gate.md`、`../prompts/m4-execution-profiles-offline-build-execution.md` |
 | M4 post-cleanup-failure offline-build recovery implementation, review, or remediation | 上記approved-execution文書一式、`reviews/m4-execution-profiles-offline-build-recovery.md`、`../prompts/m4-execution-profiles-offline-build-recovery.md`、`../prompts/reviews/m4-execution-profiles-offline-build-recovery-review.md`、`../prompts/m4-execution-profiles-offline-build-recovery-remediation.md` |
 | Container profiles | `threat-model.md`, `architecture.md`, `experiment-matrix.md` |
-| Artifact build or deploy | `artifact-pipeline.md`, `threat-model.md` |
-| Conference claims | `evidence-map.md`, sanitized results |
+| Artifact build or deploy | `artifact-pipeline.md`, `threat-model.md`; for the presentation subset also read `p3-artifact-demo.md` |
+| Conference claims or P4 final review | `evidence-map.md`, sanitized results under `../results/examples/presentation-mvp/`, `reviews/p2-selected-profile-codegen-receipts.md`, `reviews/p2-selected-profile-vite-failure.md`, `reviews/p3-artifact-demo-result.md`, and `../prompts/reviews/p4-evidence-map-review.md` when present |
 | Major design decisions | relevant ADRs under `decisions/` |
 
 The presentation-MVP row is the active delivery route. Historical M4 recovery

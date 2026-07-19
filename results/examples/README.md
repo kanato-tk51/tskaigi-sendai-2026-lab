@@ -10,3 +10,9 @@ transfer requirement.
 This example may support only the version-specific marker baseline with that
 limitation displayed. It is not capability or profile evidence. Later
 presentation examples require their own review.
+
+P4's three talk-facing projections are stored under `presentation-mvp/`. They
+derive only from repository-tracked contracts and independent review records;
+the P4 generator and verifier do not read ignored run roots. Their generated
+claim mapping is `docs/evidence-map.md`; its focused final review approved P4
+and the presentation MVP with no finding.

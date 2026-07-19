@@ -1,0 +1,62 @@
+{
+  "schemaVersion": "presentation-route-trigger-table/v1",
+  "title": "Five TypeScript dependency execution routes",
+  "sourceRecords": [
+    "results/examples/m0-npm12/summary.json",
+    "docs/presentation-evidence-inventory.md",
+    "docs/reviews/presentation-evidence-inventory.md"
+  ],
+  "sourceRunIdPolicy": "The M0 example retains its already-normalized <run-id>. Local M2 run IDs remain omitted by the reviewed P1 projection; this example derives only from tracked contracts and reviews, not ignored run roots.",
+  "rows": [
+    {
+      "routeId": "npm-lifecycle",
+      "route": "npm lifecycle",
+      "fixedInput": "npm 12.0.1; unapproved / approved rebuild / scripts-disabled / reinstall / npm ci",
+      "phaseAndTrigger": "install lifecycle — automatic",
+      "reviewedCounts": "marker 0 / 1 / 0 / 1 / 1",
+      "directAndToolApi": "marker only; no capability or official tool-API change measured",
+      "evidenceClass": "Inconclusive M0 run with scenario-level Observed marker counts",
+      "limitation": "The required docker cp transfer failed and a bounded fallback preserved the marker observations; this is version-specific marker evidence, not capability or profile evidence."
+    },
+    {
+      "routeId": "eslint-plugin",
+      "route": "ESLint plugin",
+      "fixedInput": "ESLint 9.39.5; lint-only / fix",
+      "phaseAndTrigger": "module, initialization, rule, visitor — configured; fixer change — explicit",
+      "reviewedCounts": "lint 1 / 1 / 1 / 1 / 1; fix 1 / 1 / 2 / 2 / 1",
+      "directAndToolApi": "6 capability attempts; fixer change skipped in lint-only and materialized once in fix",
+      "evidenceClass": "reviewed local adapter evidence",
+      "limitation": "Counts are pinned to the fixed version, fixture, options, and retained second lint pass; direct marker, fixer return, and source materialization are distinct."
+    },
+    {
+      "routeId": "vitest-setup",
+      "route": "Vitest setupFiles",
+      "fixedInput": "Vitest 3.2.7; one setup, one test, single fork",
+      "phaseAndTrigger": "late setup-module checkpoint — configured; setup body — automatic",
+      "reviewedCounts": "2 checkpoints; 6 capability attempts; 0 tool changes; 8 total",
+      "directAndToolApi": "direct capability attempts only; no official tool-API change",
+      "evidenceClass": "reviewed local adapter evidence",
+      "limitation": "The two checkpoints occur in one awaited import and are not two separate Vitest callbacks; this is not profile evidence."
+    },
+    {
+      "routeId": "vite-plugin",
+      "route": "Vite plugin",
+      "fixedInput": "Vite 6.4.3; observe / API",
+      "phaseAndTrigger": "module and factory — configured; build hooks — automatic",
+      "reviewedCounts": "6 route + 6 capability + 3 tool-change = 15 per variant",
+      "directAndToolApi": "3 tool changes skipped/NOT_APPLICABLE in observe and successful in API",
+      "evidenceClass": "reviewed local adapter evidence",
+      "limitation": "The local variants demonstrate route and API distinctions only; they are not selected-profile observations."
+    },
+    {
+      "routeId": "codegen-cli",
+      "route": "Codegen CLI",
+      "fixedInput": "project codegen CLI; observe / API / dry-run",
+      "phaseAndTrigger": "all route events — explicit",
+      "reviewedCounts": "5 route + 6 capability + 1 tool-change = 12 per mode",
+      "directAndToolApi": "generator API event skipped or successful as fixed by mode; direct write stays separate",
+      "evidenceClass": "reviewed local adapter evidence",
+      "limitation": "The fixed CLI has no automatic-start claim; these local variants are separate from the selected-profile pair."
+    }
+  ]
+}

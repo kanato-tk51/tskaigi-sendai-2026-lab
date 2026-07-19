@@ -1,0 +1,136 @@
+{
+  "schemaVersion": "presentation-selected-profile-capability-table/v1",
+  "title": "Selected profile capability outcomes",
+  "sourceRecords": [
+    "docs/reviews/p2-selected-profile-codegen-receipts.md",
+    "docs/reviews/p2-selected-profile-vite-failure.md",
+    "docs/p2-selected-profile-contract.md"
+  ],
+  "pairs": {
+    "codegen": {
+      "evidenceClass": "selected profile Observed at the exact one-local-pair scope",
+      "validity": "same-image",
+      "permissiveRunId": "p2-codegen-observe-p-20260719-01",
+      "constrainedRunId": "p2-codegen-observe-c-20260719-01",
+      "completion": "matches-expected / matches-expected",
+      "integrityAttempt": "source hash succeeded in both profiles and is not counted as a sixth capability"
+    },
+    "vite": {
+      "evidenceClass": "observed Inconclusive execution attempt only",
+      "validity": "inconclusive",
+      "permissiveRunId": "p2-vite-observe-p-20260719-02",
+      "constrainedRunId": "p2-vite-observe-c-20260719-02",
+      "completion": "inconclusive / missing",
+      "permissiveEvidence": "not-inspected",
+      "constrainedEvidence": "missing"
+    }
+  },
+  "capabilities": [
+    {
+      "capabilityId": "environment",
+      "capability": "Environment",
+      "codegenPermissive": {
+        "outcome": "success",
+        "reason": null
+      },
+      "codegenConstrained": {
+        "outcome": "failure",
+        "reason": "ENVIRONMENT_VARIABLE_ABSENT"
+      },
+      "vitePermissive": {
+        "outcome": "not-inspected",
+        "reason": null
+      },
+      "viteConstrained": {
+        "outcome": "missing",
+        "reason": null
+      }
+    },
+    {
+      "capabilityId": "file-read",
+      "capability": "File read",
+      "codegenPermissive": {
+        "outcome": "success",
+        "reason": null
+      },
+      "codegenConstrained": {
+        "outcome": "failure",
+        "reason": "READ_DENIED"
+      },
+      "vitePermissive": {
+        "outcome": "not-inspected",
+        "reason": null
+      },
+      "viteConstrained": {
+        "outcome": "missing",
+        "reason": null
+      }
+    },
+    {
+      "capabilityId": "direct-write",
+      "capability": "Direct write",
+      "codegenPermissive": {
+        "outcome": "success",
+        "reason": null
+      },
+      "codegenConstrained": {
+        "outcome": "failure",
+        "reason": "WRITE_DENIED"
+      },
+      "vitePermissive": {
+        "outcome": "not-inspected",
+        "reason": null
+      },
+      "viteConstrained": {
+        "outcome": "missing",
+        "reason": null
+      }
+    },
+    {
+      "capabilityId": "loopback",
+      "capability": "Loopback",
+      "codegenPermissive": {
+        "outcome": "success",
+        "reason": null
+      },
+      "codegenConstrained": {
+        "outcome": "failure",
+        "reason": "NETWORK_FAILURE"
+      },
+      "vitePermissive": {
+        "outcome": "not-inspected",
+        "reason": null
+      },
+      "viteConstrained": {
+        "outcome": "missing",
+        "reason": null
+      }
+    },
+    {
+      "capabilityId": "fixed-child",
+      "capability": "Fixed child",
+      "codegenPermissive": {
+        "outcome": "success",
+        "reason": null
+      },
+      "codegenConstrained": {
+        "outcome": "failure",
+        "reason": "CHILD_PROCESS_FAILURE"
+      },
+      "vitePermissive": {
+        "outcome": "not-inspected",
+        "reason": null
+      },
+      "viteConstrained": {
+        "outcome": "missing",
+        "reason": null
+      }
+    }
+  ],
+  "limitations": [
+    "Trigger labels describe causation, not process privilege.",
+    "The codegen evidence is one local same-image pair, not repeated-run reproducibility or a general-purpose sandbox claim.",
+    "The exhausted Vite pair produced no receipt, constrained attempt, same-image pair, or selected-profile Observed evidence; not-inspected and missing are not zero or success.",
+    "No raw canary value, file content, host path, command output, or unsanitized error is included."
+  ]
+}

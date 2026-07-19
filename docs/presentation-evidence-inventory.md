@@ -16,9 +16,10 @@ Docker, execute a probe, create profile evidence, or change an Observed field in
 The inventory uses only these evidence classes:
 
 - **Observed**: a completed runtime observation at the scope claimed by its
-  scenario. No selected presentation profile or artifact scenario currently has
-  this class. M0 contains scenario-level Observed marker counts, but the run as
-  a whole is classified Inconclusive.
+  scenario. At P1 inventory time no selected presentation profile or artifact
+  scenario had this class. The later reviewed `codegen-observe-p/c` pair now has
+  selected-profile Observed status; M0 still contains only scenario-level
+  Observed marker counts inside an overall Inconclusive run.
 - **Inconclusive**: a runtime command produced bounded observations but did not
   satisfy a required completion or evidence-transfer condition.
 - **local adapter evidence**: a reviewed fixed M2 runner observed a tool-specific
@@ -29,6 +30,10 @@ The inventory uses only these evidence classes:
   runtime-enforcement or route claim.
 - **Expected-only**: a pre-run hypothesis, design, manifest, or scenario
   contract. It is never reported as an observed outcome.
+
+An **unreviewed runtime candidate** is a workflow state, not an evidence class.
+The successful P3 command passed its recorded fresh result review and is now
+accepted as Observed only at its exact one-local-run scope.
 
 `Suitable` below means suitable for the stated narrow conference use after the
 P1 gate. It does not promote the evidence to another class.
@@ -46,7 +51,7 @@ P1 gate. It does not promote the evidence to another class.
 | [M3 remediation review](reviews/m3-harness-and-reports-remediation.md) | **static/unit** | The synthetic contract uses bounded canonical data, but it is not an adapter or presentation example. | Raw-to-derived exact regeneration is tested for the fixed synthetic fixture. | No empirical claim. It supports the future reporting path only. |
 | [M4 Expected contract](m4-execution-profiles.md), static/unit reviews, and doctor inventory | **Expected-only** for profile outcomes; **static/unit** for implementation and fake-backend checks | The recorded review/doctor projections are bounded and sanitized. | Static/unit checks are reproducible for reviewed bytes. They do not reproduce container enforcement. | No route/profile claim. Configuration intent, doctor inventory, and fake-backend behavior are not enforcement evidence. |
 | [M4 one-time build follow-up](reviews/m4-execution-profiles-offline-build-execution-gate.md#one-time-execution-follow-up) | **Inconclusive** | Yes; the canonical result omits host paths, raw output, credentials, and runtime-created contents. | Bound to one reviewed run ID/plan; retry is prohibited and retained state is frozen. | No. It ended `CLEANUP_FAILURE`, has `builtImageDigest: null`, ran no controls, and is not the presentation artifact demo. |
-| [Artifact pipeline design](artifact-pipeline.md) | **Expected-only** | No runtime bytes exist. | The MVP semantic boundary is fixed, but its fixture, command bytes, receipt, and result have not been implemented. | No empirical use until P3 runs the fixed presentation artifact scenario. |
+| [P3 artifact demo](p3-artifact-demo.md) and [result review](reviews/p3-artifact-demo-result.md) | **Observed** at the exact one-local-run scope | The fixed result/receipt projection is bounded and retains no host path, raw environment value, credential, or external output. | One fixed local command exited 0 without retry; cross-machine reproducibility is not established. | Yes for C-06/C-07 with the unsigned-receipt, identity-not-harmlessness, and no-OS-egress-evidence limitations displayed. |
 
 ## Sanitized local adapter projection
 
@@ -70,12 +75,12 @@ run-ID-bearing marker hashes are intentionally omitted.
 | Claim | Eligible existing evidence | Current state | Smallest missing runtime run and fixed scenario | Limitations that must appear next to the claim |
 |---|---|---|---|---|
 | **C-01** — dependency code runs through five routes | M0's scenario-level lifecycle marker counts plus the M2-B/C/D/E sanitized local projection above | Candidate evidence complete after the P1 review; no profile run is required for this route table | None for phase/trigger/count. P4 must generate the compact five-route table from this inventory rather than cite ignored run directories. | M0 is overall Inconclusive and marker-only. M2 facts are local adapter evidence, not matrix/profile Observed. Every count is pinned to its exact tool/fixture/options. |
-| **C-02** — trigger label is not process privilege | Reviewed route trigger metadata exists. M4 policy/outcomes are only Expected-only/static-unit. | Missing selected route/profile observations; the P2 contract now binds the complete codegen producer | After one focused implementation review, run exactly `vite-observe-p`, `vite-observe-c`, `codegen-observe-p`, and `codegen-observe-c` under the fixed runner. Preserve M2-E's complete `5 / 6 / 1 / 12` producer against the pre-run matrix. | `automatic`, `configured`, and `explicit` describe causation only. Do not derive privilege from the label or from container configuration. Do not hide extra local events or rewrite Expected after observing a run. |
-| **C-03** — five capabilities are separate | M2 local runs record environment, file, direct write, loopback, and child attempts separately; file hash is an additional event, not a sixth privilege claim. | Existing separation is local adapter evidence; bounded selected-profile outcomes are missing | Use the same four P2 runs and preserve each attempt outcome/reason separately under the reviewed binding. Do not collapse absent, skipped, denied, timeout, or success. | No raw canary values, file contents, host paths, commands, or unsanitized errors. A failed exclusive write does not prove rollback of partial output. |
-| **C-04** — the same fixture reaches different capabilities under different policies | M4 contains only Expected/static-unit control material; no selected route/profile Observed exists. | Missing selected observations; same-image/profile mechanics remain Expected-only | The same four P2 runs. Each Vite pair and codegen pair must use identical fixture and immutable image bytes, fixed command/arguments, and separate run/result IDs. | A manifest skip is not runtime denial. If a fixed tool requirement prevents isolating a capability, display the successful attempt as a limitation. Profile-control diagnostic is not route evidence. |
+| **C-02** — trigger label is not process privilege | Reviewed route trigger metadata plus the independently accepted `codegen-observe-p/c` selected-profile Observed pair | Codegen comparison complete; Vite selected-profile observations missing | Implement and run only `vite-observe-p/c` through the same gated fixed-runner process. Preserve the complete reviewed codegen `5 / 6 / 1 / 12` projection and do not hand-promote matrix cells. | `automatic`, `configured`, and `explicit` describe causation only. Do not derive privilege from the label or from container configuration. The codegen evidence is one local pair, not a reproducibility or general-isolation claim. |
+| **C-03** — five capabilities are separate | M2 local runs separate all capabilities; the accepted codegen pair retains six ordered attempts, with file hash explicitly treated as integrity rather than a sixth capability. | Codegen bounded outcomes complete; Vite selected-profile outcomes missing | Add the Vite pair while preserving each attempt outcome/reason. Do not collapse absent, skipped, denied, timeout, or success. | No raw canary values, file contents, host paths, commands, or unsanitized errors. A failed exclusive write does not prove rollback of partial output. |
+| **C-04** — the same fixture reaches different capabilities under different policies | The accepted codegen pair is same-image and records permissive success versus constrained absence/denial/failure for the fixed attempts. | Codegen comparison complete; Vite same-image pair missing | Implement and run only the fixed Vite pair with identical fixture/image bytes, fixed command/arguments, and separate run/result IDs. | The codegen receipt does not by itself carry the staging manifest or prove no-retry history; use it with the reviewed executor/execution record. A manifest skip is not runtime denial, and profile-control diagnostic is not route evidence. |
 | **C-05** — direct writes differ from official tool API changes | Reviewed ESLint fix, Vite observe/API, and codegen observe/API local adapter evidence; events, targets, materialization, and hashes remain distinct. | Candidate evidence complete after the P1 review | None under the presentation scope. P4 must project only the reviewed local facts; P2 observe runs may supplement capability outcomes but do not replace the API variants. | A direct marker is not a tool-owned artifact/source edit. API return, in-memory/bundle change, disk materialization, and ordinary tool output are not interchangeable. |
-| **C-06** — build once, verify/copy, reject one-byte tamper | Artifact design is Expected-only. M3 hash tests are synthetic static/unit evidence. The M4 build is unrelated and Inconclusive with no built-image digest. | Missing | P3 scenario `artifact-mvp-build-once`: one repository-owned fixture, fixed command ID and arguments, one build invocation, canonical receipt, separate-directory verify/copy, plus declared `one-byte-tamper` on a disposable copy before a second copy attempt. | The build must be credential-free/offline with read-only source and a dedicated artifact directory. Verify/copy must not install or rebuild. Report invocation count and all digests from the run. |
-| **C-07** — identity/provenance is not harmlessness | The limitation is stated in the presentation scope and artifact design, but there is no result beside which to display it. | Missing the same P3 result as C-06 | No additional run beyond `artifact-mvp-build-once`; include the limitation in its receipt/result and later evidence-map row. | SHA-256 and an unsigned local receipt establish byte identity and recorded inputs only. They do not prove semantic harmlessness, truth against a jointly replaced artifact/receipt, or SLSA/in-toto compliance. |
+| **C-06** — build once, verify/copy, reject one-byte tamper | The reviewed exact P3 result records build count 1, separate digest verification, verified copy/post-copy digest with zero deploy builds, and rejection before copy after exactly one changed byte. M3 hash tests remain synthetic static/unit evidence, and the M4 build remains unrelated/Inconclusive. | Exact one-local-run Observed accepted | No additional runtime run. P4 must create the tracked sanitized artifact table from the reviewed projection without citing the ignored root. | The recorded empty child environment and code path are not OS-level egress proof. Verify/copy did not install or rebuild. Report the exact one-local-run scope and all receipt limitations. |
+| **C-07** — identity/provenance is not harmlessness | The reviewed P3 receipt/result displays the required identity-not-harmlessness, unsigned-receipt, and no-OS-egress-evidence limitations. | Exact one-local-run Observed accepted with limitations | No additional runtime run. P4 must place the limitations next to C-06/C-07. | SHA-256 and an unsigned local receipt establish byte identity and recorded inputs only. They do not prove semantic harmlessness, truth against a jointly replaced artifact/receipt, or SLSA/in-toto compliance. |
 
 ## Rejected presentation inputs
 
@@ -110,8 +115,85 @@ boundaries with no findings. It confirmed that no local/static/Expected input
 was promoted and did not run Docker or change matrix Observed.
 
 The Docker-non-executing P2
-[contract](p2-selected-profile-contract.md) fixes the complete codegen
-adapter-to-scenario mapping and exact four-run boundary. The next repository
-task is the minimal fixed runner implementation. P3 remains separate, and P4
-remains responsible for the final sanitized examples, three compact talk
-tables, and evidence map.
+[contract](p2-selected-profile-contract.md) fixes the exact four-run boundary.
+Its codegen implementation, one-shot execution, and
+[fresh independent receipt review](reviews/p2-selected-profile-codegen-receipts.md)
+are complete; the two codegen receipts are selected-profile Observed without a
+matrix promotion. Root verification hardening and the Docker-non-executing M2-D
+exact binding/bounded projection, fixed runner, and exact staging assembly are
+complete without reading the ignored codegen evidence or creating Vite runtime
+evidence. The fresh focused
+[Vite runner/staging review](reviews/p2-selected-profile-vite-runner.md)
+accepted the fixed inventory and constrained-child limitation but blocked on
+P2-V01 because settlement-unknown did not suppress cleanup. The
+Docker-non-executing remediation and behavioral process/server tests closed
+P2-V01 on fresh re-review, which then found P2-V03 in successful-close residue
+classification. The focused remediation now rejects bounded force-settled
+residue as a known failure and behaviorally proves output verification is
+skipped. A fresh independent Docker-non-executing re-review closed P2-V03 with
+no new blocker and approved only minimal Vite executor implementation. That
+executor is now implemented, statically verified, and
+[independently reviewed](reviews/p2-selected-profile-vite-executor.md) without
+Docker; the review found no new blocker and approved only the exact one-shot
+Vite execution gate. The gate was used exactly once and exited 1 in the
+permissive scenario before a canonical receipt; the constrained root is absent.
+The
+[fresh Docker-free failed-attempt review](reviews/p2-selected-profile-vite-failure.md)
+classifies that pair attempt Inconclusive, leaves Vite selected-profile Observed
+unmeasured, and finds P2-V04 in receipt assembly/output availability. The
+retained attempt cannot be safely recovered inside the read-only boundary. The
+Docker-non-executing P2-V04 remediation now writes a canonical attempt record
+before host evidence access, preserves unavailable output as `not-inspected`,
+defers runner verification/export until settlement is known, and keeps complete
+receipts separate from attempt outcomes. Its focused behavioral and full P2
+static checks pass, but the
+[fresh independent Docker-non-executing re-review](reviews/p2-selected-profile-vite-failure.md)
+keeps P2-V04 open on P2-V05/P2-V06: later failures erase already-inspected
+lifecycle fields, and production evidence access can be partially performed
+while reported as `not-inspected`; the real fixed-path export/read boundary also
+lacks behavioral filesystem coverage. The bounded Docker-non-executing
+follow-up now retains validated image/exit fields, completes fixed-path
+metadata/mode preflight before event open, distinguishes post-open partial
+inspection, and connects the production runner export and executor reader in a
+repository-local filesystem regression. A fresh independent Docker-non-executing
+re-review closes P2-V06 but keeps P2-V05 open: a valid final exited inspect was
+still stored only after the image/start-exit cross-check. The bounded residual
+P2-V05 remediation now stores that outcome first and covers both exit-code and
+image mismatches while retaining the exact partial fields and avoiding evidence
+access. A fresh Docker-non-executing re-review reproduces those exact bytes,
+regressions, and staging identity, finds no new blocker, closes P2-V05, and
+therefore closes parent P2-V04 after P2-V06. The exhausted gate is not retried.
+A Docker-non-executing proposal fixed new `20260719-02` Vite run IDs, distinct
+container names, and the later exact one-command/no-retry boundary. Its active
+context/plan/runner/projection/executor binding and exact 128-file staging
+candidate are now implemented with static/unit evidence; both new result roots
+were absent before execution. A fresh independent Docker-non-executing review reproduced the
+candidate bytes and staging identity with no blocker and approved only one
+argument-free `npm run p2:execute:vite` pair attempt with no retry. A fresh
+worker revalidated the exact candidate and used standing authorization for that
+command once; it exited 1 with only the permissive scenario represented in the
+bounded Inconclusive projection. The permissive root has a canonical
+Inconclusive attempt record and no receipt, the constrained root is absent, and
+the pair was not retried. Neither Vite scenario is selected-profile Observed.
+A fresh Docker-free read-only review reproduced the exact attempt, approved
+source identities, bounded projection, and fixed root states and accepted the
+attempt only as Inconclusive. The missing constrained outcome and same-image
+pair are an explicit presentation limitation, not zero or success, and no Vite
+retry/recovery task remains. The Docker-free P3 minimal artifact-demo
+implementation and focused tests are complete. A fresh independent Docker-free
+review reproduced the fixed candidate and approved only one later argument-free
+`npm run p3:execute` invocation with no retry. A fresh worker then revalidated
+the snapshot and absent root and used standing authorization for that exact
+command once; it exited 0 and was not retried. The resulting fixed receipt/result
+passed the
+[fresh Docker-free read-only result review](reviews/p3-artifact-demo-result.md),
+which reproduced its canonical identities, cross-copy equality, exact one-byte
+tamper rejection, build/no-rebuild counts, and limitations without rerun or
+repair. C-06/C-07 are accepted at that exact one-local-run scope. The next task
+was P4 tracked sanitized examples, three compact talk tables, and the evidence
+map. Those implementation outputs are now generated and root-verified without
+rerunning P2/P3 or reading ignored roots. The
+[fresh focused read-only safety/validity review](reviews/p4-evidence-map.md)
+found no finding and approved P4 and the presentation MVP as complete.
+
+Next: none

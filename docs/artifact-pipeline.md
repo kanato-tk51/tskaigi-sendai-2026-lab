@@ -9,6 +9,21 @@ delivery contract is the five-step [presentation MVP artifact demo](presentation
 The detailed packaging/provenance design below is retained as a research target
 and must not block the small build-once/digest/copy/tamper demonstration.
 
+The exact P3 subset is [implemented](p3-artifact-demo.md), and its focused
+static/unit evidence made the candidate
+[independently approved](reviews/p3-artifact-demo.md) for one exact execution.
+That one-shot command later exited 0 under standing authorization. A
+[fresh Docker-free result review](reviews/p3-artifact-demo-result.md)
+independently reproduced the fixed canonical receipt/result, copy equality,
+one-byte rejection, and limitations and accepted them for C-06/C-07 at the
+exact one-local-run scope. The command must not be retried; P4 must use a
+tracked sanitized projection rather than the ignored result root. The P4
+implementation now uses
+[`results/examples/presentation-mvp/artifact.json`](../results/examples/presentation-mvp/artifact.json)
+for that boundary; its
+[focused final review](reviews/p4-evidence-map.md) approved the bounded
+projection and presentation MVP with no finding.
+
 The MVP requires one fixed build receipt, not a general provenance framework or
 the complete planned CLI surface.
 

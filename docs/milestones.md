@@ -1209,8 +1209,64 @@ git status --short
 
 Status: **active; P1 complete; P2 Expected contract and non-executing create
 plan complete; codegen binding/projection/fixed runner/staging assembly/review
-complete; its minimal executor is implemented and an independent read-only
-executor review is next**.
+complete; its minimal executor's P2-B01 through P2-B04 remediation is implemented
+and statically verified; independent re-review closed all four findings with no
+new blocker; the approved one-shot codegen pair and its fresh independent
+Docker-free receipt review are complete, and both exact codegen scenarios are
+accepted as selected profile Observed; root formatting verification hardening is
+complete; Vite exact context, separated runtime bindings, and bounded projection
+are implemented and statically verified; its fixed runner and exact staging
+assembly are also complete; a fresh focused review blocked executor
+implementation on P2-V01 settlement/cleanup ordering; remediation and behavioral
+process/server tests are implemented and statically verified; a fresh re-review
+closed P2-V01 but blocked executor implementation on P2-V03 successful-close
+residue classification; focused remediation and its behavioral regression are
+implemented and statically verified; another fresh re-review closed P2-V03 with
+no new blocker and approved minimal Vite executor implementation; that executor
+is implemented and statically verified without Docker; a fresh independent
+Docker-non-executing review found no new blocker and approved its exact one-shot
+execution gate; that gate was used exactly once and exited 1 during the
+permissive scenario before any canonical receipt or constrained result root was
+created; Vite selected profile Observed remains unmeasured; a fresh Docker-free
+failure review classified the attempt Inconclusive, found P2-V04 in receipt
+assembly/output availability; its Docker-non-executing remediation is
+implemented, but a fresh independent re-review keeps P2-V04 open on P2-V05 and
+P2-V06 lifecycle-state retention and production evidence
+availability/coverage; their bounded Docker-non-executing remediation is now
+implemented and statically verified; a fresh independent re-review closes
+P2-V06 but keeps P2-V05 open because final-inspect exit retention still occurs
+after image/start-exit cross-checking; the bounded residual P2-V05 remediation
+and focused mismatch regressions are implemented and statically verified; a
+fresh Docker-non-executing re-review finds no new blocker, closes P2-V05 and
+parent P2-V04; the fixed `20260719-02` Vite run IDs and distinct container
+names are now implemented across the active context/plan/runner/projection/
+executor and exact 128-file staging candidate with Docker-free static/unit
+evidence; a fresh independent Docker-non-executing review reproduced the exact
+candidate and found no blocker, approving only one argument-free
+`npm run p2:execute:vite` pair attempt with no retry; a fresh worker reproduced
+the approved snapshot and used standing authorization for exactly that command;
+it exited 1 with one canonical permissive Inconclusive attempt record, no
+receipt, and no constrained result root; the attempt was not retried and the
+fresh Docker-free read-only attempt review reproduced the exact canonical
+record, approved source identities, bounded projection, and fixed root states;
+it accepts the exhausted attempt only as Inconclusive, leaves Vite selected
+profile Observed unmeasured, and closes the P2 Vite slice with an explicit
+limitation; the Docker-free P3 minimal artifact-demo implementation and focused
+tests are complete; a fresh independent Docker-free review reproduced the fixed
+candidate and approved the exact one-shot gate with no finding; a fresh worker
+revalidated that snapshot and absent root, then used standing authorization to
+run the argument-free `npm run p3:execute` exactly once; this was not a separate
+human review; the command exited 0 without retry and created one candidate
+canonical receipt/result root with recorded build count 1, verified/copy
+dispositions, and one-byte rejection; a fresh Docker-free read-only result
+review independently reproduced the fixed identities, canonical bytes,
+copy/tamper relations, build/no-rebuild counts, and limitations with no finding
+and accepted the exact one-local-run result for C-06/C-07; the production
+command remains non-retryable; P4 tracked sanitized examples, deterministic
+generation/verification, three compact talk tables, and
+`docs/evidence-map.md` are implemented and root-verified; a fresh focused final
+safety/validity review found no finding and approved P4; the presentation MVP
+is complete; Next: none**.
 
 This section supersedes every earlier `next task` or `current-next-task` clause
 for scheduling. The preceding M4 history remains an accurate record of work and
@@ -1330,6 +1386,590 @@ P2 typecheck/build and 27 static/unit tests pass, but no Docker command was
 called. The next task is a fresh independent read-only executor review before
 the recorded one-shot codegen execution; Vite remains unchanged.
 
+Executor independent review update (2026-07-19; supersedes the next-task clause
+immediately above): the
+[fresh independent read-only review](reviews/p2-selected-profile-executor.md)
+confirmed the fixed argument-free command/configuration and sanitized receipt
+boundaries but blocked execution on P2-B01 through P2-B04. The executor validates
+create and pre-start inspect only after later Docker commands, does not bound
+post-signal CLI settlement, reads the event segment before enforcing its byte
+limit, and does not cross-bind the pair's inspected image IDs. No Docker command,
+profile run, matrix update, or Observed value was produced. The next task is a
+Docker-non-executing remediation of those four findings, followed by a fresh
+independent read-only re-review; `npm run p2:execute:codegen` remains blocked and
+Vite remains unchanged.
+
+Executor remediation update (2026-07-19; supersedes the next-task clause
+immediately above): P2-B01 through P2-B04 are remediated without Docker access.
+The lifecycle now proves create ownership and the exact first-inspect state before
+start, bounds post-signal settlement and suppresses cleanup while settlement is
+unknown, rejects/limits event bytes before retaining them and detects post-stat
+growth, and emits a separate same-image pair projection without rewriting either
+scenario receipt. Docker-free fake backends and fixed process/file-handle seams
+cover the blocked transitions and limit races. `npm run p2:verify` passed 5 files
+/ 44 tests, `npm run p2:build` passed, and `npm run check` passed 92 files / 595
+tests. No Docker command, profile run, matrix update, or Observed value was
+produced. The next task is a fresh independent read-only re-review of the
+remediated executor and entry; `npm run p2:execute:codegen` remains blocked and
+Vite remains unchanged.
+
+Executor remediation independent re-review update (2026-07-19; supersedes the
+next-task clause immediately above): the
+[fresh independent read-only re-review](reviews/p2-selected-profile-executor.md)
+closed P2-B01 through P2-B04 with no new blocking finding. It reproduced the
+remediated executor/entry hashes, exact 30-file staging equality, P2 verification
+(5 files / 44 tests), P2 build, and root check (92 files / 595 tests) without
+calling Docker or creating profile/matrix Observed. The exact one-shot codegen
+execution gate is now approved. The next task is a fresh worker revalidating the
+recorded hashes, staging inventory, and absence of both fixed result roots, then
+using the `continue-repository-work` standing authorization to run the
+argument-free `npm run p2:execute:codegen` exactly once. This is not a separate
+human review; no other Docker command, retry, Vite change, or Observed promotion
+is approved.
+
+One-shot codegen execution update (2026-07-19; supersedes the next-task clause
+immediately above): a fresh worker reproduced the reviewed executor/entry/package
+and tracked-manifest hashes, exact 30-file staging equality and logical manifest,
+and both absent fixed result roots. It then used the
+`continue-repository-work` standing authorization to run the argument-free
+`npm run p2:execute:codegen` exactly once; this was not a separate human review.
+The command exited 0 without retry. Its pair is `same-image` on the fixed image
+ID, and both fixed scenario receipts are `matches-expected`, have container exit
+0, unchanged source hashes, exact `5 / 6 / 1 / 12` counts, and no issues. Their
+summary SHA-256 values are `6b24148d57dc37d4cae67b12b19da3b75f64da4724cd1f8ab3462c5ae27a6e24`
+and `7c83e41a20577e1e4be09a92fa8d7d39225489d92d36a33ba741f54a15739423`.
+Post-run `npm run p2:verify` passed 5 files / 44 tests. No other Docker command,
+Vite run, matrix edit, or Observed promotion occurred. The next task is a fresh
+independent Docker-free read-only review of those exact receipts and the
+execution record before deciding whether to accept them as selected codegen
+Observed evidence; do not rerun Docker in that review.
+
+Codegen receipt independent review update (2026-07-19; supersedes the next-task
+clause immediately above): the
+[fresh independent Docker-free review](reviews/p2-selected-profile-codegen-receipts.md)
+reproduced both canonical summary hashes/sizes, fixed identities, same-image
+binding, container exit 0, unchanged source hashes, exact `5 / 6 / 1 / 12`
+counts, all ordered attempt outcomes, empty issues, and bounded output inventory.
+It also regenerated each projection from the local raw event segment without
+printing or retaining raw fields. Both exact codegen scenarios are accepted as
+selected profile Observed at their one-local-pair scope; this does not promote
+`experiment-matrix.md`, prove reproducibility or general isolation, or establish
+Vite evidence. Docker, runtime-socket access, external network, and retained M4
+state were not used by the review. Root `format:check` now exits 2 while
+expanding the ignored run tree because the constrained canary directory is
+intentionally unreadable; targeted formatting/lint, root typecheck, and 92 files
+/ 595 tests pass without changing that evidence. The next task is ordinary
+verification hardening so `format:check`/`check` enumerate repository-owned
+non-ignored inputs without reading or mutating either P2 run root. The following
+P2 task is the Docker-non-executing M2-D `vite-observe-p/c` binding and bounded
+projection slice.
+
+Root verification hardening update (2026-07-19; supersedes the next-task clause
+immediately above): `scripts/check-format.mjs` now obtains a NUL-delimited list
+of tracked and non-ignored untracked inputs from Git and gives Prettier only
+those file paths with unknown file types ignored. It therefore does not ask
+Prettier to expand the repository root or either ignored P2 run tree.
+`tests/format-check.test.ts` creates its own repository-local fixture and proves
+that both discovery and the formatter check succeed while an ignored nested
+directory is unreadable; the fixture restores only its own permissions and is
+removed after the assertion. Neither P2 run root was read, changed, moved, or
+deleted. The focused regression passed, `npm run format:check` passed, and the
+root `npm run check` passed 93 files / 596 tests. No Docker command, profile run,
+receipt, Expected value, or Observed value changed. The next task is the
+Docker-non-executing M2-D binding and bounded projection slice for
+`vite-observe-p/c`.
+
+Vite binding/projection update (2026-07-19; supersedes the next-task clause
+immediately above): M2-D now binds only the exact selected
+scenario/run/profile tuples before manifest/session creation while preserving
+the existing local context. Selected event, tool/canary/output, fixed staged
+source, and direct-write roots are separate, and config ownership checks are
+bound to the tool root. The small projection bounds input at 65,536 bytes / 32
+events, validates the exact `6 / 6 / 3 / 15` order and Expected outcomes,
+preserves mismatch/inconclusive states, removes unknown/raw fields, and records
+the constrained Vite child-success limitation explicitly. M2-D typecheck and 12
+test files / 72 tests passed; P2 typecheck/build and 6 test files / 52 tests
+passed; the root check passed 95 test files / 613 tests. No Docker command, Vite
+staging/executor/run, receipt, Expected edit, Observed promotion, or matrix
+change occurred. The next task is the Docker-non-executing argument-free fixed
+Vite runner and exact staging assembly; executor/review and pair execution
+remain later gates.
+
+Vite runner/staging update (2026-07-19; supersedes the next-task clause
+immediately above): the argument-free runner now accepts only the two exact
+selected Vite tuples and fixes one identical Vite production-build argv, fixed
+tool environment, permissive-only canary/loopback exposure, constrained canary
+read denial, and the documented child-success limitation. Its process group,
+time/output/settlement bounds, source recheck, event/output limits, and sanitized
+completion shape have static/unit coverage. The argument-free staging command
+copies exactly 128 byte-equal regular files with fixed modes: the selected
+adapter/config/fixture closure, probe-core runtime, pinned tool packages, and
+only the fixed Linux amd64 Rollup/esbuild binaries. `npm run p2:verify` passed 8
+test files / 62 tests, `npm run p2:build` passed, `npm run p2:stage:vite`
+assembled 128 files, and a Docker-free import check reproduced Node.js
+`v20.18.2`, Vite `6.4.3`, Rollup `4.62.2`, and esbuild `0.25.12`; the exact
+logical staging manifest hashes to
+`cc4e8dbc5df4e4f19246c48fb164b1d32157dc04423ddcc1388c95b9fb384677`. The root
+check passed 97 test files / 623 tests. No Docker command, runtime socket, Vite
+profile run, receipt, Expected edit, Observed promotion, or matrix change
+occurred. The next task is a fresh focused Docker-non-executing review of the
+fixed Vite runner and exact staging inventory; do not add an executor or run
+Docker before that review approves the exact bytes.
+
+Vite runner/staging review update (2026-07-19; supersedes the next-task clause
+immediately above): the
+[fresh focused Docker-non-executing review](reviews/p2-selected-profile-vite-runner.md)
+reproduced the fixed scenario/command/environment/mount boundaries, explicit
+constrained-child limitation, exact 128 source-equal staged files and modes,
+tool versions, and fixed plan-order staging manifest. It resolved only the
+documentation description of that manifest order. The execution gate is
+blocked on P2-V01: close-first failure discards the final group-exit result,
+failure-first paths do not require an accepted bounded close disposition, and
+loopback/partial-segment cleanup can proceed while settlement is unknown. The
+current runner tests assert lifecycle source strings but do not behaviorally
+cover those transitions. `npm run p2:verify` passed 8 files / 62 tests and
+`npm run p2:build` passed; the root check passed 97 files / 623 tests. No Docker
+command, runtime socket, Vite run, receipt, Observed promotion, or matrix change
+occurred. The next task is a Docker-non-executing P2-V01 remediation with
+behavioral fake process/server lifecycle tests, followed by a fresh re-review
+before any Vite executor or Docker operation.
+
+Vite P2-V01 remediation update (2026-07-19; supersedes the next-task clause
+immediately above): the runner now retains the first timeout/output/process
+failure with explicit known/unknown settlement. Close-first and failure-first
+paths require an accepted bounded coordinator close disposition plus confirmed
+group absence; missing/contradictory close or residue after final KILL becomes
+`P2_CHILD_SETTLEMENT_UNKNOWN`. Unknown child settlement suppresses output
+verification, loopback teardown, and partial-segment chmod. Once child settlement
+is known, server close is bounded to one second, and unknown server settlement
+retains the first failure while suppressing chmod. The bounded sanitized failure
+projection exposes that cleanup barrier for a future executor without raw errors.
+Docker-free fake process and server tests behaviorally cover success, nonzero
+close, timeout/output/process failure, TERM/KILL order, missing/contradictory
+close, final residue, bounded server close, and cleanup order/suppression. The
+rebuilt exact 128-file staging
+manifest is `edeb861279e0b4c09539456b434e3b5747e53c9069937f7756ba9b7238a23078`.
+`npm run p2:verify` passed 8 files / 76 tests, `npm run p2:build` passed, and the
+root check passed 97 files / 637 tests. No Docker command, runtime socket, Vite
+run, receipt, Expected edit, Observed promotion, matrix change, external network,
+or retained M4 access occurred; standing authorization was not needed. The next
+task is a fresh independent Docker-non-executing re-review of the remediated
+runner/tests and rebuilt staging bytes. Do not add an executor or run Docker
+before that re-review closes P2-V01.
+
+Vite settlement remediation independent re-review update (2026-07-19;
+supersedes the next-task clause immediately above): the fresh
+Docker-non-executing re-review reproduced the three remediated key-file hashes,
+the exact 128-file source-equal fixed-mode staging tree and plan-order
+`edeb861279e0b4c09539456b434e3b5747e53c9069937f7756ba9b7238a23078`
+manifest, fixed tool versions, and the behavioral settlement/cleanup coverage.
+P2-V01 is closed. The re-review found P2-V03: natural coordinator close
+`0 / null` plus a still-present process group sends `SIGKILL` and waits, but a
+successful later group exit is accepted as runner success instead of the
+run-invalidating residue failure required by the accepted M2-D boundary. A
+Docker-free fake-backend assertion reproduced resolution with trace
+`launch, group-exists, SIGKILL, wait-group`; `npm run p2:verify` still passed 8
+files / 76 tests because that exact transition is absent from the suite. No
+Docker command, runtime socket, Vite run, receipt, Expected edit, Observed
+promotion, matrix change, external network, or retained M4 access occurred;
+standing authorization was not needed. The next task is a Docker-non-executing
+P2-V03 remediation and focused behavioral test, followed by another fresh
+independent re-review. Do not add a Vite executor or call Docker before that
+gate approves the exact rebuilt bytes.
+
+Vite P2-V03 remediation update (2026-07-19; supersedes the next-task clause
+immediately above): the runner now retains post-close process-group presence.
+A natural `0 / null` coordinator close followed by residue that disappears only
+after bounded `SIGKILL` settlement is a known `P2_CHILD_FAILED` result rather
+than success; failure to prove final group absence remains
+`P2_CHILD_SETTLEMENT_UNKNOWN`. The focused fake-backend lifecycle regression
+exercises that exact transition, rejects it, and proves output verification is
+skipped while cleanup occurs only after settlement is known. The runner and test
+hashes are `480b5fd3...` and `761dca75...`; the rebuilt exact 128-file
+source-equal fixed-mode staging manifest is
+`13f019cb9d9636023d43350ed13932e5fbc2d1f8ae2a01abe85458ffcd89ae22`.
+The focused test passed 1 file / 19 tests, `npm run p2:verify` passed 8 files /
+77 tests, `npm run p2:build` passed, and `npm run p2:stage:vite` plus the
+Docker-free staging assertion passed with fixed tool versions. The root
+`npm run check` passed 97 files / 638 tests. No Docker command, runtime socket,
+Vite run, receipt, Expected edit, Observed promotion, matrix change, external
+network, or retained M4 access occurred; standing authorization was not needed.
+The next task is a fresh independent Docker-non-executing re-review of the exact
+runner/test/staging bytes. Do not add a Vite executor or call Docker before that
+review closes P2-V03.
+
+Vite P2-V03 remediation independent re-review update (2026-07-19; supersedes
+the next-task clause immediately above): the fresh Docker-non-executing
+re-review reproduced the seven candidate hashes, exact 128-file source-equal
+fixed-mode staging tree, plan-order
+`13f019cb9d9636023d43350ed13932e5fbc2d1f8ae2a01abe85458ffcd89ae22`
+manifest, and fixed Node/Vite/Rollup/esbuild versions. The focused 19-test suite
+and full P2 77-test suite passed. Natural close `0 / null` is now successful only
+with immediate process-group absence; bounded force settlement of post-close
+residue remains a known failure that skips output verification, while unknown
+final absence retains the cleanup barrier. P2-V03 is closed with no new blocker,
+and minimal Vite executor implementation is approved. No Docker command,
+runtime socket, Vite run, receipt, Expected edit, Observed promotion, matrix
+change, external network, credential, retained M4 access, or remote Git occurred;
+standing authorization was not needed because the task was non-executing. The
+next task is the Docker-non-executing minimal Vite executor bound to the exact
+reviewed runner/staging/projection and settlement barrier, followed by a fresh
+independent review before any Docker execution gate.
+
+Vite minimal executor implementation update (2026-07-19; supersedes the
+next-task clause immediately above): the argument-free executor is bound to the
+exact `vite-observe-p/c` plans/result roots, complete 128-file source-equal
+fixed-mode staging tree, fixed create/inspect/attached-start/remove sequence,
+credential-empty Docker configuration, inspected ownership/image/state
+transitions, bounded CLI output/deadline/post-signal settlement, bounded event
+read, sanitized runner framing, canonical receipt, and pair-level same-image
+identity. It preserves the reviewed runner barrier by suppressing executor
+cleanup for child/server settlement unknown; malformed runner framing and
+unknown Docker CLI settlement also fail closed without cleanup. The focused 21
+tests, `npm run p2:verify` (9 files / 98 tests), `npm run p2:build`, exact
+staging revalidation, compiled import check, and root `npm run check` (98 files /
+659 tests) passed. No Docker command,
+runtime socket, Vite run, receipt, Expected edit, Observed promotion, matrix
+change, external network, credential, retained M4 access, or remote Git
+occurred; standing authorization was not needed because the task was
+non-executing. The next task is a fresh independent Docker-non-executing review
+of the exact executor/entry/tests/staging/receipt/pair bytes and cleanup barrier.
+Do not run the recorded `npm run p2:execute:vite` command or define an execution
+gate before that review.
+
+Vite minimal executor independent review update (2026-07-19; supersedes the
+next-task clause immediately above): the
+[fresh independent Docker-non-executing review](reviews/p2-selected-profile-vite-executor.md)
+reproduced the nine candidate hashes, exact 128-file source-equal fixed-mode
+staging tree and plan-order
+`13f019cb9d9636023d43350ed13932e5fbc2d1f8ae2a01abe85458ffcd89ae22`
+manifest, fixed tool versions, command transition, bounded Docker CLI
+settlement/output, bounded event read, exact runner framing, canonical
+receipt/pair projection, and child/server settlement-unknown cleanup barrier.
+The focused 21 tests, `npm run p2:verify` (9 files / 98 tests), P2 build,
+compiled import check, independent staging assertion, and root `npm run check`
+(98 files / 659 tests) passed. No Docker command, runtime socket, Vite run,
+receipt, Expected edit, Observed promotion, matrix change, external network,
+credential, retained M4 access, or remote Git occurred; standing authorization
+was not needed because the review was non-executing. The review found no new
+blocker and approved only the exact one-shot `npm run p2:execute:vite` gate. The
+next task is a fresh worker revalidating the approved hashes, exact staging
+identity, and absence of both fixed Vite result roots, then using the
+`continue-repository-work` standing authorization to run that argument-free
+command exactly once. This is not a separate human review. Do not call any
+other Docker command, retry the pair, or promote candidate receipts before a
+later fresh Docker-free receipt review.
+
+One-shot Vite execution update (2026-07-19; supersedes the next-task clause
+immediately above): a fresh worker reproduced all nine reviewed file hashes,
+the exact 128-file source-equal fixed-mode staging inventory, plan-order
+`13f019cb9d9636023d43350ed13932e5fbc2d1f8ae2a01abe85458ffcd89ae22`
+manifest, fixed Node/Vite/Rollup/esbuild versions, and absence of both fixed
+Vite result roots. It then used the `continue-repository-work` standing
+authorization to run the approved argument-free `npm run p2:execute:vite`
+command exactly once. This was not a separate human review. The build phase
+completed, but the executor entry exited 1 with only the bounded
+`{"status":"failure","code":"P2_EXECUTOR_FAILED"}` result; it was not
+retried and no Docker command outside that fixed executor sequence was called.
+
+Only `p2-vite-observe-p-20260719-01` was created. Its fixed result metadata
+shows an 11,064-byte `vite-coordinator.jsonl` and 144-byte direct-write marker,
+both container-owned mode `0600`, plus a container-owned mode `0700` `tool/out`
+directory. `summary.json` is absent, the entry output cannot be reached by the
+host user through that directory, and
+`p2-vite-observe-c-20260719-01` is absent. The worker did not read, chmod, move,
+delete, or otherwise mutate those retained runtime paths. Therefore neither
+scenario has a canonical candidate receipt, same-image pair evidence, or
+selected Vite Observed, and `experiment-matrix.md` remains unchanged.
+Post-attempt `npm run p2:verify` passed typecheck and 9 files / 98 tests,
+`npm run format:check` passed, and `git diff --check` exited 0. The next task is
+a fresh Docker-free read-only failure review of the executor/runner paths and
+this retained metadata. It must not call Docker, inspect runtime state,
+re-permission retained files, or retry the exhausted one-shot gate; it should
+determine whether a bounded non-executing remediation/evidence-recovery
+contract can be defined.
+
+Vite failed-attempt independent review update (2026-07-19; supersedes the
+next-task clause immediately above): the
+[fresh Docker-free read-only review](reviews/p2-selected-profile-vite-failure.md)
+reproduced all nine approved source hashes and the fixed retained metadata
+without reading retained content or traversing the container-owned output
+directory. It classifies the one-shot pair attempt Inconclusive; neither Vite
+scenario is selected-profile Observed, and `experiment-matrix.md` is unchanged.
+
+P2-V04 blocks another execution gate. The executor retains sanitized lifecycle
+state through the Docker transition but unconditionally attempts receipt
+assembly through container-owned event/output paths. When those paths are
+unavailable, receipt assembly rejects and the top-level entry discards the
+in-memory runner/image/cleanup disposition into generic `P2_EXECUTOR_FAILED`.
+The retained modes/sizes do not reconstruct that disposition or the absent
+constrained scenario, so no safe Docker-free read-only evidence recovery remains
+for `p2-vite-observe-p-20260719-01`.
+
+`npm run p2:verify` passed typecheck and 9 files / 98 tests, and the root
+`npm run check` passed formatting, lint, typecheck, and 98 files / 659 tests.
+Those passing suites do not cover P2-V04's inaccessible receipt-construction
+path. No Docker command, retained-content read, permission change, retry,
+Expected/Observed edit, external network, credential, or remote Git operation
+occurred; standing authorization was not needed for this non-executing review.
+
+The next task is a Docker-non-executing P2-V04 remediation that writes a
+canonical attempt record before evidence access, represents unavailable output
+as `not-inspected`, performs no evidence-subtree access while settlement is
+unknown, exports fixed success evidence only after known settlement, and adds
+focused behavioral tests. Do not call Docker, change the existing run IDs,
+inspect or mutate retained state, edit Expected/Observed, or define another
+execution gate in that task. A fresh independent review and a later separate
+new-run-ID gate remain required before any future pair attempt.
+
+Vite P2-V04 remediation update (2026-07-19; supersedes the next-task clause
+immediately above): the runner now reaches output verification/export only
+after both child and loopback-server settlement are known, validates the exact
+bounded event segment and single fixed entry output, and exports only those
+files plus the fixed output directory with reviewed host-readable modes. The
+executor writes a separate canonical `p2-vite-attempt/v1` record before any
+host evidence access; known/unknown runner failures remain `not-inspected`,
+unknown Docker/runner settlement performs no evidence-subtree access, and only
+a complete known-settled lifecycle proceeds to bounded receipt assembly. The
+bounded entry result distinguishes recorded inconclusive attempts from
+attempt-record write failure, while `same-image` still requires two complete
+exact-identity receipts. Docker-free behavioral tests cover success, known
+failure, unknown settlement, inaccessible metadata, record-write failure, and
+pair completion. The focused 47 tests, `npm run p2:verify` (9 files / 105
+tests), `npm run p2:build`, compiled import check, and exact rebuilt 128-file
+staging assertion passed; the root `npm run check` passed 98 files / 666 tests.
+The new plan-order manifest is
+`b321c8b629ec5967c5bfdfc04f5e8dbd5042dbe602f03d818a6a8f8a8b794976`.
+No Docker command, retained-result access/mutation, retry, run-ID change,
+Expected/Observed edit, external network, credential, retained M4 access,
+remote Git, or new execution gate occurred; standing authorization was not
+needed. The next task is a fresh independent Docker-non-executing review of the
+exact P2-V04 implementation/tests/entry/staging bytes. The exhausted
+`20260719-01` gate remains non-retryable, and any later pair proposal requires
+new fixed run IDs and a separate reviewed gate.
+
+Vite P2-V04 remediation independent re-review update (2026-07-19; supersedes
+the next-task clause immediately above): the
+[fresh Docker-non-executing re-review](reviews/p2-selected-profile-vite-failure.md)
+reproduced the twelve remediation identities, exact 128-file fixed-mode staging
+tree, plan-order `b321c8b...` manifest, fixed tool versions, P2 105-test suite,
+P2 build, and import-safe entry, and accepted the pre-evidence attempt write,
+unknown-settlement evidence barrier, bounded entry classification, and
+two-complete-receipt pair rule. P2-V04 remains open on two new blockers.
+P2-V05: the all-or-nothing lifecycle object erases an already-inspected image
+ID or exit outcome when a later start or runner-framing transition fails.
+P2-V06: concurrent production event/metadata reads can be reported as wholly
+`not-inspected` after partial access, while fake backends do not behaviorally
+cover the real fixed-path export/read modes and ordering. No Docker command,
+retry, new gate, run-ID/Expected/Observed change, external communication, or
+retained-state mutation occurred. A mistakenly broad ignored-status command did
+attempt retained-directory enumeration and emitted permission warnings without
+reading retained contents or changing state; the review records that boundary
+deviation explicitly. The next task is the Docker-non-executing P2-V05/P2-V06
+partial-lifecycle and production-evidence-boundary remediation with focused
+fake-command and repository-local filesystem tests. The exhausted
+`20260719-01` gate remains non-retryable; another fresh re-review must close the
+findings before any new-run-ID execution gate is considered.
+
+Vite P2-V05/P2-V06 remediation update (2026-07-19; supersedes the next-task
+clause immediately above): the lifecycle attempt now snapshots the validated
+created-state image ID and exited-state container outcome independently of later
+start/runner-framing failure. The production evidence reader performs a serial
+fixed-path metadata/mode preflight before event open and distinguishes
+`not-inspected` from `partially-inspected`; an argument-free runner test seam
+connects the real `0444`/`0555` export to the real executor reader in a
+repository-local Docker-free fixture. Focused fake-command regressions retain
+the exact partial fields for unknown start settlement and malformed runner
+framing and retain `null` for create/first-inspect failure. The focused 54-test
+suite, P2 9 files / 112 tests, P2 build, compiled import check, and exact
+128-file source-equal fixed-mode staging assertion passed. The root check passed
+formatting, lint, typecheck, and 98 files / 673 tests. The new plan-order staging
+manifest is `e1f83e220d80f51168a4e9335001fa08b92b29c2a4530c7e0115857e173c6a27`.
+The previous generated staging tree was moved intact to the ignored
+`staging/vite.pre-p2-v05-v06-b321c8b` backup rather than deleted. No Docker
+command, retained-result access/mutation, retry, run-ID/Expected/Observed
+change, external communication, remote Git, or new execution gate occurred;
+standing authorization was not needed. The next task is a fresh independent
+Docker-non-executing re-review of the exact P2-V05/P2-V06 implementation,
+focused filesystem/fake-command evidence, partial-inspection projection, and
+rebuilt staging identity. The exhausted `20260719-01` gate remains
+non-retryable; no new-run-ID gate may be defined before that re-review closes
+the findings.
+
+Vite P2-V05/P2-V06 remediation independent re-review update (2026-07-19;
+supersedes the next-task clause immediately above): the
+[fresh Docker-non-executing re-review](reviews/p2-selected-profile-vite-failure.md)
+reproduced all twelve candidate identities, exact 128-file source-equal
+fixed-mode staging tree, plan-order `e1f83e22...` manifest, fixed tool versions,
+P2 112-test suite, P2 build, and import-safe executor/entry boundary. It closes
+P2-V06: the production reader preflights all fixed metadata/modes before event
+open, reports post-open failures as `partially-inspected`, and the real runner
+export/executor reader are joined by a Docker-free filesystem regression.
+P2-V05 remains open. After a valid final `exited` inspect, the executor assigns
+the inspected exit code only after the image/start-exit cross-check; a focused
+fake-command reproduction established final exit `1` but the canonical attempt
+emitted `null` when start reported exit `0`. No Docker command, runtime socket,
+retained-state access/mutation, retry, run-ID/Expected/Observed change, external
+communication, remote Git, or new gate occurred; standing authorization was not
+needed. The next task is the residual Docker-non-executing P2-V05 remediation:
+store the final-inspect exit outcome before cross-checking, add exit/image
+mismatch regressions, rebuild staging, and submit the exact bytes to another
+fresh re-review. The exhausted `20260719-01` gate remains non-retryable.
+
+Vite residual P2-V05 remediation update (2026-07-19; supersedes the next-task
+clause immediately above): the executor now stores the validated final
+exited-state container exit code before comparing the final image with the
+created-state image or the Docker start exit code with the inspected outcome.
+Focused fake-command-to-attempt regressions cover both cross-check failures.
+They retain the exact created-state image and final-inspect exit fields, write an
+Inconclusive attempt before any evidence access, produce no receipt, and clean up
+only after the fixed command has known settlement. The focused executor suite
+passed 1 file / 36 tests, `npm run p2:verify` passed 9 files / 114 tests,
+`npm run p2:build` and the compiled import check passed, and the root
+`npm run check` passed 98 files / 675 tests. The rebuilt exact 128-file
+source-equal fixed-mode staging tree retains plan-order manifest
+`e1f83e220d80f51168a4e9335001fa08b92b29c2a4530c7e0115857e173c6a27`
+and the fixed tool versions. The executor and test hashes are `f8bda03c...` and
+`51d2210c...`; the previous generated staging tree is preserved at the ignored
+`staging/vite.pre-p2-v05-residual-e1f83e22` path. No Docker command,
+runtime-socket or retained-result access, retry, run-ID/Expected/Observed change,
+external communication, remote Git, or new execution gate occurred; standing
+authorization was not needed. P2-V05 remains open until review. The next task is
+a fresh independent Docker-non-executing re-review of the exact residual
+implementation/tests and rebuilt staging identity. The exhausted `20260719-01`
+gate remains non-retryable.
+
+Vite residual P2-V05 independent re-review update (2026-07-19; supersedes the
+next-task clause immediately above): the fresh Docker-non-executing re-review
+reproduced the `f8bda03c...` executor and `51d2210c...` test hashes, both
+fake-command cross-check regressions, P2 9 files / 114 tests, the compiled
+import-safe boundary, root 98 files / 675 tests, and the exact 128-file
+source-equal fixed-mode staging manifest `e1f83e22...`. It found no new blocker,
+closes P2-V05, and therefore closes parent P2-V04 after the prior P2-V06
+closure. No Docker command, runtime-socket or retained-result access, retry,
+run-ID/Expected/Observed change, external communication, remote Git, or new
+execution gate occurred; standing authorization was not needed. The exhausted
+`20260719-01` attempt remains Inconclusive and non-retryable. The next task is a
+Docker-non-executing proposal that defines new fixed Vite run IDs and a separate
+exact one-shot execution gate bound to the approved snapshot and absent new
+result roots.
+
+Vite new-run-ID execution-gate proposal update (2026-07-19; supersedes the
+next-task clause immediately above): the Docker-non-executing proposal fixes
+`p2-vite-observe-p/c-20260719-02` and distinct
+`tskaigi-p2-vite-observe-p/c-20260719-02` container names so the next attempt
+does not depend on inspecting or mutating exhausted runtime state. It records a
+Docker-free implementation prompt and a separate fresh independent gate-review
+prompt. Sixteen approved-base hashes were reproduced, and exact path checks
+observed both new result roots absent without parent enumeration. One earlier
+over-broad AGENTS discovery `find` attempted retained-subdirectory traversal and
+emitted permission-denied warnings without reading contents or mutating state;
+subsequent discovery excluded `results/**`. No source/runtime/staging binding
+changed, no Docker command occurred, and no new execution gate,
+Expected/Observed value, or matrix promotion was created. A later gate may
+approve only one argument-free
+`npm run p2:execute:vite` attempt with no retry and a still-later receipt review.
+The next task is the Docker-non-executing implementation under
+[`prompts/p2-selected-profile-vite-new-run-gate.md`](../prompts/p2-selected-profile-vite-new-run-gate.md),
+followed by the separate review prompt before any Docker access.
+
+Vite new-run-ID binding/staging implementation update (2026-07-19; supersedes
+the next-task clause immediately above): all sixteen approved-base hashes and
+the prior exact 128-file `e1f83e22...` staging identity were reproduced before
+change. The active plan, M2-D context, runner, projection, and executor now bind
+only `p2-vite-observe-p/c-20260719-02` and use the exact distinct
+`tskaigi-p2-vite-observe-p/c-20260719-02` names across create, inspect,
+attached-start, and force-remove. Focused regressions reject both exhausted old
+tuples and retain the P2-V04/P2-V05/P2-V06 boundaries; codegen identities and
+accepted evidence remain unchanged. The prior staging tree was moved intact to
+the exact ignored `staging/vite.pre-p2-new-run-e1f83e22` backup, and the rebuilt
+128-file source-equal fixed-mode candidate has plan-order manifest
+`96e81f8118c787d2d862182a1f5076c98015c574b6a9db3d0111a1c5716d8bed`
+with the fixed tool versions. Focused context passed 1 file / 9 tests, focused
+P2 Vite passed 5 files / 77 tests, M2-D verification passed 12 files / 73
+tests, P2 verification passed 9 files / 116 tests, P2 build/import checks
+passed, and the root check passed 98 files / 678 tests. The implementation
+worker's first absence command accidentally omitted the
+`p2-selected-profiles` parent and is not treated as the required pre-change
+check. The proposal had recorded both exact paths absent, no implementation
+command could create or mutate them, and a corrected exact-path check after
+staging found both absent; the fresh review must check them again. No Docker
+command, runtime socket, retained-result access/mutation, new result root,
+retry, standing authorization, Expected/Observed or matrix change, external
+communication, credential, remote Git, publication, or deployment occurred.
+This is a Docker-non-executing candidate, not an approved execution gate or
+runtime observation. The next task is a fresh independent review under
+[`prompts/reviews/p2-selected-profile-vite-new-run-gate-review.md`](../prompts/reviews/p2-selected-profile-vite-new-run-gate-review.md)
+before any Docker access.
+
+Vite new-run-ID execution-gate independent review update (2026-07-19;
+supersedes the next-task clause immediately above): a fresh independent
+Docker-non-executing review reproduced all sixteen candidate hashes, the exact
+new tuple/container-name command binding, old-tuple rejection, codegen
+non-change, focused P2-V04/P2-V05/P2-V06 closure regressions, both absent new
+roots, and the 128-file source-equal fixed-mode staging manifest
+`96e81f81...` with fixed tool versions. It found no blocker and approved only
+one later argument-free `npm run p2:execute:vite` pair attempt with no retry.
+No Docker command, runtime-socket or retained-state access, new root,
+Expected/Observed or matrix change, network, credential, remote Git,
+publication, or deployment occurred; standing authorization was not used by
+this non-executing review. The next task is a fresh worker revalidating the
+approved hashes, staging, package script, and both absent exact new roots, then
+using `continue-repository-work` standing authorization for that exact command
+once. This is not a separate human review. Any candidate receipts still
+require a later fresh Docker-free review before selected Vite Observed
+acceptance.
+
+Vite `20260719-02` one-shot execution update (2026-07-19; supersedes the
+next-task clause immediately above): a fresh worker reproduced all sixteen
+approved hashes, the exact 128-file source-equal fixed-mode staging manifest
+`96e81f81...`, the fixed tool versions, the argument-free package script, and
+absence of both exact new result roots. It then used the
+`continue-repository-work` standing authorization to invoke exactly one
+`npm run p2:execute:vite` pair attempt. This was not a separate human review.
+The command exited 1 and was not retried; no Docker command outside that fixed
+executor sequence was called.
+
+The bounded entry projection classified the pair Inconclusive with
+`PAIR_IDENTITY_MISMATCH`. Only the permissive scenario ran far enough to write a
+canonical attempt: the exact mode `0700` result root contains a mode `0600`,
+522-byte `attempt.json`, while `summary.json` is absent. The attempt records the
+approved image ID, null container exit, known Docker settlement, runner
+settlement `not-established`, completed cleanup, output `not-inspected`, and
+issues `P2_ATTEMPT_DOCKER_LIFECYCLE_FAILED` plus
+`P2_ATTEMPT_OUTPUT_NOT_INSPECTED`. The exact constrained root remains absent.
+No receipt or same-image pair exists, neither Vite scenario is selected-profile
+Observed, and `experiment-matrix.md` is unchanged. The next task is a fresh
+Docker-free read-only review of the exact attempt record, bounded entry
+projection, approved source identities, and fixed root states. It must not call
+Docker, inspect runtime state, access an evidence subtree, change retained
+permissions, or retry either exhausted Vite attempt.
+
+Vite `20260719-02` canonical-attempt independent review update (2026-07-19;
+supersedes the next-task clause immediately above): the
+[fresh Docker-free read-only review](reviews/p2-selected-profile-vite-failure.md)
+reproduced all sixteen approved candidate hashes, the exact package script, the
+canonical attempt SHA-256 `1dd63280...`, the non-symlink mode `0700` permissive
+root, the non-symlink mode `0600` 522-byte attempt, the absent receipt, and the
+absent constrained root. The exact attempt retains the approved image, null
+container exit, known Docker settlement, runner settlement `not-established`,
+completed cleanup, null runner, output `not-inspected`, and both recorded issue
+codes. The approved pure projectors reconstruct the recorded bounded
+Inconclusive entry projection with `PAIR_IDENTITY_MISMATCH` and only the
+permissive scenario. P2 verification passed 9 files / 116 tests and P2 build
+passed; the root check passed formatting, lint, typecheck, and 98 files / 678
+tests.
+
+The review did not call Docker, retry either Vite pair, inspect runtime state,
+read an evidence subtree, change permissions, write a result, or change
+Expected/Observed or the matrix; standing authorization was not needed. It
+accepts the exhausted runtime facts only as an Inconclusive attempt. No receipt,
+constrained outcome, same-image pair, or selected Vite Observed exists, and no
+safe Vite retry/recovery action remains. The P2 Vite slice therefore closes
+with an explicit presentation limitation. The P3 implementation update below
+supersedes its former implementation handoff; the one-time production command
+remains unrun under the approved gate recorded below.
+
 ### P3 — Minimal artifact demo
 
 Implement one repository-owned fixed artifact build, canonical build receipt,
@@ -1338,6 +1978,81 @@ Build exactly once; verify/deploy must not install or rebuild. Keep the receipt
 small and state explicitly that identity/provenance does not prove harmlessness.
 The full artifact framework in `artifact-pipeline.md` remains deferred.
 
+Implementation update (2026-07-19): the exact
+[`artifact-mvp-build-once-20260719-01` contract](p3-artifact-demo.md) is
+implemented inside `packages/lab-cli` without running its production command.
+The fixed parent accepts no arguments, creates only its absent owned result
+root, and invokes one fixed Node child with no arguments, an empty environment,
+and bounded time/output. The child consumes its one-build marker before bounded
+regular-file reads, derives canonical artifact/receipt bytes from the fixed
+repository source and root lockfile, and records source-tree/lockfile/artifact
+digests, actual Node/builder versions, command ID, invocation count, and the
+identity-not-harmlessness/unsigned/no-OS-egress-evidence limitations. The
+parent's separate verification, verified-only copy/post-copy hash, and exact
+one-byte rejection contain no install or rebuild path. Focused positive,
+negative, import-safety, and static boundary tests use only repository-local
+disposable roots. `npm run p3:execute` remains unrun and unapproved, the exact
+production result root remains absent, and runtime artifact evidence is
+unmeasured. The next task is a fresh independent Docker-free review of the
+candidate and exact one-shot execution gate.
+
+Execution-gate independent review update (2026-07-19; supersedes the next-task
+clause immediately above): the
+[fresh independent Docker-free review](reviews/p3-artifact-demo.md) reproduced
+all eleven source/input identities, the fixed source/lock/build/command/artifact
+binding, exact absent result root, argument-free parent and child, empty child
+environment, bounded process output/time, invocation-before-input/no-retry
+state machine, canonical receipt, separate verified-only copy, post-copy
+digest, exact one-byte rejection, and all required limitations. Focused P3
+verification passed 2 files / 9 tests, compiled non-entry imports left the exact
+root absent, and the root check passed 100 files / 687 tests. The review found
+no blocking or non-blocking finding and did not run `npm run p3:execute`, create
+runtime artifact evidence, call Docker/network, or use standing authorization.
+It approves only one later argument-free `npm run p3:execute` invocation with
+no retry. The next task is a fresh worker revalidating the approved hashes,
+package script, compiled import/static-entry boundary, and exact absent root,
+then using `continue-repository-work` standing authorization for that command
+exactly once. This is not a separate human review. Any resulting bytes require
+a later fresh Docker-free receipt/result review before C-06/C-07 acceptance.
+
+One-shot execution update (2026-07-19; supersedes the next-task clause
+immediately above): a fresh worker reproduced all eleven approved source/input
+hashes, all five derived JavaScript hashes, the exact argument-free package
+script, compiled non-entry import/static-entry boundary, and exact absent fixed
+root. It then used `continue-repository-work` standing authorization for exactly
+one `npm run p3:execute` invocation; this was not a separate human review. The
+command exited 0 and was not retried. The fixed root now contains candidate
+canonical artifact, receipt, verification copy, deployment copy, one-byte
+tamper copy, invocation marker, and result bytes; `tamper-deployment/` is
+absent. The candidate artifact/receipt/result SHA-256 values are respectively
+`e3a5bc0808db5a4c706c35cc53616350c5ff84b662c071880ccca8b4982525c3`,
+`0cbc174bebb1e1570500cbcfb384ffa1d60e8f02d151e5e1336ab2c8eeddd84a`,
+and `011a0ce10d02ff76d0319903a8a03a35abb1ae94de4fa3c1fe804e27e2b4edd3`.
+The result records build invocation count 1, verified digest, copied deployment
+with zero build invocations, rejected-before-copy one-byte tamper, and all three
+limitations. These are unreviewed candidate runtime observations, not accepted
+C-06/C-07 evidence. The next task is the fresh independent Docker-free
+read-only review defined by
+[`prompts/reviews/p3-artifact-demo-result-review.md`](../prompts/reviews/p3-artifact-demo-result-review.md).
+Do not rerun or repair the consumed production root.
+
+Result independent review update (2026-07-19; supersedes the next-task clause
+immediately above): the
+[fresh Docker-free read-only review](reviews/p3-artifact-demo-result.md)
+reproduced all eleven source/input and five compiled identities, the exact
+package script, nine known regular output files, canonical invocation/receipt/
+result bytes, source-tree/source/lockfile/artifact digests, copy equality, one
+changed tamper byte, and absent `tamper-deployment/` without enumerating the
+parent result directory. It found no blocking or non-blocking finding and
+accepted the result for C-06/C-07 only at the exact one-local-run scope. The
+unsigned-receipt, identity-not-harmlessness, no-OS-egress-evidence, and
+cross-machine-reproducibility limitations remain explicit. The review did not
+rerun the consumed production command or change the fixed root. The next task
+is P4 evidence-map/talk-table implementation: tracked sanitized examples, one
+five-route trigger table, one selected profile/capability table retaining the
+Vite Inconclusive limitation, one artifact result table, and
+`docs/evidence-map.md`; do not rerun P2 or P3.
+
 ### P4 — Evidence map and final presentation review
 
 Generate sanitized examples, one compact five-route trigger table, one selected
@@ -1345,6 +2060,35 @@ profile/capability table, one artifact result table, and `docs/evidence-map.md`.
 Every empirical claim must link to observed evidence and display its limitation.
 Perform one focused final safety/validity review of the claim/evidence map;
 do not create remediation-specific review loops for non-critical appendix code.
+
+Implementation update (2026-07-19): three repository-tracked JSON projections
+now retain the reviewed five-route local facts, exact one-local-pair codegen
+Observed outcomes, the Vite `not-inspected` / `missing` Inconclusive gap, and
+the exact one-local-run artifact result with all required limitations.
+`scripts/presentation-evidence.mjs` deterministically renders and validates
+[`docs/evidence-map.md`](evidence-map.md), whose only three tables are the
+required route, capability/profile, and artifact result tables. C-01 through
+C-07 each link to a tracked projection and display an evidence-class or runtime
+limitation. The implementation task did not read ignored run roots, rerun P2 or
+P3, edit matrix Observed, or use Docker, runtime sockets, external network,
+credentials, publication, or deployment. Standing authorization was not needed
+for this ordinary non-executing task. `npm run p4:verify` passed 1 focused file
+/ 2 tests, `npm run check` passed 101 files / 689 tests, and
+`git diff --check` exited 0 before this status update. The next task is the
+fresh focused read-only review defined by
+[`prompts/reviews/p4-evidence-map-review.md`](../prompts/reviews/p4-evidence-map-review.md).
+
+Focused final review update (2026-07-19; supersedes the next-task clause
+immediately above): the
+[fresh independent Docker-free read-only review](reviews/p4-evidence-map.md)
+reproduced exact generation from the three tracked projections, exactly three
+talk tables, all seven evidence/limitation pairs, reviewed route counts,
+codegen outcomes, the explicit Vite gap, artifact copy/tamper relations, and
+the bounded sanitization rules. It found no blocking or non-blocking finding
+and approved P4 and the presentation MVP as complete. No P2/P3 production
+command, Docker, ignored runtime tree, matrix edit, network, credential,
+publication, or deployment was used. Standing authorization was not needed.
+Next: none.
 
 ### Presentation MVP completion criteria
 
