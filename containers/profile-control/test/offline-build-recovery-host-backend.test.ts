@@ -1,3 +1,5 @@
+import { EventEmitter } from "node:events";
+import { PassThrough } from "node:stream";
 import {
   chmod,
   link,
@@ -11,13 +13,34 @@ import {
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+import {
+  FIXED_BASE_IMAGE_DIGEST,
+  FIXED_STAGING_DIGEST,
+  LIMITS,
+} from "../src/constants.js";
+
+const spawnMock = vi.hoisted(() => vi.fn());
+vi.mock("node:child_process", () => ({ spawn: spawnMock }));
+
+class FakeChildProcess extends EventEmitter {
+  readonly stdout = new PassThrough();
+  readonly stderr = new PassThrough();
+  readonly kill = vi.fn(() => {
+    this.killed = true;
+    return true;
+  });
+  killed = false;
+}
 
 import {
   consumeOfflineBuildRecoveryInspectAttempt,
   createDisposableRetainedStateValidatorForTest,
   FIXED_RETAINED_STATE_INVENTORY,
+  createFixedOfflineBuildRecoveryHostBackend,
 } from "../src/offline-build-recovery-host-backend.js";
+import { createFixedOfflineBuildRecoveryInput } from "../src/offline-build-recovery.js";
 
 const repositoryRoot = path.resolve(
   fileURLToPath(new URL("../../../", import.meta.url)),
@@ -33,6 +56,26 @@ const replacementBackup = path.join(
   path.dirname(testRoot),
   ".m4-recovery-state-test-replaced-file",
 );
+const RECORDED_BUILD_FAILURE = Object.freeze({
+  schemaVersion: "lab-profile-offline-build-result/v1",
+  validity: "inconclusive",
+  primaryFailure: "CLEANUP_FAILURE",
+  completedSteps: Object.freeze([
+    "stage-build-context",
+    "doctor",
+    "build",
+    "inspect-image",
+  ]),
+  baseImageDigest: FIXED_BASE_IMAGE_DIGEST,
+  stagingDigest: FIXED_STAGING_DIGEST,
+  dockerClientVersion: "29.6.1",
+  dockerServerVersion: "29.6.1",
+  builtImageDigest: null,
+});
+
+beforeEach(() => {
+  spawnMock.mockReset();
+});
 
 async function cleanTestRoot(): Promise<void> {
   await rm(testRoot, { recursive: true, force: true });
@@ -73,6 +116,43 @@ describe("retained offline-build state metadata validator", () => {
     );
   });
 
+  it("rejects post-validation while fixed process remains active", async () => {
+    const backend = await createFixedOfflineBuildRecoveryHostBackend();
+    await backend.validateRetainedState();
+    const { command } = createFixedOfflineBuildRecoveryInput({
+      failedBuildResult: RECORDED_BUILD_FAILURE,
+      backend,
+    });
+    spawnMock.mockImplementationOnce(() => {
+      const child = new FakeChildProcess();
+      queueMicrotask(() => {
+        child.emit(
+          "error",
+          Object.assign(new Error("synthetic process failure"), {
+            code: "SIMULATED",
+          }),
+        );
+      });
+      return child;
+    });
+    const result = await backend.run(command, {
+      timeoutMs: LIMITS.controlTimeoutMs,
+      outputBytes: LIMITS.outputBytes,
+    });
+    expect(result).toMatchObject({
+      exitCode: null,
+      timedOut: false,
+      outputLimitExceeded: false,
+      closeObserved: false,
+      stdoutBytes: 0,
+      stderrBytes: 0,
+      stdout: new Uint8Array(),
+    });
+    await expect(backend.validateRetainedState()).rejects.toThrow(
+      "M4_OFFLINE_BUILD_RECOVERY_SEQUENCE",
+    );
+  });
+
   it("accepts the exact disposable metadata tree without reading contents", async () => {
     await createExactTestTree();
     const validator =
@@ -80,28 +160,41 @@ describe("retained offline-build state metadata validator", () => {
     await expect(validator.validate()).resolves.toBeUndefined();
   });
 
-  it.each(["extra", "missing", "mode", "size", "type"] as const)(
-    "rejects %s retained-state drift",
-    async (drift) => {
-      await createExactTestTree();
-      const tokenSeed = path.join(testRoot, "docker-config", ".token_seed");
-      if (drift === "extra") {
-        await writeFile(path.join(testRoot, "extra"), "x", { mode: 0o600 });
-      } else if (drift === "missing") {
-        await unlink(tokenSeed);
-      } else if (drift === "mode") {
-        await chmod(tokenSeed, 0o644);
-      } else if (drift === "size") {
-        await writeFile(tokenSeed, Buffer.alloc(75));
-      } else {
-        await unlink(tokenSeed);
-        await mkdir(tokenSeed, { mode: 0o600 });
-      }
-      await expect(
-        createDisposableRetainedStateValidatorForTest(testRoot),
-      ).rejects.toThrow("M4_OFFLINE_BUILD_RECOVERY_STATE");
-    },
-  );
+  it.each([
+    "extra",
+    "missing",
+    "mode",
+    "mode-setuid-dir",
+    "mode-setgid-file",
+    "mode-sticky-dir",
+    "size",
+    "type",
+  ] as const)("rejects %s retained-state drift", async (drift) => {
+    await createExactTestTree();
+    const tokenSeed = path.join(testRoot, "docker-config", ".token_seed");
+    const buildxDir = path.join(testRoot, "docker-config", "buildx");
+    if (drift === "extra") {
+      await writeFile(path.join(testRoot, "extra"), "x", { mode: 0o600 });
+    } else if (drift === "missing") {
+      await unlink(tokenSeed);
+    } else if (drift === "mode") {
+      await chmod(tokenSeed, 0o644);
+    } else if (drift === "mode-setuid-dir") {
+      await chmod(path.join(testRoot, "docker-config"), 0o4700);
+    } else if (drift === "mode-setgid-file") {
+      await chmod(tokenSeed, 0o2600);
+    } else if (drift === "mode-sticky-dir") {
+      await chmod(buildxDir, 0o1700);
+    } else if (drift === "size") {
+      await writeFile(tokenSeed, Buffer.alloc(75));
+    } else {
+      await unlink(tokenSeed);
+      await mkdir(tokenSeed, { mode: 0o600 });
+    }
+    await expect(
+      createDisposableRetainedStateValidatorForTest(testRoot),
+    ).rejects.toThrow("M4_OFFLINE_BUILD_RECOVERY_STATE");
+  });
 
   it("rejects a symlink replacement and a hard-linked file", async () => {
     await createExactTestTree();

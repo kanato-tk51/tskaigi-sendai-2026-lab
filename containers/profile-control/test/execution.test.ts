@@ -19,6 +19,7 @@ import {
   type DockerCommand,
 } from "../src/docker-plan.js";
 import {
+  executeFixedExistingImageProfilePair,
   executeFixedProfilePair,
   type FixedExecutionBackend,
 } from "../src/execution.js";
@@ -205,6 +206,14 @@ class FakeBackend implements FixedExecutionBackend {
       scratchFiles: profileId === "permissive" ? ["scratch-marker.txt"] : [],
     };
   }
+
+  async recordProfileResult(profileId: ProfileId): Promise<void> {
+    this.calls.push(`${profileId}:record-profile-result`);
+  }
+
+  async cleanup(): Promise<void> {
+    this.calls.push("cleanup-control-backend");
+  }
 }
 
 function fixture(input?: {
@@ -313,6 +322,27 @@ function fixture(input?: {
 }
 
 describe("bounded profile-pair execution state machine", () => {
+  it("runs an existing-image pair without staging, doctor, build, or image inspect", async () => {
+    const test = fixture();
+    const result = await executeFixedExistingImageProfilePair({
+      acceptedSnapshot: test.input.acceptedSnapshot,
+      pair: test.input.pair,
+      profilePlans: test.input.profilePlans,
+      permissiveLayout: test.input.permissiveLayout,
+      constrainedLayout: test.input.constrainedLayout,
+      backend: test.backend,
+    });
+    expect(result.validity).toBe("complete");
+    expect(test.backend.calls).not.toContain("stage-build-context-backend");
+    expect(test.backend.calls).not.toContain("read-build-context-backend");
+    expect(test.backend.calls).not.toContain("doctor");
+    expect(test.backend.calls).not.toContain("build");
+    expect(test.backend.calls).not.toContain("inspect-image");
+    expect(test.backend.calls).toContain("permissive:record-profile-result");
+    expect(test.backend.calls).toContain("constrained:record-profile-result");
+    expect(test.backend.calls.at(-1)).toBe("cleanup-control-backend");
+  });
+
   it("completes both runs while preserving an Expected mismatch", async () => {
     const test = fixture();
     const result = await executeFixedProfilePair(test.input);

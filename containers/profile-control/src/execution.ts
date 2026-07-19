@@ -39,7 +39,10 @@ import {
 } from "./staging.js";
 import type {
   AcceptedImageStagingSnapshot,
+  ControlCompletion,
+  EvidenceComparison,
   ExecutionFailureCode,
+  HostInspection,
   PairExecutionResult,
   ProfileControlPair,
   ProfileExecutionResult,
@@ -90,6 +93,24 @@ export interface FixedExecutionBackend {
   transfer(profileId: ProfileId): Promise<unknown>;
 }
 
+export interface FixedExistingImageExecutionBackend {
+  run(
+    stepId: string,
+    command: DockerCommand,
+    limits: Readonly<{ timeoutMs: number; outputBytes: number }>,
+  ): Promise<unknown>;
+  transfer(profileId: ProfileId): Promise<unknown>;
+  recordProfileResult(
+    profileId: ProfileId,
+    result: Readonly<{
+      inspection: HostInspection;
+      comparison: EvidenceComparison;
+      completion: ControlCompletion;
+    }>,
+  ): Promise<void>;
+  cleanup(): Promise<void>;
+}
+
 export interface FixedExecutionInput {
   readonly acceptedSnapshot: AcceptedImageStagingSnapshot;
   readonly pair: ProfileControlPair;
@@ -99,6 +120,17 @@ export interface FixedExecutionInput {
   readonly constrainedLayout: FixedRuntimeLayout;
   readonly backend: FixedExecutionBackend;
 }
+
+export interface FixedExistingImageExecutionInput {
+  readonly acceptedSnapshot: AcceptedImageStagingSnapshot;
+  readonly pair: ProfileControlPair;
+  readonly profilePlans: ProfilePairDockerPlans;
+  readonly permissiveLayout: FixedRuntimeLayout;
+  readonly constrainedLayout: FixedRuntimeLayout;
+  readonly backend: FixedExistingImageExecutionBackend;
+}
+
+type ControlExecutionBackend = Pick<FixedExecutionBackend, "run" | "transfer">;
 
 interface CommandResult {
   readonly payload: unknown;
@@ -127,7 +159,7 @@ function nonNegativeInteger(input: unknown): number {
 }
 
 async function runCommand(
-  backend: FixedExecutionBackend,
+  backend: ControlExecutionBackend,
   stepId: string,
   command: DockerCommand,
   completedSteps: string[],
@@ -319,7 +351,8 @@ async function executeProfile(input: {
   readonly plan: ProfileDockerPlan;
   readonly layout: FixedRuntimeLayout;
   readonly baseEnvironmentKeys: readonly string[];
-  readonly backend: FixedExecutionBackend;
+  readonly backend: ControlExecutionBackend;
+  readonly recordProfileResult?: FixedExistingImageExecutionBackend["recordProfileResult"];
   readonly allCompletedSteps: string[];
 }): Promise<ProfileExecutionResult> {
   const profileSteps: string[] = [];
@@ -423,6 +456,17 @@ async function executeProfile(input: {
       hostInspectionBytes,
       controlEvidenceBytes: evidenceBytes,
     });
+    if (input.recordProfileResult !== undefined) {
+      try {
+        await input.recordProfileResult(prefix, {
+          inspection,
+          comparison,
+          completion,
+        });
+      } catch {
+        return failStep("TRANSFER_FAILURE");
+      }
+    }
     profileSteps.push(`${prefix}:transfer`);
     completeResult = Object.freeze({
       validity: "complete",
@@ -489,6 +533,38 @@ function validateExecutionPlan(input: FixedExecutionInput): ProfileControlPair {
     ) ||
     !profilePlans.constrained.create.arguments.includes(
       `type=bind,src=${input.constrainedLayout.scratchRoot},dst=/scratch,ro`,
+    )
+  ) {
+    failStep("COMMAND_FAILURE");
+  }
+  return pair;
+}
+
+function validateExistingImageExecutionPlan(
+  input: FixedExistingImageExecutionInput,
+): ProfileControlPair {
+  const acceptedSnapshot = assertAcceptedImageStagingSnapshot(
+    input.acceptedSnapshot,
+  );
+  assertAcceptedProfileControlPair(input.pair, acceptedSnapshot);
+  const pair = validateProfileControlPair(input.pair);
+  const profilePlans = assertFixedProfilePairDockerPlans(
+    input.profilePlans,
+    acceptedSnapshot,
+    input.permissiveLayout,
+    input.constrainedLayout,
+  );
+  if (
+    pair.stagingDigest !== acceptedSnapshot.stagingDigest ||
+    profilePlans.containerImageDigest !== pair.containerImageDigest ||
+    profilePlans.permissiveRunId !== pair.permissive.manifest.runId ||
+    profilePlans.constrainedRunId !== pair.constrained.manifest.runId ||
+    input.permissiveLayout.runRoot === input.constrainedLayout.runRoot ||
+    !profilePlans.permissive.create.arguments.includes(
+      pair.containerImageDigest,
+    ) ||
+    !profilePlans.constrained.create.arguments.includes(
+      pair.containerImageDigest,
     )
   ) {
     failStep("COMMAND_FAILURE");
@@ -571,5 +647,57 @@ export async function executeFixedProfilePair(
     completedSteps: Object.freeze(completedSteps),
     permissive,
     constrained,
+  });
+}
+
+export async function executeFixedExistingImageProfilePair(
+  input: FixedExistingImageExecutionInput,
+): Promise<PairExecutionResult> {
+  const completedSteps: string[] = [];
+  let pair: ProfileControlPair | null = null;
+  let primaryFailure: ExecutionFailureCode | null = null;
+  let permissive: ProfileExecutionResult | null = null;
+  let constrained: ProfileExecutionResult | null = null;
+  try {
+    pair = validateExistingImageExecutionPlan(input);
+    permissive = await executeProfile({
+      definition: pair.permissive,
+      plan: input.profilePlans.permissive,
+      layout: input.permissiveLayout,
+      baseEnvironmentKeys: input.acceptedSnapshot.baseEnvironmentKeys,
+      backend: input.backend,
+      allCompletedSteps: completedSteps,
+      recordProfileResult: input.backend.recordProfileResult.bind(
+        input.backend,
+      ),
+    });
+    constrained = await executeProfile({
+      definition: pair.constrained,
+      plan: input.profilePlans.constrained,
+      layout: input.constrainedLayout,
+      baseEnvironmentKeys: input.acceptedSnapshot.baseEnvironmentKeys,
+      backend: input.backend,
+      allCompletedSteps: completedSteps,
+      recordProfileResult: input.backend.recordProfileResult.bind(
+        input.backend,
+      ),
+    });
+    primaryFailure =
+      permissive.primaryFailure ?? constrained.primaryFailure ?? null;
+  } catch (error) {
+    primaryFailure = failureCode(error);
+  } finally {
+    try {
+      await input.backend.cleanup();
+    } catch {
+      primaryFailure ??= "CLEANUP_FAILURE";
+    }
+  }
+  return Object.freeze({
+    validity: primaryFailure === null ? "complete" : "inconclusive",
+    primaryFailure,
+    completedSteps: Object.freeze(completedSteps),
+    permissive: pair === null ? null : permissive,
+    constrained: pair === null ? null : constrained,
   });
 }

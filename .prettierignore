@@ -11,3 +11,7 @@ results/examples/m0-npm12/
 AGENTS.md
 docs/
 prompts/
+
+# Preserve reviewed canonical single-line profile bytes.
+profiles/permissive/profile.json
+profiles/constrained/profile.json

@@ -205,6 +205,30 @@ describe("fixed offline-build cleanup-failure recovery", () => {
     expect(result.builtImageDigest).toBeNull();
   });
 
+  it("preserves abnormal-close command failure when post-validation is blocked", async () => {
+    const test = fixture({
+      commandResult: {
+        exitCode: null,
+        timedOut: false,
+        outputLimitExceeded: false,
+        closeObserved: false,
+        stdoutBytes: 0,
+        stderrBytes: 0,
+        stdout: new Uint8Array(),
+      },
+      validationFailure: "post",
+    });
+    const result = await executeFixedOfflineBuildRecovery(test.fixedInput);
+    expect(result.primaryFailure).toBe("COMMAND_FAILURE");
+    expect(result.completedSteps).toEqual(["validate-retained-state"]);
+    expect(result.builtImageDigest).toBeNull();
+    expect(test.backend.calls).toEqual([
+      "validate-pre",
+      "inspect-image",
+      "validate-post",
+    ]);
+  });
+
   it.each([
     ["noncanonical", new TextEncoder().encode(`${BUILT_IMAGE_DIGEST}\n`)],
     ["uppercase", imageIdBytes(`sha256:${"A".repeat(64)}`)],
