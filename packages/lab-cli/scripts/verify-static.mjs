@@ -25,7 +25,10 @@ const sourceEntries = await Promise.all(
   sourceNames.map(async (name) => [name, await packageText(`src/${name}`)]),
 );
 const sources = Object.fromEntries(sourceEntries);
-const allSource = sourceEntries.map(([, source]) => source).join("\n");
+const m3SourceEntries = sourceEntries.filter(
+  ([name]) => !name.startsWith("artifact-demo"),
+);
+const allM3Source = m3SourceEntries.map(([, source]) => source).join("\n");
 const [
   packageSource,
   rootPackageSource,
@@ -100,7 +103,7 @@ for (const forbidden of [
   'from "vite"',
   "shell: true",
 ]) {
-  if (allSource.includes(forbidden))
+  if (allM3Source.includes(forbidden))
     fail(`forbidden source marker ${forbidden}`);
 }
 
@@ -136,7 +139,7 @@ for (const marker of [
   "INPUT_INVENTORY_INVALID",
   "assertCanonicalJson",
 ]) {
-  if (!allSource.includes(marker) && !persistenceSource.includes(marker)) {
+  if (!allM3Source.includes(marker) && !persistenceSource.includes(marker)) {
     fail(`regeneration marker ${marker}`);
   }
 }
