@@ -74,6 +74,8 @@
     "p3:test": "npm run test --workspace packages/lab-cli -- test/artifact-demo.test.ts test/artifact-demo-static.test.ts",
     "p3:verify": "npm run p3:typecheck && npm run p3:build && npm run p3:test",
     "p3:execute": "npm run p3:build && node packages/lab-cli/dist/artifact-demo-entry.js",
+    "p4:generate": "node scripts/presentation-evidence.mjs --write",
+    "p4:verify": "node scripts/presentation-evidence.mjs --check && vitest run tests/presentation-evidence.test.ts --configLoader runner",
     "m4:typecheck": "tsc --project containers/profile-control/tsconfig.json --noEmit",
     "m4:static": "node containers/profile-control/scripts/verify-static.mjs",
     "m4:test": "vitest run --config containers/profile-control/vitest.config.ts --configLoader runner",
