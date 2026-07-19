@@ -38,10 +38,16 @@ const FIXED_OUTPUT_FILE = "entry.js";
 const MAX_CHILD_OUTPUT_BYTES = 65_536;
 const MAX_EVENT_SEGMENT_BYTES = 65_536;
 const MAX_OUTPUT_FILE_BYTES = 65_536;
-const CHILD_TIMEOUT_MS = 30_000;
-const TERMINATION_GRACE_MS = 500;
-const FORCE_SETTLEMENT_MS = 1_000;
-const SERVER_SETTLEMENT_MS = 1_000;
+export const FIXED_VITE_RUNNER_LIMITS = Object.freeze({
+  childTimeoutMs: 30_000,
+  terminationGraceMs: 500,
+  forceSettlementMs: 1_000,
+  serverSettlementMs: 1_000,
+});
+const CHILD_TIMEOUT_MS = FIXED_VITE_RUNNER_LIMITS.childTimeoutMs;
+const TERMINATION_GRACE_MS = FIXED_VITE_RUNNER_LIMITS.terminationGraceMs;
+const FORCE_SETTLEMENT_MS = FIXED_VITE_RUNNER_LIMITS.forceSettlementMs;
+const SERVER_SETTLEMENT_MS = FIXED_VITE_RUNNER_LIMITS.serverSettlementMs;
 const PROCESS_POLL_MS = 25;
 
 const FIXED_OUTPUT_PATHS = Object.freeze({
@@ -78,12 +84,12 @@ const DEFINITIONS = Object.freeze([
   Object.freeze({
     scenarioId: "vite-observe-p",
     profileId: "permissive",
-    runId: "p2-vite-observe-p-20260719-02",
+    runId: "p2-vite-observe-p-20260719-03",
   }),
   Object.freeze({
     scenarioId: "vite-observe-c",
     profileId: "constrained",
-    runId: "p2-vite-observe-c-20260719-02",
+    runId: "p2-vite-observe-c-20260719-03",
   }),
 ]);
 

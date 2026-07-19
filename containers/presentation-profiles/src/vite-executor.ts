@@ -24,13 +24,17 @@ import {
   createFixedSelectedScenarioPlans,
   FIXED_DOCKER_EXECUTABLE,
   FIXED_NODE_IMAGE,
+  FIXED_NODE_IMAGE_ID,
+  FIXED_VITE_EXPECTED_REVISION,
   type FixedDockerCommand,
   type SelectedScenarioPlan,
 } from "./plan.js";
 
-const DOCKER_COMMAND_TIMEOUT_MS = 20_000;
-const DOCKER_START_TIMEOUT_MS = 40_000;
-const DOCKER_SETTLEMENT_MS = 1_000;
+export const FIXED_VITE_EXECUTOR_LIMITS = Object.freeze({
+  dockerCommandMs: 20_000,
+  attachedStartMs: 60_000,
+  dockerSettlementMs: 1_000,
+});
 const DOCKER_OUTPUT_BYTES = 16_384;
 const EVENT_SEGMENT_BYTES = 65_536;
 const OUTPUT_FILE_BYTES = 65_536;
@@ -49,6 +53,7 @@ const INSPECT_FORMAT =
 type ViteSelectedPlan = SelectedScenarioPlan & {
   readonly scenarioId: ViteScenarioId;
   readonly adapterId: "vite";
+  readonly expectedRevision: typeof FIXED_VITE_EXPECTED_REVISION;
 };
 
 type ViteRunnerFailureCode =
@@ -98,6 +103,22 @@ export interface FixedViteLifecycleResult {
   readonly cleanup: "completed" | "suppressed-runner-settlement-unknown";
 }
 
+export type VitePrimaryLifecycleStage =
+  | "create"
+  | "created-inspect"
+  | "attached-start"
+  | "final-inspect"
+  | "runner-disposition"
+  | "cleanup";
+
+export type VitePrimaryFailureCode =
+  | FixedCommandFailureCode
+  | ViteRunnerFailureCode
+  | "P2_EXECUTOR_CREATE_INVALID"
+  | "P2_EXECUTOR_INSPECT_INVALID"
+  | "P2_EXECUTOR_RUNNER_INVALID"
+  | "P2_EXECUTOR_FAILED";
+
 type ViteAttemptCleanupDisposition =
   | FixedViteLifecycleResult["cleanup"]
   | "failed"
@@ -114,11 +135,14 @@ type ViteAttemptIssueCode =
   | "P2_ATTEMPT_RUNNER_SETTLEMENT_UNKNOWN";
 
 export interface ViteExecutionAttemptRecord {
-  readonly schemaVersion: "p2-vite-attempt/v1";
+  readonly schemaVersion: "p2-vite-attempt/v2";
   readonly scenarioId: ViteScenarioId;
   readonly profileId: "permissive" | "constrained";
   readonly runId: string;
+  readonly expectedRevision: typeof FIXED_VITE_EXPECTED_REVISION;
   readonly attemptStatus: "inconclusive" | "receipt-pending";
+  readonly primaryFailureStage: VitePrimaryLifecycleStage | null;
+  readonly primaryFailureCode: VitePrimaryFailureCode | null;
   readonly inspectedImageId: string | null;
   readonly inspectedContainerExitCode: number | null;
   readonly dockerSettlement: "known" | "unknown";
@@ -130,10 +154,11 @@ export interface ViteExecutionAttemptRecord {
 }
 
 export interface ViteExecutionReceipt {
-  readonly schemaVersion: "p2-vite-execution/v1";
+  readonly schemaVersion: "p2-vite-execution/v2";
   readonly scenarioId: ViteScenarioId;
   readonly profileId: "permissive" | "constrained";
   readonly runId: string;
+  readonly expectedRevision: typeof FIXED_VITE_EXPECTED_REVISION;
   readonly imageId: string;
   readonly nodeVersion: typeof NODE_VERSION;
   readonly viteVersion: typeof VITE_VERSION;
@@ -157,7 +182,8 @@ export interface ViteExecutionReceipt {
 }
 
 export interface ViteExecutionPairProjection {
-  readonly schemaVersion: "p2-vite-pair/v1";
+  readonly schemaVersion: "p2-vite-pair/v2";
+  readonly expectedRevision: typeof FIXED_VITE_EXPECTED_REVISION;
   readonly validity: "same-image" | "inconclusive";
   readonly imageId: string | null;
   readonly issues: readonly (
@@ -290,6 +316,8 @@ interface FixedViteLifecycleAttempt {
   readonly dockerSettlement: "known" | "unknown";
   readonly cleanupDisposition: ViteAttemptCleanupDisposition;
   readonly cleanupFailed: boolean;
+  readonly primaryFailureStage: VitePrimaryLifecycleStage | null;
+  readonly primaryFailureCode: VitePrimaryFailureCode | null;
 }
 
 interface FixedViteEvidence {
@@ -327,12 +355,15 @@ function fixedDockerCommand(
 }
 
 function isVitePlan(plan: SelectedScenarioPlan): plan is ViteSelectedPlan {
-  return plan.adapterId === "vite";
+  return (
+    plan.adapterId === "vite" &&
+    plan.expectedRevision === FIXED_VITE_EXPECTED_REVISION
+  );
 }
 
 const FIXED_VITE_CONTAINER_NAMES = Object.freeze({
-  "vite-observe-p": "tskaigi-p2-vite-observe-p-20260719-02",
-  "vite-observe-c": "tskaigi-p2-vite-observe-c-20260719-02",
+  "vite-observe-p": "tskaigi-p2-vite-observe-p-20260719-03",
+  "vite-observe-c": "tskaigi-p2-vite-observe-c-20260719-03",
 } as const);
 
 function fixedViteContainerName(selected: ViteSelectedPlan): string {
@@ -624,9 +655,9 @@ function runFixedDockerCommand(
     {
       timeoutMs:
         command === plan.start
-          ? DOCKER_START_TIMEOUT_MS
-          : DOCKER_COMMAND_TIMEOUT_MS,
-      settlementMs: DOCKER_SETTLEMENT_MS,
+          ? FIXED_VITE_EXECUTOR_LIMITS.attachedStartMs
+          : FIXED_VITE_EXECUTOR_LIMITS.dockerCommandMs,
+      settlementMs: FIXED_VITE_EXECUTOR_LIMITS.dockerSettlementMs,
       outputBytes: DOCKER_OUTPUT_BYTES,
     },
   );
@@ -690,6 +721,7 @@ function requireInspect(
   if (
     inspect.containerId !== containerId ||
     inspect.configuredImage !== FIXED_NODE_IMAGE ||
+    inspect.imageId !== FIXED_NODE_IMAGE_ID ||
     inspect.state !== expectedState ||
     !Number.isSafeInteger(inspect.exitCode) ||
     !plan.create.arguments.includes(FIXED_NODE_IMAGE)
@@ -1153,10 +1185,11 @@ function buildReceipt(
         ]),
       });
   return Object.freeze({
-    schemaVersion: "p2-vite-execution/v1",
+    schemaVersion: "p2-vite-execution/v2",
     scenarioId: plan.selected.scenarioId,
     profileId: plan.selected.profileId,
     runId: plan.selected.runId,
+    expectedRevision: plan.selected.expectedRevision,
     imageId: lifecycle.imageId,
     nodeVersion: NODE_VERSION,
     viteVersion: VITE_VERSION,
@@ -1224,6 +1257,25 @@ function withCleanupFailure(primary: Error): FixedViteExecutionError {
   return new FixedViteExecutionError(primary, ["P2_EXECUTOR_CLEANUP_FAILED"]);
 }
 
+function sanitizedLifecycleFailureCode(error: Error): VitePrimaryFailureCode {
+  if (error instanceof FixedViteCommandError) return error.failureCode;
+  if (error instanceof FixedViteRunnerBoundaryError) {
+    return "P2_EXECUTOR_RUNNER_INVALID";
+  }
+  if (error instanceof FixedViteExecutionError) {
+    return sanitizedLifecycleFailureCode(error.primary);
+  }
+  switch (error.message) {
+    case "P2_EXECUTOR_DOCKER_FAILED":
+    case "P2_EXECUTOR_CREATE_INVALID":
+    case "P2_EXECUTOR_INSPECT_INVALID":
+    case "P2_EXECUTOR_FAILED":
+      return error.message;
+    default:
+      return "P2_EXECUTOR_FAILED";
+  }
+}
+
 async function executeFixedViteLifecycleAttempt(
   plan: FixedViteExecutionPlan,
   runCommand: (command: FixedDockerCommand) => Promise<FixedViteCommandResult>,
@@ -1234,61 +1286,204 @@ async function executeFixedViteLifecycleAttempt(
   let lifecycle: Omit<FixedViteLifecycleResult, "cleanup"> | undefined;
   let primaryFailure: Error | undefined;
   let cleanupFailure: Error | undefined;
-  try {
-    const create = await runCommand(plan.create);
-    ownedContainerId = parseContainerId(create);
-    const beforeInspect = await runCommand(plan.inspect);
-    const before = parseInspect(beforeInspect);
-    requireInspect(before, plan, ownedContainerId, "created");
-    inspectedImageId = before.imageId;
-    const start = await runCommand(plan.start);
-    const afterInspect = await runCommand(plan.inspect);
-    const after = parseInspect(afterInspect);
-    requireInspect(after, plan, ownedContainerId, "exited");
-    inspectedContainerExitCode = after.exitCode;
-    if (
-      after.imageId !== inspectedImageId ||
-      start.exitCode !== after.exitCode
-    ) {
-      throw new Error("P2_EXECUTOR_INSPECT_INVALID");
+  const dockerState: { settlement: "known" | "unknown" } = {
+    settlement: "known",
+  };
+  let primaryFailureStage: VitePrimaryLifecycleStage | null = null;
+  let primaryFailureCode: VitePrimaryFailureCode | null = null;
+  const retainPrimaryDiagnostic = (
+    stage: VitePrimaryLifecycleStage,
+    code: VitePrimaryFailureCode,
+  ): void => {
+    if (primaryFailureStage === null) {
+      primaryFailureStage = stage;
+      primaryFailureCode = code;
     }
-    const runner = parseRunnerOutput(start, plan.selected);
-    lifecycle = Object.freeze({
-      imageId: after.imageId,
-      containerExitCode: after.exitCode,
-      runner: runner.disposition,
-      runnerSummary: runner.summary,
-    });
-  } catch (error) {
-    primaryFailure = normalizedError(error);
+  };
+  const retainPrimaryFailure = (
+    stage: VitePrimaryLifecycleStage,
+    error: unknown,
+    commandFailure: boolean,
+  ): Error => {
+    const failure = normalizedError(error);
+    if (primaryFailure === undefined) {
+      primaryFailure = failure;
+    }
+    retainPrimaryDiagnostic(stage, sanitizedLifecycleFailureCode(failure));
+    if (
+      commandFailure &&
+      (!(failure instanceof FixedViteCommandError) ||
+        failure.settlement === "unknown")
+    ) {
+      dockerState.settlement = "unknown";
+    }
+    return failure;
+  };
+  const runStageCommand = async (
+    stage: VitePrimaryLifecycleStage,
+    command: FixedDockerCommand,
+  ): Promise<FixedViteCommandResult | null> => {
+    try {
+      return await runCommand(command);
+    } catch (error) {
+      retainPrimaryFailure(stage, error, true);
+      return null;
+    }
+  };
+
+  const create = await runStageCommand("create", plan.create);
+  if (create !== null) {
+    try {
+      ownedContainerId = parseContainerId(create);
+    } catch (error) {
+      retainPrimaryFailure("create", error, false);
+    }
+  }
+
+  if (primaryFailure === undefined && ownedContainerId !== null) {
+    const beforeInspect = await runStageCommand(
+      "created-inspect",
+      plan.inspect,
+    );
+    if (beforeInspect !== null) {
+      try {
+        const before = parseInspect(beforeInspect);
+        requireInspect(before, plan, ownedContainerId, "created");
+        inspectedImageId = before.imageId;
+      } catch (error) {
+        retainPrimaryFailure("created-inspect", error, false);
+      }
+    }
+  }
+
+  let start: FixedViteCommandResult | null = null;
+  if (primaryFailure === undefined) {
+    start = await runStageCommand("attached-start", plan.start);
+  }
+
+  if (
+    start === null &&
+    primaryFailureStage === "attached-start" &&
+    primaryFailure instanceof FixedViteCommandError &&
+    primaryFailure.settlement === "closed" &&
+    ownedContainerId !== null
+  ) {
+    const recoveryInspect = await runStageCommand(
+      "final-inspect",
+      plan.inspect,
+    );
+    if (recoveryInspect !== null) {
+      try {
+        const after = parseInspect(recoveryInspect);
+        requireInspect(after, plan, ownedContainerId, "exited");
+        inspectedContainerExitCode = after.exitCode;
+      } catch (error) {
+        retainPrimaryFailure("final-inspect", error, false);
+      }
+    }
+  }
+
+  if (
+    primaryFailure === undefined &&
+    start !== null &&
+    ownedContainerId !== null
+  ) {
+    const afterInspect = await runStageCommand("final-inspect", plan.inspect);
+    if (afterInspect !== null) {
+      try {
+        const after = parseInspect(afterInspect);
+        requireInspect(after, plan, ownedContainerId, "exited");
+        inspectedContainerExitCode = after.exitCode;
+        if (
+          after.imageId !== inspectedImageId ||
+          start.exitCode !== after.exitCode
+        ) {
+          throw new Error("P2_EXECUTOR_INSPECT_INVALID");
+        }
+        try {
+          const runner = parseRunnerOutput(start, plan.selected);
+          lifecycle = Object.freeze({
+            imageId: after.imageId,
+            containerExitCode: after.exitCode,
+            runner: runner.disposition,
+            runnerSummary: runner.summary,
+          });
+          if (
+            runner.disposition.status === "failure" &&
+            runner.disposition.failureCode !== null
+          ) {
+            retainPrimaryDiagnostic(
+              "runner-disposition",
+              runner.disposition.failureCode,
+            );
+          }
+        } catch (error) {
+          retainPrimaryFailure("runner-disposition", error, false);
+        }
+      } catch (error) {
+        retainPrimaryFailure("final-inspect", error, false);
+      }
+    }
   }
 
   const runnerSettlementUnknown = lifecycle?.runner.settlement === "unknown";
   const cleanupSuppressed =
     runnerSettlementUnknown ||
+    dockerState.settlement === "unknown" ||
     (primaryFailure !== undefined && settlementUnknown(primaryFailure));
   let cleanupDisposition: ViteAttemptCleanupDisposition =
     ownedContainerId === null ? "not-required" : "completed";
   if (runnerSettlementUnknown) {
     cleanupDisposition = "suppressed-runner-settlement-unknown";
   } else if (
-    primaryFailure !== undefined &&
-    settlementUnknown(primaryFailure)
+    dockerState.settlement === "unknown" ||
+    (primaryFailure !== undefined && settlementUnknown(primaryFailure))
   ) {
-    cleanupDisposition = dockerSettlementUnknown(primaryFailure)
-      ? "suppressed-docker-settlement-unknown"
-      : "suppressed-runner-settlement-unknown";
+    cleanupDisposition =
+      dockerState.settlement === "unknown" ||
+      (primaryFailure !== undefined && dockerSettlementUnknown(primaryFailure))
+        ? "suppressed-docker-settlement-unknown"
+        : "suppressed-runner-settlement-unknown";
   }
   if (ownedContainerId !== null && !cleanupSuppressed) {
+    let removal: FixedViteCommandResult | null = null;
     try {
-      requireSuccessfulCommand(await runCommand(plan.remove));
+      removal = await runCommand(plan.remove);
     } catch (error) {
       cleanupFailure = normalizedError(error);
+      if (
+        !(cleanupFailure instanceof FixedViteCommandError) ||
+        cleanupFailure.settlement === "unknown"
+      ) {
+        dockerState.settlement = "unknown";
+      }
       cleanupDisposition = "failed";
-      primaryFailure =
-        primaryFailure === undefined
-          ? cleanupFailure
-          : withCleanupFailure(primaryFailure);
+      retainPrimaryDiagnostic(
+        "cleanup",
+        sanitizedLifecycleFailureCode(cleanupFailure),
+      );
+      if (primaryFailure === undefined) {
+        primaryFailure = cleanupFailure;
+      } else {
+        primaryFailure = withCleanupFailure(primaryFailure);
+      }
+    }
+    if (removal !== null) {
+      try {
+        requireSuccessfulCommand(removal);
+      } catch (error) {
+        cleanupFailure = normalizedError(error);
+        cleanupDisposition = "failed";
+        retainPrimaryDiagnostic(
+          "cleanup",
+          sanitizedLifecycleFailureCode(cleanupFailure),
+        );
+        if (primaryFailure === undefined) {
+          primaryFailure = cleanupFailure;
+        } else {
+          primaryFailure = withCleanupFailure(primaryFailure);
+        }
+      }
     }
   }
 
@@ -1309,13 +1504,11 @@ async function executeFixedViteLifecycleAttempt(
     inspectedImageId,
     inspectedContainerExitCode,
     failure,
-    dockerSettlement:
-      (failure !== null && dockerSettlementUnknown(failure)) ||
-      (cleanupFailure !== undefined && dockerSettlementUnknown(cleanupFailure))
-        ? "unknown"
-        : "known",
+    dockerSettlement: dockerState.settlement,
     cleanupDisposition,
     cleanupFailed: cleanupFailure !== undefined,
+    primaryFailureStage,
+    primaryFailureCode,
   });
 }
 
@@ -1376,11 +1569,14 @@ function buildAttemptRecord(
     issues.push("P2_ATTEMPT_OUTPUT_NOT_INSPECTED");
   }
   return Object.freeze({
-    schemaVersion: "p2-vite-attempt/v1",
+    schemaVersion: "p2-vite-attempt/v2",
     scenarioId: plan.selected.scenarioId,
     profileId: plan.selected.profileId,
     runId: plan.selected.runId,
+    expectedRevision: plan.selected.expectedRevision,
     attemptStatus: receiptPending ? "receipt-pending" : "inconclusive",
+    primaryFailureStage: lifecycleAttempt.primaryFailureStage,
+    primaryFailureCode: lifecycleAttempt.primaryFailureCode,
     inspectedImageId: lifecycleAttempt.inspectedImageId,
     inspectedContainerExitCode: lifecycleAttempt.inspectedContainerExitCode,
     dockerSettlement: lifecycleAttempt.dockerSettlement,
@@ -1507,6 +1703,9 @@ export function finalizeFixedViteLifecycleWithBackendForTest(
       dockerSettlement: "known",
       cleanupDisposition: lifecycle.cleanup,
       cleanupFailed: false,
+      primaryFailureStage:
+        lifecycle.runner.status === "failure" ? "runner-disposition" : null,
+      primaryFailureCode: lifecycle.runner.failureCode,
     }),
     backend,
   );
@@ -1542,7 +1741,12 @@ async function executeOne(
 export function projectFixedViteExecutionPair(
   receipts: readonly Pick<
     ViteExecutionReceipt,
-    "completion" | "imageId" | "profileId" | "runId" | "scenarioId"
+    | "completion"
+    | "expectedRevision"
+    | "imageId"
+    | "profileId"
+    | "runId"
+    | "scenarioId"
   >[],
 ): ViteExecutionPairProjection {
   const plans = createFixedViteExecutionPlans();
@@ -1554,12 +1758,13 @@ export function projectFixedViteExecutionPair(
         selected !== undefined &&
         receipt.scenarioId === selected.scenarioId &&
         receipt.profileId === selected.profileId &&
-        receipt.runId === selected.runId
+        receipt.runId === selected.runId &&
+        receipt.expectedRevision === selected.expectedRevision
       );
     });
   const imageMatches =
     identityMatches &&
-    receipts[0]?.imageId !== undefined &&
+    receipts[0]?.imageId === FIXED_NODE_IMAGE_ID &&
     receipts[0].imageId === receipts[1]?.imageId;
   const executionComplete =
     identityMatches &&
@@ -1572,7 +1777,8 @@ export function projectFixedViteExecutionPair(
     if (!executionComplete) issues.push("PAIR_EXECUTION_INCOMPLETE");
   }
   return Object.freeze({
-    schemaVersion: "p2-vite-pair/v1",
+    schemaVersion: "p2-vite-pair/v2",
+    expectedRevision: FIXED_VITE_EXPECTED_REVISION,
     validity: imageMatches && executionComplete ? "same-image" : "inconclusive",
     imageId: imageMatches ? (receipts[0]?.imageId ?? null) : null,
     issues: Object.freeze(issues),

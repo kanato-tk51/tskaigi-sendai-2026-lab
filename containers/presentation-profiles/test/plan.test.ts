@@ -7,6 +7,8 @@ import {
   FIXED_CONTAINER_USER,
   FIXED_DOCKER_EXECUTABLE,
   FIXED_NODE_IMAGE,
+  FIXED_NODE_IMAGE_ID,
+  FIXED_VITE_EXPECTED_REVISION,
 } from "../src/plan.js";
 
 function argumentValue(arguments_: readonly string[], option: string): string {
@@ -28,16 +30,16 @@ describe("P2 selected profile plan", () => {
       "codegen-observe-c",
     ]);
     expect(plans.map((plan) => plan.runId)).toEqual([
-      "p2-vite-observe-p-20260719-02",
-      "p2-vite-observe-c-20260719-02",
+      "p2-vite-observe-p-20260719-03",
+      "p2-vite-observe-c-20260719-03",
       "p2-codegen-observe-p-20260719-01",
       "p2-codegen-observe-c-20260719-01",
     ]);
     expect(
       plans.map((plan) => argumentValue(plan.create.arguments, "--name")),
     ).toEqual([
-      "tskaigi-p2-vite-observe-p-20260719-02",
-      "tskaigi-p2-vite-observe-c-20260719-02",
+      "tskaigi-p2-vite-observe-p-20260719-03",
+      "tskaigi-p2-vite-observe-c-20260719-03",
       "tskaigi-p2-codegen-observe-p",
       "tskaigi-p2-codegen-observe-c",
     ]);
@@ -47,6 +49,13 @@ describe("P2 selected profile plan", () => {
       { route: 5, capability: 6, toolApiChange: 1, total: 12 },
       { route: 5, capability: 6, toolApiChange: 1, total: 12 },
     ]);
+    expect(plans.map((plan) => plan.expectedRevision ?? null)).toEqual([
+      FIXED_VITE_EXPECTED_REVISION,
+      FIXED_VITE_EXPECTED_REVISION,
+      null,
+      null,
+    ]);
+    expect(FIXED_NODE_IMAGE.endsWith(FIXED_NODE_IMAGE_ID.slice(7))).toBe(true);
   });
 
   it("keeps image, staging, and semantic command identical within each pair", () => {
@@ -75,7 +84,7 @@ describe("P2 selected profile plan", () => {
       expect(command.arguments[0]).toBe("create");
       expect(argumentValue(command.arguments, "--name")).toBe(
         plan.adapterId === "vite"
-          ? `tskaigi-p2-${plan.scenarioId}-20260719-02`
+          ? `tskaigi-p2-${plan.scenarioId}-20260719-03`
           : `tskaigi-p2-${plan.scenarioId}`,
       );
       expect(argumentValue(command.arguments, "--pull")).toBe("never");

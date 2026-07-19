@@ -196,4 +196,13 @@ rerunning P2/P3 or reading ignored roots. The
 [fresh focused read-only safety/validity review](reviews/p4-evidence-map.md)
 found no finding and approved P4 and the presentation MVP as complete.
 
+The later selected Vite completion addendum exhausted one separately reviewed
+`20260719-03` one-shot pair. Its
+[fresh Docker-free result review](reviews/p2-vite-diagnostic-result.md)
+reproduced the canonical v2 attached-start-timeout attempt and accepted it only
+as a third immutable Inconclusive execution attempt. The tracked presentation
+projection now lists `20260719-01`, `20260719-02`, and `20260719-03` side by
+side; it retains Vite permissive `not-inspected`, constrained `missing`, no
+same-image pair, and no selected Vite or experiment-matrix Observed promotion.
+
 Next: none

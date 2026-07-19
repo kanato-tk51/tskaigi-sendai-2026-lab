@@ -1,6 +1,6 @@
 # Presentation evidence map
 
-Status: **P4 focused final review approved; presentation MVP complete**.
+Status: **complete; P4 baseline and selected Vite completion-addendum result reviews approved**.
 
 This document is generated from the three tracked, sanitized JSON projections
 under [`results/examples/presentation-mvp`](../results/examples/presentation-mvp/README.md).
@@ -12,8 +12,9 @@ Docker, network, or deployment operation.
 The evidence classes below are deliberate. M0 remains overall **Inconclusive**
 with scenario-level Observed marker counts; the four adapter rows are **reviewed
 local adapter evidence**; the codegen pair is selected-profile **Observed** only
-at one-local-pair scope; Vite is an observed **Inconclusive attempt**, not a
-capability result; and P3 is **Observed** only at one-local-run scope.
+at one-local-pair scope; all three Vite pair attempts are observed
+**Inconclusive attempts**, not capability results; and P3 is **Observed** only
+at one-local-run scope.
 
 ## Talk table 1 — five routes, phases, triggers, and counts
 
@@ -42,9 +43,13 @@ code ran; they do not imply the privilege of the executing process.
 [`profiles.json`](../results/examples/presentation-mvp/profiles.json) preserves
 five capabilities and keeps the separate source-hash integrity attempt out of
 their denominator. The codegen cells come from the independently accepted exact
-same-image pair. The exhausted Vite attempt has no receipt or constrained run:
+same-image pair. The three exhausted Vite attempts have no receipt or
+constrained run:
 `not-inspected` and `missing` are displayed rather than converted to zero,
 denial, or success.
+
+All three immutable attempts remain side by side in the tracked projection:
+`20260719-01` — not established; not recorded; Inconclusive; partial permissive output; constrained missing | `20260719-02` — p2-vite-attempt/v1 / SHA-256 1dd63280f8d665547de613fe732f6205aceccfd92a9a4f3b156d36b3c47c70c6; not recorded by v1; Inconclusive; permissive not-inspected; constrained missing | `20260719-03` — p2-vite-attempt/v2 / SHA-256 5f90a582664b1f5d068a01341dfb71fc029c9a5f445e64b930729dd6a4f398b6; attached-start / P2_EXECUTOR_DOCKER_TIMEOUT; Inconclusive; permissive not-inspected; constrained missing.
 
 ## Talk table 3 — build once, verify, copy, reject
 
@@ -98,8 +103,9 @@ are not OS-level egress-enforcement evidence.
 - Limitation: same-image and pair-identical staging have the narrow bindings in
   the [codegen receipt review](reviews/p2-selected-profile-codegen-receipts.md);
   they do not prove a general sandbox or repeated-run reproducibility. The
-  [Vite review](reviews/p2-selected-profile-vite-failure.md) accepts only an
-  Inconclusive attempt, so the selected Vite comparison is explicitly missing.
+  [latest Vite result review](reviews/p2-vite-diagnostic-result.md) accepts only
+  three Inconclusive attempts, so the selected Vite comparison is explicitly
+  missing.
 
 ### C-05 — direct writes differ from official tool API changes
 
@@ -133,9 +139,10 @@ are not OS-level egress-enforcement evidence.
 - `npm run p4:generate` deterministically renders only this tracked document
   from the three tracked JSON files.
 - `npm run p4:verify` validates fixed route/capability counts, codegen
-  `same-image`, Vite `not-inspected` / `missing`, artifact build count 1,
-  zero deployment builds, one-byte rejection, source-record boundaries, and
-  exact document regeneration.
+  `same-image`, the ordered three-attempt Vite history and its
+  `not-inspected` / `missing` boundary, artifact build count 1, zero
+  deployment builds, one-byte rejection, source-record boundaries, and exact
+  document regeneration.
 - P4 does not rerun P2 or P3, read ignored raw evidence, edit
   `experiment-matrix.md`, access Docker/runtime sockets, use external network
   or credentials, publish, or deploy.

@@ -4,6 +4,10 @@ import { fileURLToPath } from "node:url";
 export const FIXED_DOCKER_EXECUTABLE = "/usr/bin/docker" as const;
 export const FIXED_NODE_IMAGE =
   "node@sha256:4ada13d4258db3809cbff56d605f80af8383bf1f823168d0518d8dce799e7cf0" as const;
+export const FIXED_NODE_IMAGE_ID =
+  "sha256:4ada13d4258db3809cbff56d605f80af8383bf1f823168d0518d8dce799e7cf0" as const;
+export const FIXED_VITE_EXPECTED_REVISION =
+  "p2-vite-expected-20260719-03" as const;
 export const FIXED_CONTAINER_USER = "65532:65532" as const;
 
 export type SelectedScenarioId =
@@ -27,6 +31,7 @@ export interface SelectedScenarioPlan {
   readonly profileId: SelectedProfileId;
   readonly adapterId: SelectedAdapterId;
   readonly runId: string;
+  readonly expectedRevision?: typeof FIXED_VITE_EXPECTED_REVISION;
   readonly image: typeof FIXED_NODE_IMAGE;
   readonly stagingRoot: string;
   readonly resultRoot: string;
@@ -46,6 +51,7 @@ interface ScenarioDefinition {
   readonly adapterId: SelectedAdapterId;
   readonly runId: string;
   readonly containerName: string;
+  readonly expectedRevision?: typeof FIXED_VITE_EXPECTED_REVISION;
 }
 
 const REPOSITORY_ROOT = path.resolve(
@@ -71,15 +77,17 @@ const DEFINITIONS: readonly ScenarioDefinition[] = Object.freeze([
     scenarioId: "vite-observe-p",
     profileId: "permissive",
     adapterId: "vite",
-    runId: "p2-vite-observe-p-20260719-02",
-    containerName: "tskaigi-p2-vite-observe-p-20260719-02",
+    runId: "p2-vite-observe-p-20260719-03",
+    containerName: "tskaigi-p2-vite-observe-p-20260719-03",
+    expectedRevision: FIXED_VITE_EXPECTED_REVISION,
   }),
   Object.freeze({
     scenarioId: "vite-observe-c",
     profileId: "constrained",
     adapterId: "vite",
-    runId: "p2-vite-observe-c-20260719-02",
-    containerName: "tskaigi-p2-vite-observe-c-20260719-02",
+    runId: "p2-vite-observe-c-20260719-03",
+    containerName: "tskaigi-p2-vite-observe-c-20260719-03",
+    expectedRevision: FIXED_VITE_EXPECTED_REVISION,
   }),
   Object.freeze({
     scenarioId: "codegen-observe-p",
@@ -209,6 +217,9 @@ function createScenarioPlan(
     profileId: definition.profileId,
     adapterId: definition.adapterId,
     runId: definition.runId,
+    ...(definition.expectedRevision === undefined
+      ? {}
+      : { expectedRevision: definition.expectedRevision }),
     image: FIXED_NODE_IMAGE,
     stagingRoot,
     resultRoot,

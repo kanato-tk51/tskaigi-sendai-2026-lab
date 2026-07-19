@@ -11,6 +11,7 @@ import {
   executeAndFinalizeFixedViteLifecycleWithBackendsForTest,
   executeFixedViteLifecycleWithBackendForTest,
   finalizeFixedViteLifecycleWithBackendForTest,
+  FIXED_VITE_EXECUTOR_LIMITS,
   FixedViteCommandError,
   FixedViteEvidenceAccessError,
   projectFixedViteExecutionPair,
@@ -23,10 +24,15 @@ import {
   validateFixedViteLifecycle,
   verifyFixedViteStagingForTest,
 } from "../src/vite-executor.js";
-import { verifyFixedViteOutputForTest } from "../runner/vite-runner.js";
+import {
+  FIXED_VITE_RUNNER_LIMITS,
+  verifyFixedViteOutputForTest,
+} from "../runner/vite-runner.js";
 import {
   FIXED_DOCKER_EXECUTABLE,
   FIXED_NODE_IMAGE,
+  FIXED_NODE_IMAGE_ID,
+  FIXED_VITE_EXPECTED_REVISION,
   type FixedDockerCommand,
 } from "../src/plan.js";
 
@@ -153,7 +159,7 @@ function successfulLifecycleResults(
   plan: ReturnType<typeof createFixedViteExecutionPlans>[number],
 ): readonly CommandResult[] {
   const containerId = "a".repeat(64);
-  const imageId = `sha256:${"b".repeat(64)}`;
+  const imageId = FIXED_NODE_IMAGE_ID;
   return [
     { exitCode: 0, stdout: `${containerId}\n`, stderr: "" },
     {
@@ -173,7 +179,7 @@ function successfulLifecycleResults(
 
 function completedLifecycle(): FixedViteLifecycleResult {
   return Object.freeze({
-    imageId: `sha256:${"b".repeat(64)}`,
+    imageId: FIXED_NODE_IMAGE_ID,
     containerExitCode: 0,
     runner: Object.freeze({
       status: "completed",
@@ -194,7 +200,7 @@ function failedLifecycle(
   settlement: "known" | "unknown",
 ): FixedViteLifecycleResult {
   return Object.freeze({
-    imageId: `sha256:${"b".repeat(64)}`,
+    imageId: FIXED_NODE_IMAGE_ID,
     containerExitCode: 1,
     runner: Object.freeze({
       status: "failure",
@@ -328,12 +334,12 @@ describe("P2 fixed Vite executor", () => {
       "vite-observe-c",
     ]);
     expect(plans.map((plan) => plan.selected.resultRoot)).toEqual([
-      expect.stringMatching(/p2-vite-observe-p-20260719-02$/u),
-      expect.stringMatching(/p2-vite-observe-c-20260719-02$/u),
+      expect.stringMatching(/p2-vite-observe-p-20260719-03$/u),
+      expect.stringMatching(/p2-vite-observe-c-20260719-03$/u),
     ]);
     expect(plans.map((plan) => plan.containerName)).toEqual([
-      "tskaigi-p2-vite-observe-p-20260719-02",
-      "tskaigi-p2-vite-observe-c-20260719-02",
+      "tskaigi-p2-vite-observe-p-20260719-03",
+      "tskaigi-p2-vite-observe-c-20260719-03",
     ]);
   });
 
@@ -392,7 +398,7 @@ describe("P2 fixed Vite executor", () => {
         afterInspect: results[3]!,
       }),
     ).toEqual({
-      imageId: `sha256:${"b".repeat(64)}`,
+      imageId: FIXED_NODE_IMAGE_ID,
       containerExitCode: 0,
       runner: {
         status: "completed",
@@ -414,7 +420,7 @@ describe("P2 fixed Vite executor", () => {
     results[2] = runnerFailure("unknown");
     results[3] = {
       ...results[3]!,
-      stdout: `${"a".repeat(64)}|sha256:${"b".repeat(64)}|${FIXED_NODE_IMAGE}|exited|1\n`,
+      stdout: `${"a".repeat(64)}|${FIXED_NODE_IMAGE_ID}|${FIXED_NODE_IMAGE}|exited|1\n`,
     };
     const lifecycle = validateFixedViteLifecycle({
       plan,
@@ -483,6 +489,106 @@ describe("P2 fixed Vite executor", () => {
     expect(trace).toEqual(["create", "inspect", "start", "inspect", "remove"]);
   });
 
+  it("retains cleanup as the primary stage after an otherwise complete lifecycle", async () => {
+    const plan = createFixedViteExecutionPlans()[0]!;
+    const commandTrace: string[] = [];
+    const finalizationTrace: string[] = [];
+    const results = [...successfulLifecycleResults(plan)];
+    results[4] = { exitCode: 1, stdout: "", stderr: "bounded failure" };
+    const outcome =
+      await executeAndFinalizeFixedViteLifecycleWithBackendsForTest(
+        plan,
+        async (command) => {
+          commandTrace.push(commandLabel(plan, command));
+          return results.shift()!;
+        },
+        finalizationBackend({ trace: finalizationTrace, failEvidence: true }),
+      );
+    expect(commandTrace).toEqual([
+      "create",
+      "inspect",
+      "start",
+      "inspect",
+      "remove",
+    ]);
+    expect(finalizationTrace).toEqual(["attempt"]);
+    expect(outcome.attempt).toMatchObject({
+      cleanupDisposition: "failed",
+      primaryFailureStage: "cleanup",
+      primaryFailureCode: "P2_EXECUTOR_DOCKER_FAILED",
+      issues: [
+        "P2_ATTEMPT_DOCKER_LIFECYCLE_FAILED",
+        "P2_ATTEMPT_CLEANUP_FAILED",
+      ],
+    });
+  });
+
+  it("keeps a known runner failure primary when cleanup later fails", async () => {
+    const plan = createFixedViteExecutionPlans()[0]!;
+    const commandTrace: string[] = [];
+    const finalizationTrace: string[] = [];
+    const results = [...successfulLifecycleResults(plan)];
+    results[2] = runnerFailure("known");
+    results[3] = {
+      ...results[3]!,
+      stdout: `${"a".repeat(64)}|${FIXED_NODE_IMAGE_ID}|${FIXED_NODE_IMAGE}|exited|1\n`,
+    };
+    results[4] = { exitCode: 1, stdout: "", stderr: "bounded failure" };
+
+    const outcome =
+      await executeAndFinalizeFixedViteLifecycleWithBackendsForTest(
+        plan,
+        async (command) => {
+          commandTrace.push(commandLabel(plan, command));
+          return results.shift()!;
+        },
+        finalizationBackend({ trace: finalizationTrace, failEvidence: true }),
+      );
+
+    expect(commandTrace).toEqual([
+      "create",
+      "inspect",
+      "start",
+      "inspect",
+      "remove",
+    ]);
+    expect(finalizationTrace).toEqual(["attempt"]);
+    expect(outcome).toMatchObject({
+      completion: "inconclusive",
+      attemptRecord: "written",
+      evidence: "not-inspected",
+      receipt: null,
+    });
+    expect(outcome.attempt).toEqual({
+      schemaVersion: "p2-vite-attempt/v2",
+      scenarioId: plan.selected.scenarioId,
+      profileId: plan.selected.profileId,
+      runId: plan.selected.runId,
+      expectedRevision: FIXED_VITE_EXPECTED_REVISION,
+      attemptStatus: "inconclusive",
+      primaryFailureStage: "runner-disposition",
+      primaryFailureCode: "P2_CHILD_FAILED",
+      inspectedImageId: FIXED_NODE_IMAGE_ID,
+      inspectedContainerExitCode: 1,
+      dockerSettlement: "known",
+      runnerSettlement: "known",
+      cleanupDisposition: "failed",
+      runner: {
+        status: "failure",
+        failureCode: "P2_CHILD_FAILED",
+        settlement: "known",
+        settlementCode: null,
+      },
+      outputAvailability: "not-inspected",
+      issues: [
+        "P2_ATTEMPT_DOCKER_LIFECYCLE_FAILED",
+        "P2_ATTEMPT_RUNNER_FAILED",
+        "P2_ATTEMPT_CLEANUP_FAILED",
+        "P2_ATTEMPT_OUTPUT_NOT_INSPECTED",
+      ],
+    });
+  });
+
   it("cleans up after a known runner failure", async () => {
     const plan = createFixedViteExecutionPlans()[0]!;
     const trace: string[] = [];
@@ -490,7 +596,7 @@ describe("P2 fixed Vite executor", () => {
     results[2] = runnerFailure("known");
     results[3] = {
       ...results[3]!,
-      stdout: `${"a".repeat(64)}|sha256:${"b".repeat(64)}|${FIXED_NODE_IMAGE}|exited|1\n`,
+      stdout: `${"a".repeat(64)}|${FIXED_NODE_IMAGE_ID}|${FIXED_NODE_IMAGE}|exited|1\n`,
     };
     await expect(
       executeFixedViteLifecycleWithBackendForTest(plan, async (command) => {
@@ -511,7 +617,7 @@ describe("P2 fixed Vite executor", () => {
     results[2] = runnerFailure("unknown");
     results[3] = {
       ...results[3]!,
-      stdout: `${"a".repeat(64)}|sha256:${"b".repeat(64)}|${FIXED_NODE_IMAGE}|exited|1\n`,
+      stdout: `${"a".repeat(64)}|${FIXED_NODE_IMAGE_ID}|${FIXED_NODE_IMAGE}|exited|1\n`,
     };
     await expect(
       executeFixedViteLifecycleWithBackendForTest(plan, async (command) => {
@@ -553,12 +659,111 @@ describe("P2 fixed Vite executor", () => {
       completion: "inconclusive",
       evidence: "not-inspected",
       attempt: {
-        inspectedImageId: `sha256:${"b".repeat(64)}`,
+        inspectedImageId: FIXED_NODE_IMAGE_ID,
         inspectedContainerExitCode: null,
         dockerSettlement: "unknown",
         runnerSettlement: "not-established",
         cleanupDisposition: "suppressed-docker-settlement-unknown",
+        primaryFailureStage: "attached-start",
+        primaryFailureCode: "P2_EXECUTOR_DOCKER_TIMEOUT",
       },
+    });
+  });
+
+  it("performs one final inspect after a known-settled attached-start failure", async () => {
+    const plan = createFixedViteExecutionPlans()[0]!;
+    const commandTrace: string[] = [];
+    const finalizationTrace: string[] = [];
+    const results = successfulLifecycleResults(plan);
+    let inspectCount = 0;
+    const outcome =
+      await executeAndFinalizeFixedViteLifecycleWithBackendsForTest(
+        plan,
+        async (command) => {
+          const label = commandLabel(plan, command);
+          commandTrace.push(label);
+          if (label === "create") return results[0]!;
+          if (label === "inspect") {
+            inspectCount += 1;
+            return inspectCount === 1 ? results[1]! : results[3]!;
+          }
+          if (label === "start") {
+            throw new FixedViteCommandError(
+              "P2_EXECUTOR_DOCKER_TIMEOUT",
+              "closed",
+              true,
+            );
+          }
+          return results[4]!;
+        },
+        finalizationBackend({ trace: finalizationTrace, failEvidence: true }),
+      );
+    expect(commandTrace).toEqual([
+      "create",
+      "inspect",
+      "start",
+      "inspect",
+      "remove",
+    ]);
+    expect(inspectCount).toBe(2);
+    expect(finalizationTrace).toEqual(["attempt"]);
+    expect(outcome).toMatchObject({
+      completion: "inconclusive",
+      receipt: null,
+      attempt: {
+        inspectedImageId: FIXED_NODE_IMAGE_ID,
+        inspectedContainerExitCode: 0,
+        dockerSettlement: "known",
+        cleanupDisposition: "completed",
+        primaryFailureStage: "attached-start",
+        primaryFailureCode: "P2_EXECUTOR_DOCKER_TIMEOUT",
+      },
+    });
+  });
+
+  it("keeps the attached-start failure primary when its final inspect is invalid", async () => {
+    const plan = createFixedViteExecutionPlans()[0]!;
+    const commandTrace: string[] = [];
+    const finalizationTrace: string[] = [];
+    const results = successfulLifecycleResults(plan);
+    let inspectCount = 0;
+    const outcome =
+      await executeAndFinalizeFixedViteLifecycleWithBackendsForTest(
+        plan,
+        async (command) => {
+          const label = commandLabel(plan, command);
+          commandTrace.push(label);
+          if (label === "create") return results[0]!;
+          if (label === "inspect") {
+            inspectCount += 1;
+            return inspectCount === 1
+              ? results[1]!
+              : { exitCode: 0, stdout: "invalid\n", stderr: "" };
+          }
+          if (label === "start") {
+            throw new FixedViteCommandError(
+              "P2_EXECUTOR_DOCKER_OUTPUT",
+              "closed",
+              true,
+            );
+          }
+          return results[4]!;
+        },
+        finalizationBackend({ trace: finalizationTrace, failEvidence: true }),
+      );
+    expect(commandTrace).toEqual([
+      "create",
+      "inspect",
+      "start",
+      "inspect",
+      "remove",
+    ]);
+    expect(inspectCount).toBe(2);
+    expect(outcome.attempt).toMatchObject({
+      inspectedImageId: FIXED_NODE_IMAGE_ID,
+      inspectedContainerExitCode: null,
+      primaryFailureStage: "attached-start",
+      primaryFailureCode: "P2_EXECUTOR_DOCKER_OUTPUT",
     });
   });
 
@@ -570,7 +775,7 @@ describe("P2 fixed Vite executor", () => {
     results[2] = { exitCode: 1, stdout: "", stderr: "raw failure" };
     results[3] = {
       ...results[3]!,
-      stdout: `${"a".repeat(64)}|sha256:${"b".repeat(64)}|${FIXED_NODE_IMAGE}|exited|1\n`,
+      stdout: `${"a".repeat(64)}|${FIXED_NODE_IMAGE_ID}|${FIXED_NODE_IMAGE}|exited|1\n`,
     };
     const outcome =
       await executeAndFinalizeFixedViteLifecycleWithBackendsForTest(
@@ -587,11 +792,13 @@ describe("P2 fixed Vite executor", () => {
       completion: "inconclusive",
       evidence: "not-inspected",
       attempt: {
-        inspectedImageId: `sha256:${"b".repeat(64)}`,
+        inspectedImageId: FIXED_NODE_IMAGE_ID,
         inspectedContainerExitCode: 1,
         dockerSettlement: "known",
         runnerSettlement: "unknown",
         cleanupDisposition: "suppressed-runner-settlement-unknown",
+        primaryFailureStage: "runner-disposition",
+        primaryFailureCode: "P2_EXECUTOR_RUNNER_INVALID",
         issues: [
           "P2_ATTEMPT_RUNNER_DISPOSITION_INVALID",
           "P2_ATTEMPT_RUNNER_SETTLEMENT_UNKNOWN",
@@ -604,17 +811,19 @@ describe("P2 fixed Vite executor", () => {
   it.each([
     {
       label: "start/final-inspect exit-code mismatch",
-      finalImageId: `sha256:${"b".repeat(64)}`,
+      finalImageId: FIXED_NODE_IMAGE_ID,
       finalExitCode: 1,
+      retainedExitCode: 1,
     },
     {
       label: "created/final-inspect image mismatch",
       finalImageId: `sha256:${"e".repeat(64)}`,
       finalExitCode: 0,
+      retainedExitCode: null,
     },
   ])(
     "retains validated lifecycle fields after a $label",
-    async ({ finalImageId, finalExitCode }) => {
+    async ({ finalImageId, finalExitCode, retainedExitCode }) => {
       const plan = createFixedViteExecutionPlans()[0]!;
       const commandTrace: string[] = [];
       const finalizationTrace: string[] = [];
@@ -645,11 +854,13 @@ describe("P2 fixed Vite executor", () => {
         evidence: "not-inspected",
         receipt: null,
         attempt: {
-          inspectedImageId: `sha256:${"b".repeat(64)}`,
-          inspectedContainerExitCode: finalExitCode,
+          inspectedImageId: FIXED_NODE_IMAGE_ID,
+          inspectedContainerExitCode: retainedExitCode,
           dockerSettlement: "known",
           runnerSettlement: "not-established",
           cleanupDisposition: "completed",
+          primaryFailureStage: "final-inspect",
+          primaryFailureCode: "P2_EXECUTOR_INSPECT_INVALID",
           issues: [
             "P2_ATTEMPT_DOCKER_LIFECYCLE_FAILED",
             "P2_ATTEMPT_OUTPUT_NOT_INSPECTED",
@@ -658,6 +869,50 @@ describe("P2 fixed Vite executor", () => {
       });
     },
   );
+
+  it("serializes only the closed v2 diagnostic attempt fields", async () => {
+    const plan = createFixedViteExecutionPlans()[0]!;
+    let written: unknown;
+    await finalizeFixedViteLifecycleWithBackendForTest(
+      plan,
+      failedLifecycle("known"),
+      {
+        async writeAttempt(record) {
+          written = record;
+        },
+        async readEvidence() {
+          throw new Error("evidence must not be inspected");
+        },
+        async writeReceipt() {
+          throw new Error("receipt must not be written");
+        },
+      },
+    );
+    expect(Object.keys(written as Record<string, unknown>).sort()).toEqual(
+      [
+        "attemptStatus",
+        "cleanupDisposition",
+        "dockerSettlement",
+        "expectedRevision",
+        "inspectedContainerExitCode",
+        "inspectedImageId",
+        "issues",
+        "outputAvailability",
+        "primaryFailureCode",
+        "primaryFailureStage",
+        "profileId",
+        "runId",
+        "runner",
+        "runnerSettlement",
+        "scenarioId",
+        "schemaVersion",
+      ].sort(),
+    );
+    const canonical = JSON.stringify(written);
+    expect(canonical).not.toMatch(
+      /stdout|stderr|raw|error|containerName|resultRoot|\/home\//u,
+    );
+  });
 
   it.each(["create", "first-inspect"] as const)(
     "keeps lifecycle fields null after an early %s failure",
@@ -693,6 +948,12 @@ describe("P2 fixed Vite executor", () => {
         inspectedContainerExitCode: null,
         cleanupDisposition:
           failurePoint === "create" ? "not-required" : "completed",
+        primaryFailureStage:
+          failurePoint === "create" ? "create" : "created-inspect",
+        primaryFailureCode:
+          failurePoint === "create"
+            ? "P2_EXECUTOR_DOCKER_FAILED"
+            : "P2_EXECUTOR_INSPECT_INVALID",
       });
     },
   );
@@ -714,13 +975,17 @@ describe("P2 fixed Vite executor", () => {
       attemptRecord: "written",
       evidence: "inspected",
       attempt: {
-        schemaVersion: "p2-vite-attempt/v1",
+        schemaVersion: "p2-vite-attempt/v2",
+        expectedRevision: FIXED_VITE_EXPECTED_REVISION,
         attemptStatus: "receipt-pending",
+        primaryFailureStage: null,
+        primaryFailureCode: null,
         outputAvailability: "fixed-paths-exported",
         issues: [],
       },
       receipt: {
-        schemaVersion: "p2-vite-execution/v1",
+        schemaVersion: "p2-vite-execution/v2",
+        expectedRevision: FIXED_VITE_EXPECTED_REVISION,
         completion: "complete",
         projection: { validity: "matches-expected" },
       },
@@ -843,6 +1108,8 @@ describe("P2 fixed Vite executor", () => {
           attemptStatus: "inconclusive",
           runnerSettlement: settlement,
           cleanupDisposition,
+          primaryFailureStage: "runner-disposition",
+          primaryFailureCode: "P2_CHILD_FAILED",
           outputAvailability: "not-inspected",
         },
       });
@@ -898,7 +1165,7 @@ describe("P2 fixed Vite executor", () => {
     results[2] = { exitCode: 1, stdout: "", stderr: "raw failure" };
     results[3] = {
       ...results[3]!,
-      stdout: `${"a".repeat(64)}|sha256:${"b".repeat(64)}|${FIXED_NODE_IMAGE}|exited|1\n`,
+      stdout: `${"a".repeat(64)}|${FIXED_NODE_IMAGE_ID}|${FIXED_NODE_IMAGE}|exited|1\n`,
     };
     await expect(
       executeFixedViteLifecycleWithBackendForTest(plan, async (command) => {
@@ -950,6 +1217,28 @@ describe("P2 fixed Vite executor", () => {
       settlement: "closed",
       signalAccepted: true,
     });
+  });
+
+  it("keeps the fixed 60-second attached-start boundary outside unchanged runner limits", () => {
+    const runnerControlledFailureMs =
+      FIXED_VITE_RUNNER_LIMITS.childTimeoutMs +
+      FIXED_VITE_RUNNER_LIMITS.terminationGraceMs +
+      FIXED_VITE_RUNNER_LIMITS.forceSettlementMs +
+      FIXED_VITE_RUNNER_LIMITS.serverSettlementMs;
+    expect(FIXED_VITE_EXECUTOR_LIMITS).toEqual({
+      dockerCommandMs: 20_000,
+      attachedStartMs: 60_000,
+      dockerSettlementMs: 1_000,
+    });
+    expect(FIXED_VITE_RUNNER_LIMITS).toEqual({
+      childTimeoutMs: 30_000,
+      terminationGraceMs: 500,
+      forceSettlementMs: 1_000,
+      serverSettlementMs: 1_000,
+    });
+    expect(FIXED_VITE_EXECUTOR_LIMITS.attachedStartMs).toBeGreaterThan(
+      runnerControlledFailureMs,
+    );
   });
 
   it("returns bounded unknown settlement when Docker close never arrives", async () => {
@@ -1015,22 +1304,41 @@ describe("P2 fixed Vite executor", () => {
 
   it("requires exact pair identity, completion, and one inspected image ID", () => {
     const plans = createFixedViteExecutionPlans();
-    const imageId = `sha256:${"f".repeat(64)}`;
+    const imageId = FIXED_NODE_IMAGE_ID;
     const identities = plans.map(({ selected }) => ({
       scenarioId: selected.scenarioId,
       profileId: selected.profileId,
       runId: selected.runId,
+      expectedRevision: FIXED_VITE_EXPECTED_REVISION,
       imageId,
       completion: "complete" as const,
     }));
     expect(projectFixedViteExecutionPair(identities)).toEqual({
-      schemaVersion: "p2-vite-pair/v1",
+      schemaVersion: "p2-vite-pair/v2",
+      expectedRevision: FIXED_VITE_EXPECTED_REVISION,
       validity: "same-image",
       imageId,
       issues: [],
     });
     expect(projectFixedViteExecutionPair(identities.slice(0, 1))).toEqual({
-      schemaVersion: "p2-vite-pair/v1",
+      schemaVersion: "p2-vite-pair/v2",
+      expectedRevision: FIXED_VITE_EXPECTED_REVISION,
+      validity: "inconclusive",
+      imageId: null,
+      issues: ["PAIR_IDENTITY_MISMATCH"],
+    });
+    expect(
+      projectFixedViteExecutionPair([
+        identities[0]!,
+        {
+          ...identities[1]!,
+          expectedRevision:
+            "p2-vite-expected-20260719-02" as typeof FIXED_VITE_EXPECTED_REVISION,
+        },
+      ]),
+    ).toEqual({
+      schemaVersion: "p2-vite-pair/v2",
+      expectedRevision: FIXED_VITE_EXPECTED_REVISION,
       validity: "inconclusive",
       imageId: null,
       issues: ["PAIR_IDENTITY_MISMATCH"],
@@ -1041,7 +1349,8 @@ describe("P2 fixed Vite executor", () => {
         { ...identities[1]!, completion: "inconclusive" },
       ]),
     ).toEqual({
-      schemaVersion: "p2-vite-pair/v1",
+      schemaVersion: "p2-vite-pair/v2",
+      expectedRevision: FIXED_VITE_EXPECTED_REVISION,
       validity: "inconclusive",
       imageId,
       issues: ["PAIR_EXECUTION_INCOMPLETE"],
@@ -1052,7 +1361,8 @@ describe("P2 fixed Vite executor", () => {
         { ...identities[1]!, imageId: `sha256:${"e".repeat(64)}` },
       ]),
     ).toEqual({
-      schemaVersion: "p2-vite-pair/v1",
+      schemaVersion: "p2-vite-pair/v2",
+      expectedRevision: FIXED_VITE_EXPECTED_REVISION,
       validity: "inconclusive",
       imageId: null,
       issues: ["IMAGE_ID_MISMATCH"],
