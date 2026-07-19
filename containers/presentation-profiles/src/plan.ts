@@ -45,6 +45,7 @@ interface ScenarioDefinition {
   readonly profileId: SelectedProfileId;
   readonly adapterId: SelectedAdapterId;
   readonly runId: string;
+  readonly containerName: string;
 }
 
 const REPOSITORY_ROOT = path.resolve(
@@ -70,25 +71,29 @@ const DEFINITIONS: readonly ScenarioDefinition[] = Object.freeze([
     scenarioId: "vite-observe-p",
     profileId: "permissive",
     adapterId: "vite",
-    runId: "p2-vite-observe-p-20260719-01",
+    runId: "p2-vite-observe-p-20260719-02",
+    containerName: "tskaigi-p2-vite-observe-p-20260719-02",
   }),
   Object.freeze({
     scenarioId: "vite-observe-c",
     profileId: "constrained",
     adapterId: "vite",
-    runId: "p2-vite-observe-c-20260719-01",
+    runId: "p2-vite-observe-c-20260719-02",
+    containerName: "tskaigi-p2-vite-observe-c-20260719-02",
   }),
   Object.freeze({
     scenarioId: "codegen-observe-p",
     profileId: "permissive",
     adapterId: "codegen",
     runId: "p2-codegen-observe-p-20260719-01",
+    containerName: "tskaigi-p2-codegen-observe-p",
   }),
   Object.freeze({
     scenarioId: "codegen-observe-c",
     profileId: "constrained",
     adapterId: "codegen",
     runId: "p2-codegen-observe-c-20260719-01",
+    containerName: "tskaigi-p2-codegen-observe-c",
   }),
 ]);
 
@@ -150,7 +155,7 @@ function createCommand(
     arguments: Object.freeze([
       "create",
       "--name",
-      `tskaigi-p2-${definition.scenarioId}`,
+      definition.containerName,
       "--pull",
       "never",
       "--network",
@@ -200,7 +205,10 @@ function createScenarioPlan(
   const stagingRoot = path.join(STAGING_ROOT, definition.adapterId);
   const resultRoot = path.join(RESULT_ROOT, definition.runId);
   return Object.freeze({
-    ...definition,
+    scenarioId: definition.scenarioId,
+    profileId: definition.profileId,
+    adapterId: definition.adapterId,
+    runId: definition.runId,
     image: FIXED_NODE_IMAGE,
     stagingRoot,
     resultRoot,

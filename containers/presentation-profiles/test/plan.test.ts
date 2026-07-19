@@ -27,6 +27,20 @@ describe("P2 selected profile plan", () => {
       "codegen-observe-p",
       "codegen-observe-c",
     ]);
+    expect(plans.map((plan) => plan.runId)).toEqual([
+      "p2-vite-observe-p-20260719-02",
+      "p2-vite-observe-c-20260719-02",
+      "p2-codegen-observe-p-20260719-01",
+      "p2-codegen-observe-c-20260719-01",
+    ]);
+    expect(
+      plans.map((plan) => argumentValue(plan.create.arguments, "--name")),
+    ).toEqual([
+      "tskaigi-p2-vite-observe-p-20260719-02",
+      "tskaigi-p2-vite-observe-c-20260719-02",
+      "tskaigi-p2-codegen-observe-p",
+      "tskaigi-p2-codegen-observe-c",
+    ]);
     expect(plans.map((plan) => plan.expectedCounts)).toEqual([
       { route: 6, capability: 6, toolApiChange: 3, total: 15 },
       { route: 6, capability: 6, toolApiChange: 3, total: 15 },
@@ -59,6 +73,11 @@ describe("P2 selected profile plan", () => {
       expect(command.executable).toBe(FIXED_DOCKER_EXECUTABLE);
       expect(command.shell).toBe(false);
       expect(command.arguments[0]).toBe("create");
+      expect(argumentValue(command.arguments, "--name")).toBe(
+        plan.adapterId === "vite"
+          ? `tskaigi-p2-${plan.scenarioId}-20260719-02`
+          : `tskaigi-p2-${plan.scenarioId}`,
+      );
       expect(argumentValue(command.arguments, "--pull")).toBe("never");
       expect(argumentValue(command.arguments, "--network")).toBe("none");
       expect(argumentValue(command.arguments, "--user")).toBe(

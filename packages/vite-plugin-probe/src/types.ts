@@ -1,10 +1,15 @@
 import type { ProbeEvent, ProbeManifest } from "@tskaigi-lab/probe-core";
 
 import type { ScenarioVariant } from "./constants.js";
+import type { ViteScenarioId } from "./constants.js";
+import type { SelectedProfileId } from "./scenario-context.js";
 
 export interface CoordinatorInputs {
   readonly runId: string;
+  readonly scenarioId: ViteScenarioId;
+  readonly profileId: SelectedProfileId | null;
   readonly runRoot: string;
+  readonly toolRoot: string;
   readonly loopbackPort: number;
   readonly variant: ScenarioVariant;
   readonly toolTempRoot: string;

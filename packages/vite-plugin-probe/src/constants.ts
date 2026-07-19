@@ -13,12 +13,20 @@ export const RUN_ID_VARIABLE = "PROBE_CANARY_M2D_RUN_ID" as const;
 export const RUN_ROOT_VARIABLE = "PROBE_CANARY_M2D_RUN_ROOT" as const;
 export const LOOPBACK_PORT_VARIABLE = "PROBE_CANARY_M2D_LOOPBACK_PORT" as const;
 export const VARIANT_VARIABLE = "PROBE_CANARY_M2D_VARIANT" as const;
+export const SCENARIO_ID_VARIABLE = "PROBE_CANARY_M2D_SCENARIO_ID" as const;
 export const ENVIRONMENT_VARIABLE = "PROBE_CANARY_M2D_ENVIRONMENT" as const;
 export const DISPOSABLE_CANARY_VALUE =
   "m2d-disposable-environment-canary" as const;
 export const VITE_ENV_PREFIX = "PROBE_CANARY_M2D_VITE_" as const;
 
 export const SCENARIO_ID = "m2d-vite-plugin-local-contract" as const;
+export const SELECTED_PROFILE_SCENARIO_IDS = Object.freeze([
+  "vite-observe-p",
+  "vite-observe-c",
+] as const);
+export type SelectedProfileScenarioId =
+  (typeof SELECTED_PROFILE_SCENARIO_IDS)[number];
+export type ViteScenarioId = typeof SCENARIO_ID | SelectedProfileScenarioId;
 export const PRODUCER_ID = "vite-coordinator" as const;
 export const CWD_ID = "vite-adapter-workspace" as const;
 export const PLUGIN_NAME = "tskaigi-m2d-dependency-probe" as const;

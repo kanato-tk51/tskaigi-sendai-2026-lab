@@ -34,19 +34,19 @@ import {
   PLUGIN_NAME,
   PRODUCER_ID,
   ROUTE_IDS,
-  SCENARIO_ID,
   SEGMENT_RELATIVE_PATH,
   SOURCE_HASH_TARGET_ID,
   TOOL_CHANGE_IDS,
   VITE_VERSION,
 } from "./constants.js";
 import { AdapterError } from "./errors.js";
+import { scenarioIdForRunId } from "./scenario-context.js";
 
 export function createFixedManifest(runId: string): ProbeManifest {
   return {
     schemaVersion: PROBE_MANIFEST_SCHEMA_VERSION,
     runId,
-    scenarioId: SCENARIO_ID,
+    scenarioId: scenarioIdForRunId(runId),
     route: "vite-plugin",
     phases: Object.values(PHASES),
     triggerTypes: ["configured", "automatic"],
@@ -237,6 +237,9 @@ export function createFixedRuntimeBindings(
   adapterRoot: string,
   loopbackPort: number,
 ): ProbeRuntimeBindings {
+  if (runRoot === "/tmp/p2-result") {
+    return createSelectedProfileRuntimeBindings(loopbackPort);
+  }
   return {
     schemaVersion: PROBE_RUNTIME_BINDINGS_SCHEMA_VERSION,
     bindings: [
@@ -276,6 +279,48 @@ export function createFixedRuntimeBindings(
   };
 }
 
+export function createSelectedProfileRuntimeBindings(
+  loopbackPort: number,
+): ProbeRuntimeBindings {
+  return {
+    schemaVersion: PROBE_RUNTIME_BINDINGS_SCHEMA_VERSION,
+    bindings: [
+      {
+        targetId: EVENT_TARGET_ID,
+        kind: "path",
+        rootPath: "/tmp/p2-result",
+        relativePath: SEGMENT_RELATIVE_PATH,
+      },
+      { targetId: ENVIRONMENT_TARGET_ID, kind: "environment" },
+      {
+        targetId: CANARY_FILE_TARGET_ID,
+        kind: "path",
+        rootPath: "/tmp/p2-tool",
+        relativePath: CANARY_RELATIVE_PATH,
+      },
+      {
+        targetId: SOURCE_HASH_TARGET_ID,
+        kind: "path",
+        rootPath: "/opt/p2/input/packages/vite-plugin-probe",
+        relativePath: DESIGNATED_RELATIVE_PATH,
+      },
+      {
+        targetId: DIRECT_OUTPUT_TARGET_ID,
+        kind: "path",
+        rootPath: "/tmp/p2-direct-write",
+        relativePath: "direct-write-marker.json",
+      },
+      {
+        targetId: LOOPBACK_TARGET_ID,
+        kind: "loopback-http",
+        address: "127.0.0.1",
+        port: loopbackPort,
+      },
+      { targetId: CHILD_TARGET_ID, kind: "fixed-child" },
+    ],
+  };
+}
+
 function sameValues(
   actual: readonly string[],
   expected: readonly string[],
@@ -289,7 +334,7 @@ function sameValues(
 export function validateViteManifestContract(manifest: ProbeManifest): void {
   if (
     manifest.route !== "vite-plugin" ||
-    manifest.scenarioId !== SCENARIO_ID ||
+    manifest.scenarioId !== scenarioIdForRunId(manifest.runId) ||
     manifest.producerId !== PRODUCER_ID ||
     manifest.workerId !== null ||
     manifest.cwdId !== CWD_ID ||
