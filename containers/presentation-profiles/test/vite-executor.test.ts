@@ -18,6 +18,7 @@ import { EXPECTED_EVENT_ORDER } from "../../../packages/vite-plugin-probe/src/co
 import {
   createFixedViteExecutionPlans,
   executeAndFinalizeFixedViteLifecycleWithBackendsForTest,
+  executeFixedVitePlanSequenceWithBackendForTest,
   executeFixedViteLifecycleWithBackendForTest,
   finalizeFixedViteLifecycleWithBackendForTest,
   FIXED_VITE_EXECUTOR_LIMITS,
@@ -30,10 +31,12 @@ import {
   runFixedViteDockerCommandWithProcessForTest,
   type FixedViteLifecycleResult,
   type ViteExecutionOutcome,
+  type ViteRunnerProgressProjection,
   validateFixedViteLifecycle,
   verifyFixedViteStagingForTest,
 } from "../src/vite-executor.js";
 import {
+  createFixedViteProgressLineForTest,
   FIXED_VITE_RUNNER_LIMITS,
   verifyFixedViteOutputForTest,
 } from "../runner/vite-runner.js";
@@ -50,6 +53,7 @@ type CommandResult = Readonly<{
   exitCode: number;
   stdout: string;
   stderr: string;
+  runnerProgress?: ViteRunnerProgressProjection;
 }>;
 
 const filesystemFixtureRoots: string[] = [];
@@ -162,7 +166,45 @@ function runnerCompletion(
       outputFiles: [{ logicalId: "vite-entry-output", bytes: 123 }],
     })}\n`,
     stderr: "",
+    runnerProgress: runnerProgress(7),
   };
+}
+
+function runnerProgress(
+  count: number,
+  validity: ViteRunnerProgressProjection["validity"] = count === 0
+    ? "not-established"
+    : "valid-prefix",
+): ViteRunnerProgressProjection {
+  return Object.freeze({
+    schemaVersion: "p2-vite-progress/v1",
+    validity,
+    stages: Object.freeze(
+      [
+        "runner-entered",
+        "inputs-prepared",
+        "service-ready",
+        "child-launched",
+        "child-settled",
+        "service-settled",
+        "output-exported",
+      ].slice(0, count),
+    ) as ViteRunnerProgressProjection["stages"],
+  });
+}
+
+function progressLines(
+  plan: ReturnType<typeof createFixedViteExecutionPlans>[number],
+  count: number,
+): string {
+  const definition = {
+    scenarioId: plan.selected.scenarioId,
+    profileId: plan.selected.profileId,
+    runId: plan.selected.runId,
+  };
+  return Array.from({ length: count }, (_, sequence) =>
+    createFixedViteProgressLineForTest(definition, sequence),
+  ).join("");
 }
 
 function runnerFailure(settlement: "known" | "unknown"): CommandResult {
@@ -177,6 +219,7 @@ function runnerFailure(settlement: "known" | "unknown"): CommandResult {
       settlementCode:
         settlement === "unknown" ? "P2_CHILD_SETTLEMENT_UNKNOWN" : null,
     })}\n`,
+    runnerProgress: runnerProgress(settlement === "known" ? 6 : 4),
   };
 }
 
@@ -217,6 +260,7 @@ function completedLifecycle(): FixedViteLifecycleResult {
       sourceAfterHash: `sha256:${"c".repeat(64)}`,
       entryOutputBytes: 123,
     }),
+    runnerProgress: runnerProgress(7),
     cleanup: "completed",
   });
 }
@@ -235,6 +279,7 @@ function failedLifecycle(
         settlement === "unknown" ? "P2_CHILD_SETTLEMENT_UNKNOWN" : null,
     }),
     runnerSummary: null,
+    runnerProgress: runnerProgress(settlement === "known" ? 6 : 4),
     cleanup:
       settlement === "unknown"
         ? "suppressed-runner-settlement-unknown"
@@ -359,12 +404,12 @@ describe("P2 fixed Vite executor", () => {
       "vite-observe-c",
     ]);
     expect(plans.map((plan) => plan.selected.resultRoot)).toEqual([
-      expect.stringMatching(/p2-vite-observe-p-20260719-11$/u),
-      expect.stringMatching(/p2-vite-observe-c-20260719-11$/u),
+      expect.stringMatching(/p2-vite-observe-p-20260720-01$/u),
+      expect.stringMatching(/p2-vite-observe-c-20260720-01$/u),
     ]);
     expect(plans.map((plan) => plan.containerName)).toEqual([
-      "tskaigi-p2-vite-observe-p-20260719-11",
-      "tskaigi-p2-vite-observe-c-20260719-11",
+      "tskaigi-p2-vite-observe-p-20260720-01",
+      "tskaigi-p2-vite-observe-c-20260720-01",
     ]);
   });
 
@@ -439,6 +484,7 @@ describe("P2 fixed Vite executor", () => {
         sourceAfterHash: `sha256:${"c".repeat(64)}`,
         entryOutputBytes: 123,
       },
+      runnerProgress: runnerProgress(7),
     });
   });
 
@@ -588,7 +634,7 @@ describe("P2 fixed Vite executor", () => {
       receipt: null,
     });
     expect(outcome.attempt).toEqual({
-      schemaVersion: "p2-vite-attempt/v2",
+      schemaVersion: "p2-vite-attempt/v3",
       scenarioId: plan.selected.scenarioId,
       profileId: plan.selected.profileId,
       runId: plan.selected.runId,
@@ -607,6 +653,7 @@ describe("P2 fixed Vite executor", () => {
         settlement: "known",
         settlementCode: null,
       },
+      runnerProgress: runnerProgress(6),
       outputAvailability: "not-inspected",
       issues: [
         "P2_ATTEMPT_DOCKER_LIFECYCLE_FAILED",
@@ -773,6 +820,7 @@ describe("P2 fixed Vite executor", () => {
               "P2_EXECUTOR_DOCKER_OUTPUT",
               "closed",
               true,
+              runnerProgress(3, "invalid"),
             );
           }
           return results[4]!;
@@ -792,6 +840,8 @@ describe("P2 fixed Vite executor", () => {
       inspectedContainerExitCode: null,
       primaryFailureStage: "attached-start",
       primaryFailureCode: "P2_EXECUTOR_DOCKER_OUTPUT",
+      runnerProgress: runnerProgress(3, "invalid"),
+      issues: expect.arrayContaining(["P2_ATTEMPT_RUNNER_PROGRESS_INVALID"]),
     });
   });
 
@@ -800,7 +850,12 @@ describe("P2 fixed Vite executor", () => {
     const commandTrace: string[] = [];
     const finalizationTrace: string[] = [];
     const results = [...successfulLifecycleResults(plan)];
-    results[2] = { exitCode: 1, stdout: "", stderr: "raw failure" };
+    results[2] = {
+      exitCode: 1,
+      stdout: "",
+      stderr: "raw failure",
+      runnerProgress: runnerProgress(6),
+    };
     results[3] = {
       ...results[3]!,
       stdout: `${"a".repeat(64)}|${FIXED_NODE_IMAGE_ID}|${FIXED_NODE_IMAGE}|exited|1\n`,
@@ -898,7 +953,7 @@ describe("P2 fixed Vite executor", () => {
     },
   );
 
-  it("serializes only the closed v2 diagnostic attempt fields", async () => {
+  it("serializes only the closed v3 diagnostic attempt fields", async () => {
     const plan = createFixedViteExecutionPlans()[0]!;
     let written: unknown;
     await finalizeFixedViteLifecycleWithBackendForTest(
@@ -931,6 +986,7 @@ describe("P2 fixed Vite executor", () => {
         "profileId",
         "runId",
         "runner",
+        "runnerProgress",
         "runnerSettlement",
         "scenarioId",
         "schemaVersion",
@@ -1003,16 +1059,17 @@ describe("P2 fixed Vite executor", () => {
       attemptRecord: "written",
       evidence: "inspected",
       attempt: {
-        schemaVersion: "p2-vite-attempt/v2",
+        schemaVersion: "p2-vite-attempt/v3",
         expectedRevision: FIXED_VITE_EXPECTED_REVISION,
         attemptStatus: "receipt-pending",
         primaryFailureStage: null,
         primaryFailureCode: null,
         outputAvailability: "fixed-paths-exported",
+        runnerProgress: runnerProgress(7),
         issues: [],
       },
       receipt: {
-        schemaVersion: "p2-vite-execution/v2",
+        schemaVersion: "p2-vite-execution/v3",
         expectedRevision: FIXED_VITE_EXPECTED_REVISION,
         completion: "complete",
         projection: { validity: "matches-expected" },
@@ -1190,7 +1247,12 @@ describe("P2 fixed Vite executor", () => {
     const plan = createFixedViteExecutionPlans()[0]!;
     const trace: string[] = [];
     const results = [...successfulLifecycleResults(plan)];
-    results[2] = { exitCode: 1, stdout: "", stderr: "raw failure" };
+    results[2] = {
+      exitCode: 1,
+      stdout: "",
+      stderr: "raw failure",
+      runnerProgress: runnerProgress(6),
+    };
     results[3] = {
       ...results[3]!,
       stdout: `${"a".repeat(64)}|${FIXED_NODE_IMAGE_ID}|${FIXED_NODE_IMAGE}|exited|1\n`,
@@ -1246,6 +1308,121 @@ describe("P2 fixed Vite executor", () => {
       signalAccepted: true,
     });
   });
+
+  it.each([1, 2, 3, 4, 5, 6, 7])(
+    "retains a %i-stage progress prefix across arbitrary stdout chunks",
+    async (count) => {
+      const plan = createFixedViteExecutionPlans()[0]!;
+      const process = new FakeProcess();
+      const result = runFixedViteDockerCommandWithProcessForTest(
+        plan.start,
+        () => process,
+        { timeoutMs: 100, settlementMs: 100, outputBytes: 16_384 },
+        plan.selected,
+      );
+      const bytes = Buffer.from(progressLines(plan, count));
+      for (let offset = 0; offset < bytes.byteLength;) {
+        const length = (offset % 7) + 1;
+        process.stdout(bytes.subarray(offset, offset + length));
+        offset += length;
+      }
+      process.close(1);
+      await expect(result).resolves.toMatchObject({
+        stdout: "",
+        runnerProgress: runnerProgress(count),
+      });
+      const commandResult = await result;
+      expect(JSON.stringify(commandResult.runnerProgress)).not.toMatch(
+        /stdout|raw|path|command|environment|canary|timestamp|duration/u,
+      );
+    },
+  );
+
+  it.each([
+    ["malformed", "not-json\n"],
+    [
+      "duplicate",
+      (plan: ReturnType<typeof createFixedViteExecutionPlans>[number]) =>
+        `${progressLines(plan, 1)}${progressLines(plan, 1)}`,
+    ],
+    [
+      "reordered",
+      (plan: ReturnType<typeof createFixedViteExecutionPlans>[number]) =>
+        createFixedViteProgressLineForTest(
+          {
+            scenarioId: plan.selected.scenarioId,
+            profileId: plan.selected.profileId,
+            runId: plan.selected.runId,
+          },
+          1,
+        ),
+    ],
+    [
+      "identity-mismatched",
+      (plan: ReturnType<typeof createFixedViteExecutionPlans>[number]) =>
+        progressLines(plan, 1).replace(plan.selected.runId, "rejected-run"),
+    ],
+    ["oversized", `${"x".repeat(1_025)}\n`],
+    [
+      "post-terminal",
+      (plan: ReturnType<typeof createFixedViteExecutionPlans>[number]) =>
+        `${progressLines(plan, 7)}${runnerCompletion(plan).stdout}${progressLines(plan, 1)}`,
+    ],
+  ] as const)("marks %s progress invalid", async (_label, fixture) => {
+    const plan = createFixedViteExecutionPlans()[0]!;
+    const process = new FakeProcess();
+    const result = runFixedViteDockerCommandWithProcessForTest(
+      plan.start,
+      () => process,
+      { timeoutMs: 100, settlementMs: 100, outputBytes: 16_384 },
+      plan.selected,
+    );
+    process.stdout(
+      Buffer.from(typeof fixture === "function" ? fixture(plan) : fixture),
+    );
+    process.close(1);
+    await expect(result).resolves.toMatchObject({
+      runnerProgress: { validity: "invalid" },
+    });
+  });
+
+  it.each([0, 1, 2, 3, 4, 5, 6, 7])(
+    "keeps attached-start timeout primary with a %i-stage prefix",
+    async (count) => {
+      const plan = createFixedViteExecutionPlans()[0]!;
+      const results = successfulLifecycleResults(plan);
+      let inspectCount = 0;
+      const outcome =
+        await executeAndFinalizeFixedViteLifecycleWithBackendsForTest(
+          plan,
+          async (command) => {
+            const label = commandLabel(plan, command);
+            if (label === "create") return results[0]!;
+            if (label === "inspect") {
+              inspectCount += 1;
+              return inspectCount === 1 ? results[1]! : results[3]!;
+            }
+            if (label === "start") {
+              throw new FixedViteCommandError(
+                "P2_EXECUTOR_DOCKER_TIMEOUT",
+                "closed",
+                true,
+                runnerProgress(count),
+              );
+            }
+            return results[4]!;
+          },
+          finalizationBackend({ trace: [], failEvidence: true }),
+        );
+      expect(outcome.attempt).toMatchObject({
+        primaryFailureStage: "attached-start",
+        primaryFailureCode: "P2_EXECUTOR_DOCKER_TIMEOUT",
+        dockerSettlement: "known",
+        cleanupDisposition: "completed",
+        runnerProgress: runnerProgress(count),
+      });
+    },
+  );
 
   it("keeps the fixed 60-second attached-start boundary outside unchanged runner limits", () => {
     const runnerControlledFailureMs =
@@ -1304,6 +1481,28 @@ describe("P2 fixed Vite executor", () => {
     expect(process.signals).toEqual(["SIGKILL"]);
   });
 
+  it("keeps Docker output overflow primary and invalidates partial progress", async () => {
+    const plan = createFixedViteExecutionPlans()[0]!;
+    const process = new FakeProcess();
+    const result = runFixedViteDockerCommandWithProcessForTest(
+      plan.start,
+      () => process,
+      { timeoutMs: 100, settlementMs: 100, outputBytes: 512 },
+      plan.selected,
+    );
+    process.stdout(Buffer.from(progressLines(plan, 1)));
+    process.stdout(Buffer.alloc(513));
+    process.close(null, "SIGKILL");
+    await expect(result).rejects.toMatchObject({
+      failureCode: "P2_EXECUTOR_DOCKER_OUTPUT",
+      settlement: "closed",
+      runnerProgress: {
+        validity: "invalid",
+        stages: ["runner-entered"],
+      },
+    });
+  });
+
   it.each([
     { label: "exact limit", before: 65_536, after: 65_536, expected: 65_536 },
     { label: "limit plus one", before: 65_537, after: 65_537, expected: null },
@@ -1342,14 +1541,14 @@ describe("P2 fixed Vite executor", () => {
       completion: "complete" as const,
     }));
     expect(projectFixedViteExecutionPair(identities)).toEqual({
-      schemaVersion: "p2-vite-pair/v2",
+      schemaVersion: "p2-vite-pair/v3",
       expectedRevision: FIXED_VITE_EXPECTED_REVISION,
       validity: "same-image",
       imageId,
       issues: [],
     });
     expect(projectFixedViteExecutionPair(identities.slice(0, 1))).toEqual({
-      schemaVersion: "p2-vite-pair/v2",
+      schemaVersion: "p2-vite-pair/v3",
       expectedRevision: FIXED_VITE_EXPECTED_REVISION,
       validity: "inconclusive",
       imageId: null,
@@ -1365,7 +1564,7 @@ describe("P2 fixed Vite executor", () => {
         },
       ]),
     ).toEqual({
-      schemaVersion: "p2-vite-pair/v2",
+      schemaVersion: "p2-vite-pair/v3",
       expectedRevision: FIXED_VITE_EXPECTED_REVISION,
       validity: "inconclusive",
       imageId: null,
@@ -1377,7 +1576,7 @@ describe("P2 fixed Vite executor", () => {
         { ...identities[1]!, completion: "inconclusive" },
       ]),
     ).toEqual({
-      schemaVersion: "p2-vite-pair/v2",
+      schemaVersion: "p2-vite-pair/v3",
       expectedRevision: FIXED_VITE_EXPECTED_REVISION,
       validity: "inconclusive",
       imageId,
@@ -1389,11 +1588,36 @@ describe("P2 fixed Vite executor", () => {
         { ...identities[1]!, imageId: `sha256:${"e".repeat(64)}` },
       ]),
     ).toEqual({
-      schemaVersion: "p2-vite-pair/v2",
+      schemaVersion: "p2-vite-pair/v3",
       expectedRevision: FIXED_VITE_EXPECTED_REVISION,
       validity: "inconclusive",
       imageId: null,
       issues: ["IMAGE_ID_MISMATCH"],
+    });
+  });
+
+  it("stops pair progression after an inconclusive permissive outcome", async () => {
+    const firstPlan = createFixedViteExecutionPlans()[0]!;
+    const permissive = await finalizeFixedViteLifecycleWithBackendForTest(
+      firstPlan,
+      failedLifecycle("known"),
+      finalizationBackend({ trace: [], failEvidence: true }),
+    );
+    const calls: string[] = [];
+    const pair = await executeFixedVitePlanSequenceWithBackendForTest(
+      async (plan) => {
+        calls.push(plan.selected.scenarioId);
+        if (plan.selected.scenarioId !== "vite-observe-p") {
+          throw new Error("constrained plan must not start");
+        }
+        return permissive;
+      },
+    );
+    expect(calls).toEqual(["vite-observe-p"]);
+    expect(pair).toMatchObject({
+      projection: { validity: "inconclusive" },
+      receipts: [],
+      outcomes: [{ completion: "inconclusive" }],
     });
   });
 

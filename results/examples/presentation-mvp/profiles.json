@@ -5,6 +5,7 @@
     "docs/reviews/p2-selected-profile-codegen-receipts.md",
     "docs/reviews/p2-selected-profile-vite-failure.md",
     "docs/reviews/p2-vite-diagnostic-result.md",
+    "docs/reviews/p2-vite-new-measurement-result.md",
     "docs/p2-selected-profile-contract.md"
   ],
   "pairs": {
@@ -17,10 +18,10 @@
       "integrityAttempt": "source hash succeeded in both profiles and is not counted as a sixth capability"
     },
     "vite": {
-      "evidenceClass": "three observed Inconclusive execution attempts only",
+      "evidenceClass": "four observed Inconclusive execution attempts only",
       "validity": "inconclusive",
-      "permissiveRunId": "p2-vite-observe-p-20260719-03",
-      "constrainedRunId": "p2-vite-observe-c-20260719-03",
+      "permissiveRunId": "p2-vite-observe-p-20260720-01",
+      "constrainedRunId": "p2-vite-observe-c-20260720-01",
       "completion": "inconclusive / missing",
       "permissiveEvidence": "not-inspected",
       "constrainedEvidence": "missing",
@@ -31,6 +32,7 @@
           "constrainedRunId": "p2-vite-observe-c-20260719-01",
           "canonicalRecord": "not established",
           "primaryDiagnostic": "not recorded",
+          "diagnosticProgress": "not established",
           "retainedConclusion": "Inconclusive; partial permissive output; constrained missing"
         },
         {
@@ -39,6 +41,7 @@
           "constrainedRunId": "p2-vite-observe-c-20260719-02",
           "canonicalRecord": "p2-vite-attempt/v1 / SHA-256 1dd63280f8d665547de613fe732f6205aceccfd92a9a4f3b156d36b3c47c70c6",
           "primaryDiagnostic": "not recorded by v1",
+          "diagnosticProgress": "not established",
           "retainedConclusion": "Inconclusive; permissive not-inspected; constrained missing"
         },
         {
@@ -47,6 +50,16 @@
           "constrainedRunId": "p2-vite-observe-c-20260719-03",
           "canonicalRecord": "p2-vite-attempt/v2 / SHA-256 5f90a582664b1f5d068a01341dfb71fc029c9a5f445e64b930729dd6a4f398b6",
           "primaryDiagnostic": "attached-start / P2_EXECUTOR_DOCKER_TIMEOUT",
+          "diagnosticProgress": "not established",
+          "retainedConclusion": "Inconclusive; permissive not-inspected; constrained missing"
+        },
+        {
+          "attemptId": "20260720-01",
+          "permissiveRunId": "p2-vite-observe-p-20260720-01",
+          "constrainedRunId": "p2-vite-observe-c-20260720-01",
+          "canonicalRecord": "p2-vite-attempt/v3 / SHA-256 9175487c2ed92eb8265e9047c362bc1d0a42d79e1911ba951fcf235530f6eada",
+          "primaryDiagnostic": "attached-start / P2_EXECUTOR_DOCKER_TIMEOUT",
+          "diagnosticProgress": "valid-prefix: runner-entered > inputs-prepared > service-ready > child-launched",
           "retainedConclusion": "Inconclusive; permissive not-inspected; constrained missing"
         }
       ]
@@ -157,7 +170,7 @@
   "limitations": [
     "Trigger labels describe causation, not process privilege.",
     "The codegen evidence is one local same-image pair, not repeated-run reproducibility or a general-purpose sandbox claim.",
-    "The three exhausted Vite pair attempts produced no receipt, constrained attempt, same-image pair, or selected-profile Observed evidence; not-inspected and missing are not zero or success.",
+    "The four exhausted Vite pair attempts produced no receipt, constrained attempt, same-image pair, or selected-profile Observed evidence; not-inspected and missing are not zero or success.",
     "No raw canary value, file content, host path, command output, or unsanitized error is included."
   ]
 }

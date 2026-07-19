@@ -17,6 +17,7 @@ import { clearTimeout, setTimeout } from "node:timers";
 import { fileURLToPath, pathToFileURL, URL } from "node:url";
 
 const FIXED_NODE_VERSION = "v20.18.2";
+const FIXED_VITE_EXPECTED_REVISION = "p2-vite-expected-20260720-01";
 const FIXED_LOOPBACK_ADDRESS = "127.0.0.1";
 const FIXED_LOOPBACK_PORT = 47_832;
 const FIXED_VITE_CLI_PATH = "/opt/p2/input/node_modules/vite/bin/vite.js";
@@ -49,6 +50,15 @@ const TERMINATION_GRACE_MS = FIXED_VITE_RUNNER_LIMITS.terminationGraceMs;
 const FORCE_SETTLEMENT_MS = FIXED_VITE_RUNNER_LIMITS.forceSettlementMs;
 const SERVER_SETTLEMENT_MS = FIXED_VITE_RUNNER_LIMITS.serverSettlementMs;
 const PROCESS_POLL_MS = 25;
+const FIXED_PROGRESS_STAGES = Object.freeze([
+  "runner-entered",
+  "inputs-prepared",
+  "service-ready",
+  "child-launched",
+  "child-settled",
+  "service-settled",
+  "output-exported",
+]);
 
 const FIXED_OUTPUT_PATHS = Object.freeze({
   sourcePath: FIXED_SOURCE_PATH,
@@ -84,12 +94,12 @@ const DEFINITIONS = Object.freeze([
   Object.freeze({
     scenarioId: "vite-observe-p",
     profileId: "permissive",
-    runId: "p2-vite-observe-p-20260719-11",
+    runId: "p2-vite-observe-p-20260720-01",
   }),
   Object.freeze({
     scenarioId: "vite-observe-c",
     profileId: "constrained",
-    runId: "p2-vite-observe-c-20260719-11",
+    runId: "p2-vite-observe-c-20260720-01",
   }),
 ]);
 
@@ -201,6 +211,34 @@ export function createFixedViteInvocation(definition) {
     cwd: FIXED_ADAPTER_ROOT,
     shell: false,
   });
+}
+
+/**
+ * @param {Readonly<{scenarioId: ScenarioId, profileId: ProfileId, runId: string}>} definition
+ * @param {number} sequence
+ */
+function createFixedViteProgressLine(definition, sequence) {
+  const stage = FIXED_PROGRESS_STAGES[sequence];
+  if (stage === undefined) {
+    throw new Error("P2_PROGRESS_INVALID");
+  }
+  return `${JSON.stringify({
+    schemaVersion: "p2-vite-progress/v1",
+    expectedRevision: FIXED_VITE_EXPECTED_REVISION,
+    scenarioId: definition.scenarioId,
+    profileId: definition.profileId,
+    runId: definition.runId,
+    sequence,
+    stage,
+  })}\n`;
+}
+
+/**
+ * @param {Readonly<{scenarioId: ScenarioId, profileId: ProfileId, runId: string}>} definition
+ * @param {number} sequence
+ */
+export function createFixedViteProgressLineForTest(definition, sequence) {
+  return createFixedViteProgressLine(definition, sequence);
 }
 
 /** @param {string} filePath */
@@ -434,9 +472,15 @@ function childFailure(failureCode, settlement) {
  * @param {FixedInvocation} invocation
  * @param {FixedProcessBackend} backend
  * @param {FixedProcessLimits} limits
+ * @param {() => void} [onLaunched]
  * @returns {Promise<void>}
  */
-async function executeBoundedChild(invocation, backend, limits) {
+async function executeBoundedChild(
+  invocation,
+  backend,
+  limits,
+  onLaunched = () => undefined,
+) {
   /** @type {FixedProcessHandle} */
   let child;
   try {
@@ -449,6 +493,7 @@ async function executeBoundedChild(invocation, backend, limits) {
     child.onceError(() => undefined);
     throw childFailure("P2_CHILD_FAILED", "unknown");
   }
+  onLaunched();
 
   /** @type {(value: FixedChildFailureCode) => void} */
   let fail = () => undefined;
@@ -508,8 +553,12 @@ async function executeBoundedChild(invocation, backend, limits) {
         processGroupId,
         limits.settlementMs,
       );
+      if (!groupExited || !isNaturalClose(result)) {
+        throw childFailure("P2_CHILD_FAILED", "unknown");
+      }
+      throw childFailure("P2_CHILD_FAILED", "known");
     }
-    if (!groupExited || !isNaturalClose(result)) {
+    if (!isNaturalClose(result)) {
       throw childFailure("P2_CHILD_FAILED", "unknown");
     }
     if (result.code === 0) {
@@ -594,13 +643,15 @@ const PRODUCTION_PROCESS_LIMITS = Object.freeze({
  * @param {FixedInvocation} invocation
  * @param {FixedProcessBackend} backend
  * @param {FixedProcessLimits} limits
+ * @param {() => void} [onLaunched]
  */
 export function executeBoundedViteChildWithBackendForTest(
   invocation,
   backend,
   limits,
+  onLaunched,
 ) {
-  return executeBoundedChild(invocation, backend, limits);
+  return executeBoundedChild(invocation, backend, limits, onLaunched);
 }
 
 /**
@@ -698,6 +749,13 @@ async function executeSettledViteLifecycle(backend) {
       error instanceof Error ? error : new Error("P2_CHILD_FAILED");
   }
 
+  if (
+    primaryFailure instanceof FixedViteRunnerError &&
+    primaryFailure.settlement === "unknown"
+  ) {
+    throw primaryFailure;
+  }
+
   let serverSettled = false;
   try {
     serverSettled = await backend.closeServer();
@@ -725,12 +783,6 @@ async function executeSettledViteLifecycle(backend) {
   }
 
   if (primaryFailure !== null) {
-    if (
-      primaryFailure instanceof FixedViteRunnerError &&
-      primaryFailure.settlement === "unknown"
-    ) {
-      throw primaryFailure;
-    }
     await backend.makeEventSegmentHostReadable();
     throw primaryFailure;
   }
@@ -791,20 +843,60 @@ export async function executeFixedViteScenario() {
   }
   const definition = resolveFixedViteScenario(scenarioId);
   const invocation = createFixedViteInvocation(definition);
+  let nextProgressSequence = 0;
+  /** @param {number} sequence */
+  const emitProgress = (sequence) => {
+    if (sequence !== nextProgressSequence) {
+      return;
+    }
+    process.stdout.write(createFixedViteProgressLine(definition, sequence));
+    nextProgressSequence += 1;
+  };
+  emitProgress(0);
   const sourceBeforeHash = await prepareFixedInputs(definition.profileId);
+  emitProgress(1);
   const server =
     definition.profileId === "permissive"
       ? await startFixedLoopbackServer()
       : null;
+  emitProgress(2);
+  let childLaunched = false;
   const output = await executeSettledViteLifecycle({
-    executeChild: () =>
-      executeBoundedChild(
-        invocation,
-        PRODUCTION_PROCESS_BACKEND,
-        PRODUCTION_PROCESS_LIMITS,
-      ),
-    verifyOutput: verifyFixedOutput,
-    closeServer: () => closeServer(server),
+    async executeChild() {
+      try {
+        await executeBoundedChild(
+          invocation,
+          PRODUCTION_PROCESS_BACKEND,
+          PRODUCTION_PROCESS_LIMITS,
+          () => {
+            childLaunched = true;
+            emitProgress(3);
+          },
+        );
+        emitProgress(4);
+      } catch (error) {
+        if (
+          childLaunched &&
+          error instanceof FixedViteRunnerError &&
+          error.settlement === "known"
+        ) {
+          emitProgress(4);
+        }
+        throw error;
+      }
+    },
+    async verifyOutput() {
+      const verified = await verifyFixedOutput();
+      emitProgress(6);
+      return verified;
+    },
+    async closeServer() {
+      const settled = await closeServer(server);
+      if (settled) {
+        emitProgress(5);
+      }
+      return settled;
+    },
     makeEventSegmentHostReadable,
   });
   process.stdout.write(

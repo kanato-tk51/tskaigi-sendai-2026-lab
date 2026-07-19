@@ -205,4 +205,13 @@ projection now lists `20260719-01`, `20260719-02`, and `20260719-03` side by
 side; it retains Vite permissive `not-inspected`, constrained `missing`, no
 same-image pair, and no selected Vite or experiment-matrix Observed promotion.
 
+The later independent `20260720-01` one-shot outcome also passed a fresh
+Docker-free
+[result review](reviews/p2-vite-new-measurement-result.md). The review accepted
+its exact canonical v3 permissive record only as the fourth immutable
+Inconclusive attempt and retained the `child-launched` valid progress prefix as
+diagnostic secondary state. The tracked presentation projection now lists all
+four attempts side by side; Vite capabilities remain `not-inspected` /
+`missing`, and no same-image or Observed promotion exists.
+
 Next: none

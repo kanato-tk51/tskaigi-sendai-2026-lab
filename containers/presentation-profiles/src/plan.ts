@@ -7,7 +7,7 @@ export const FIXED_NODE_IMAGE =
 export const FIXED_NODE_IMAGE_ID =
   "sha256:4ada13d4258db3809cbff56d605f80af8383bf1f823168d0518d8dce799e7cf0" as const;
 export const FIXED_VITE_EXPECTED_REVISION =
-  "p2-vite-expected-20260719-11" as const;
+  "p2-vite-expected-20260720-01" as const;
 export const FIXED_CONTAINER_USER = "65532:65532" as const;
 
 export type SelectedScenarioId =
@@ -77,16 +77,16 @@ const DEFINITIONS: readonly ScenarioDefinition[] = Object.freeze([
     scenarioId: "vite-observe-p",
     profileId: "permissive",
     adapterId: "vite",
-    runId: "p2-vite-observe-p-20260719-11",
-    containerName: "tskaigi-p2-vite-observe-p-20260719-11",
+    runId: "p2-vite-observe-p-20260720-01",
+    containerName: "tskaigi-p2-vite-observe-p-20260720-01",
     expectedRevision: FIXED_VITE_EXPECTED_REVISION,
   }),
   Object.freeze({
     scenarioId: "vite-observe-c",
     profileId: "constrained",
     adapterId: "vite",
-    runId: "p2-vite-observe-c-20260719-11",
-    containerName: "tskaigi-p2-vite-observe-c-20260719-11",
+    runId: "p2-vite-observe-c-20260720-01",
+    containerName: "tskaigi-p2-vite-observe-c-20260720-01",
     expectedRevision: FIXED_VITE_EXPECTED_REVISION,
   }),
   Object.freeze({

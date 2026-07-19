@@ -81,10 +81,16 @@ export function createFixedViteInvocation(
   definition: FixedViteScenario,
 ): FixedViteInvocation;
 
+export function createFixedViteProgressLineForTest(
+  definition: FixedViteScenario,
+  sequence: number,
+): string;
+
 export function executeBoundedViteChildWithBackendForTest(
   invocation: FixedViteInvocation,
   backend: FixedViteProcessBackend,
   limits: FixedViteProcessLimits,
+  onLaunched?: () => void,
 ): Promise<void>;
 
 export function closeFixedViteServerWithBackendForTest(
