@@ -79,11 +79,11 @@ const ATTEMPT_IDS = Object.freeze([
 const SELECTED_TUPLES = Object.freeze({
   "vite-observe-p": Object.freeze({
     profileId: "permissive",
-    runId: "p2-vite-observe-p-20260719-03",
+    runId: "p2-vite-observe-p-20260719-11",
   }),
   "vite-observe-c": Object.freeze({
     profileId: "constrained",
-    runId: "p2-vite-observe-c-20260719-03",
+    runId: "p2-vite-observe-c-20260719-11",
   }),
 } as const);
 

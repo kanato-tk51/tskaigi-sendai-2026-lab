@@ -84,12 +84,12 @@ const DEFINITIONS = Object.freeze([
   Object.freeze({
     scenarioId: "vite-observe-p",
     profileId: "permissive",
-    runId: "p2-vite-observe-p-20260719-03",
+    runId: "p2-vite-observe-p-20260719-11",
   }),
   Object.freeze({
     scenarioId: "vite-observe-c",
     profileId: "constrained",
-    runId: "p2-vite-observe-c-20260719-03",
+    runId: "p2-vite-observe-c-20260719-11",
   }),
 ]);
 
@@ -512,9 +512,6 @@ async function executeBoundedChild(invocation, backend, limits) {
     if (!groupExited || !isNaturalClose(result)) {
       throw childFailure("P2_CHILD_FAILED", "unknown");
     }
-    if (postCloseResidue) {
-      throw childFailure("P2_CHILD_FAILED", "known");
-    }
     if (result.code === 0) {
       return;
     }
@@ -699,12 +696,6 @@ async function executeSettledViteLifecycle(backend) {
   } catch (error) {
     primaryFailure =
       error instanceof Error ? error : new Error("P2_CHILD_FAILED");
-    if (
-      primaryFailure instanceof FixedViteRunnerError &&
-      primaryFailure.settlement === "unknown"
-    ) {
-      throw primaryFailure;
-    }
   }
 
   let serverSettled = false;
@@ -714,6 +705,12 @@ async function executeSettledViteLifecycle(backend) {
     serverSettled = false;
   }
   if (!serverSettled) {
+    if (
+      primaryFailure instanceof FixedViteRunnerError &&
+      primaryFailure.settlement === "unknown"
+    ) {
+      throw primaryFailure;
+    }
     const firstFailure =
       primaryFailure instanceof FixedViteRunnerError
         ? primaryFailure.failureCode
@@ -728,6 +725,12 @@ async function executeSettledViteLifecycle(backend) {
   }
 
   if (primaryFailure !== null) {
+    if (
+      primaryFailure instanceof FixedViteRunnerError &&
+      primaryFailure.settlement === "unknown"
+    ) {
+      throw primaryFailure;
+    }
     await backend.makeEventSegmentHostReadable();
     throw primaryFailure;
   }

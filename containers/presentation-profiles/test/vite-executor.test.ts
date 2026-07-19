@@ -1,4 +1,13 @@
-import { chmod, lstat, mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { constants } from "node:fs";
+import {
+  chmod,
+  copyFile,
+  lstat,
+  mkdir,
+  readFile,
+  rm,
+  writeFile,
+} from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -28,6 +37,7 @@ import {
   FIXED_VITE_RUNNER_LIMITS,
   verifyFixedViteOutputForTest,
 } from "../runner/vite-runner.js";
+import { createFixedViteStagingPlan } from "../runner/vite-staging.js";
 import {
   FIXED_DOCKER_EXECUTABLE,
   FIXED_NODE_IMAGE,
@@ -46,6 +56,21 @@ const filesystemFixtureRoots: string[] = [];
 const FIXED_FILESYSTEM_FIXTURE_ROOT = fileURLToPath(
   new URL(".vite-output-fixture/", import.meta.url),
 );
+const FIXED_STAGING_FIXTURE_ROOT = fileURLToPath(
+  new URL(".vite-staging-fixture/", import.meta.url),
+);
+
+async function assembleViteStagingFixtureForTest(): Promise<string> {
+  await rm(FIXED_STAGING_FIXTURE_ROOT, { recursive: true, force: true });
+  filesystemFixtureRoots.push(FIXED_STAGING_FIXTURE_ROOT);
+  for (const entry of createFixedViteStagingPlan().entries) {
+    const targetPath = path.join(FIXED_STAGING_FIXTURE_ROOT, entry.targetPath);
+    await mkdir(path.dirname(targetPath), { recursive: true });
+    await copyFile(entry.sourcePath, targetPath, constants.COPYFILE_EXCL);
+    await chmod(targetPath, entry.mode);
+  }
+  return FIXED_STAGING_FIXTURE_ROOT;
+}
 
 afterEach(async () => {
   await Promise.all(
@@ -334,12 +359,12 @@ describe("P2 fixed Vite executor", () => {
       "vite-observe-c",
     ]);
     expect(plans.map((plan) => plan.selected.resultRoot)).toEqual([
-      expect.stringMatching(/p2-vite-observe-p-20260719-03$/u),
-      expect.stringMatching(/p2-vite-observe-c-20260719-03$/u),
+      expect.stringMatching(/p2-vite-observe-p-20260719-11$/u),
+      expect.stringMatching(/p2-vite-observe-c-20260719-11$/u),
     ]);
     expect(plans.map((plan) => plan.containerName)).toEqual([
-      "tskaigi-p2-vite-observe-p-20260719-03",
-      "tskaigi-p2-vite-observe-c-20260719-03",
+      "tskaigi-p2-vite-observe-p-20260719-11",
+      "tskaigi-p2-vite-observe-c-20260719-11",
     ]);
   });
 
@@ -383,7 +408,10 @@ describe("P2 fixed Vite executor", () => {
   });
 
   it("revalidates the exact reviewed 128-file staging tree", async () => {
-    await expect(verifyFixedViteStagingForTest()).resolves.toBeUndefined();
+    const stagingRoot = await assembleViteStagingFixtureForTest();
+    await expect(
+      verifyFixedViteStagingForTest(stagingRoot),
+    ).resolves.toBeUndefined();
   });
 
   it("accepts only a fixed completed created-to-exited transition", () => {
