@@ -1265,14 +1265,187 @@ and accepted the exact one-local-run result for C-06/C-07; the production
 command remains non-retryable; P4 tracked sanitized examples, deterministic
 generation/verification, three compact talk tables, and
 `docs/evidence-map.md` are implemented and root-verified; a fresh focused final
-safety/validity review found no finding and approved P4; the presentation MVP
-is complete; Next: none**.
+safety/validity review found no finding and approved P4; that presentation MVP
+baseline remains complete; the user has reopened only the selected Vite pair
+under the bounded completion addendum; diagnosis and the Docker-non-executing
+diagnostic-state/timeout remediation with fixed `20260719-03` binding are
+complete; its fresh independent Docker-non-executing review reproduced the
+candidate but BLOCKED an execution gate on P2-V07; the bounded Docker-free
+P2-V07 remediation now preserves the first runner diagnostic across later
+cleanup failure and adds the focused canonical-attempt regression; its fresh
+independent Docker-non-executing re-review closed P2-V07 with no new
+finding and approved only the exact one-shot `npm run p2:execute:vite` gate;
+a fresh worker revalidated that exact gate and used standing authorization for
+the command once; it exited 1 with a canonical permissive Inconclusive v2
+attempt, attached-start timeout as primary, no receipt, and no constrained
+root, and was not retried; a fresh Docker-free read-only result review
+reproduced the exact canonical attempt and pure bounded projection, accepted it
+only as the third immutable Inconclusive attempt, and updated the tracked talk
+projection to retain all three attempts side by side; selected Vite Observed
+remains unmeasured; Next: none**.
 
 This section supersedes every earlier `next task` or `current-next-task` clause
 for scheduling. The preceding M4 history remains an accurate record of work and
 findings, but it is no longer the default continuation path. The active scope is
 [TSKaigi Sendai 2026 presentation MVP](presentation-scope.md), accepted by
 [ADR-0002](decisions/0002-prioritize-presentation-mvp.md).
+
+### Selected Vite completion addendum (2026-07-19)
+
+[`docs/p2-vite-completion.md`](p2-vite-completion.md) is the authoritative
+bounded continuation path after P4. It diagnoses why the second Inconclusive
+cannot distinguish attached-start failure from the following inspect, preserves
+both `20260719-01` and `20260719-02` as immutable Inconclusive history, and fixes
+the ordered implementation/review/one-shot/result-review path for new `-03`
+identities. It does not reopen the frozen M4 track, add scenarios, invalidate the
+accepted codegen/P3/P4 evidence, approve Docker execution, or change Expected or
+Observed. Its current next action supersedes the earlier `Next: none` only for
+this selected Vite addendum.
+
+Selected Vite diagnostic remediation update (2026-07-19; supersedes the
+addendum next-task clause above): the Docker-free implementation adds canonical
+`p2-vite-attempt/v2` primary stage/failure diagnostics, retains the original
+attached-start failure while performing at most one final inspect only after
+known Docker CLI settlement, suppresses that inspect after unknown settlement,
+and changes only the outer attached-start timeout from 40 to 60 seconds. The
+runner's fixed `30,000 + 500 + 1,000 + 1,000 ms` controlled failure boundaries
+are unchanged and tested below the new outer limit. The fixed Expected revision
+`p2-vite-expected-20260719-03`, required image identity, Vite run IDs, and
+container names are cross-bound through the plan, M2-D context, runner,
+projection, executor, v2 attempt/receipt/pair identity, tests, and rebuilt
+staging. Both historical Vite tuples are rejected and remain immutable
+Inconclusive.
+
+The prior staging tree was preserved at the ignored exact
+`staging/vite.pre-p2-vite-diagnostic-96e81f81` path. The rebuilt 128-file
+source-equal fixed-mode tree has plan-order manifest `f7cae69f...` and the fixed
+Node/Vite/Rollup/esbuild versions. Focused Vite passed 5 files / 84 tests,
+focused M2-D context passed 1 file / 11 tests, M2-D verification passed 12 files
+/ 75 tests, P2 verification passed 9 files / 123 tests, P2 build and corrected
+compiled import checks passed, and the root check passed 101 files / 698 tests.
+The codegen combined tracked identity remained `936ba1ae...`. The initial
+compiled import check used a non-generated dist entry path and failed with
+`ERR_MODULE_NOT_FOUND`; the corrected compiled-executor/source-entry check
+passed without side effects.
+
+This implementation is static/unit evidence only. It did not call Docker,
+access a runtime socket or either historical result/container state, create a
+new result root, pull an image, use external network or credentials, change
+Expected values or Observed, access frozen M4 retained state, perform Remote
+Git, publish, or deploy. Standing authorization was not used. The accepted
+codegen/P3/P4 evidence remains unchanged and selected Vite Observed remains
+unmeasured. The next task is a fresh independent Docker-non-executing review of
+the exact candidate under
+[`prompts/reviews/p2-vite-diagnostic-remediation-review.md`](../prompts/reviews/p2-vite-diagnostic-remediation-review.md).
+No execution command is approved by this implementation record.
+
+Selected Vite diagnostic remediation independent-review update (2026-07-19;
+supersedes the implementation next-task clause above): the fresh review
+reproduced all sixteen candidate hashes, exact `f7cae69f...` staging identity,
+fixed versions and bindings, both absent `-03` roots, focused/full checks, and
+the required attached-start known/unknown settlement behavior. The review is
+**BLOCKED** on P2-V07: a known runner failure first records
+`runner-disposition` and its bounded runner code, but a later cleanup failure
+replaces those primary fields with `cleanup` and the cleanup command code. A
+Docker-free compiled-backend reproduction confirmed that loss, and the focused
+suite does not cover the combination. The next task is a bounded
+Docker-non-executing remediation using one first-failure diagnostic latch across
+runner and cleanup plus a focused fake-command-to-canonical-attempt regression,
+followed by another fresh independent review. No Docker command, execution
+gate, Expected/Observed change, historical-state access, or standing
+authorization use occurred in the review; accepted codegen/P3/P4 evidence
+remains unchanged.
+
+Selected Vite P2-V07 remediation update (2026-07-19; supersedes the review
+next-task clause above): one first-failure diagnostic latch now spans command,
+validation, runner-disposition, and cleanup stages. A known runner failure
+therefore retains `runner-disposition` and its bounded runner code when fixed
+cleanup later fails; cleanup remains a secondary disposition/issue. The new
+fake-command regression drives that exact ordering through canonical attempt
+finalization, asserts the five fixed commands, writes only the Inconclusive
+attempt, and proves evidence and receipt paths are not reached.
+
+The focused Vite/context suite passed 6 files / 96 tests, M2-D verification
+passed 12 files / 75 tests, P2 verification passed 9 files / 124 tests, and P2
+build plus compiled import checks passed; the root check passed formatting,
+lint, typecheck, and 101 files / 699 tests. The current and preserved staging
+trees each reproduce 128 source-equal fixed-mode files and exact manifest
+`f7cae69f...`; fixed tool versions and both absent `-03` roots were rechecked.
+The five accepted codegen-specific hashes and empty tracked diff were also
+reproduced. This task did not call Docker or use standing authorization and did
+not access historical result/container state or change Expected/Observed,
+accepted evidence, or the frozen M4 track. The next task is another fresh
+independent Docker-non-executing review under the recorded diagnostic review
+prompt; no execution gate is approved.
+
+Selected Vite P2-V07 remediation independent re-review update (2026-07-19;
+supersedes the remediation next-task clause above): the fresh review reproduced
+all sixteen candidate hashes, both exact 128-file source-equal fixed-mode
+`f7cae69f...` staging identities, fixed tool versions, Expected/image/tuple
+binding, both absent `-03` roots, codegen non-change, focused/full checks, and
+compiled import safety. Its independent compiled fake-backend reproduction
+confirmed that known runner failure remains primary across later cleanup
+failure while evidence and receipt paths stay unreachable. P2-V07 is closed
+with no new finding. The review did not call Docker or use standing
+authorization and is not a separate human review. The exact one-shot
+`npm run p2:execute:vite` gate is approved with no retry on any outcome. The
+next task is a fresh worker revalidating the approved hashes, both staging
+identities, fixed package script, and both absent exact `-03` roots, then using
+standing authorization for that exact command once. Selected Vite Observed and
+experiment-matrix Observed remain unmeasured until a later fresh result review.
+
+Selected Vite `20260719-03` one-shot execution update (2026-07-19; supersedes
+the re-review next-task clause above): a fresh worker reproduced all sixteen
+approved hashes, both exact 128-file source-equal fixed-mode staging manifests
+`f7cae69f...`, the fixed tool versions, argument-free package script, and both
+absent exact `-03` roots. It then used the `continue-repository-work` standing
+authorization for exactly one `npm run p2:execute:vite` pair attempt. This was
+not a separate human review. The command exited 1, was not retried, and no
+Docker command outside the fixed executor sequence was called. The fixed
+`p2:build` phase completed before the bounded executor result.
+
+The bounded entry projection is Inconclusive with `PAIR_IDENTITY_MISMATCH` and
+only `vite-observe-p`. The exact permissive root is a non-symlink mode `0700`
+directory; its canonical non-symlink mode `0600`, 661-byte `attempt.json` has
+SHA-256 `5f90a582...`. It records `p2-vite-attempt/v2`, Expected revision
+`p2-vite-expected-20260719-03`, primary
+`attached-start / P2_EXECUTOR_DOCKER_TIMEOUT`, the approved image ID, null
+container exit, known Docker settlement, runner settlement `not-established`,
+completed cleanup, null runner disposition, output `not-inspected`, and the
+bounded lifecycle/output issues. The exact summary and constrained root are
+absent. No evidence subtree or historical result/container state was accessed,
+and Expected, selected Vite Observed, experiment-matrix Observed, and accepted
+codegen/P3/P4 evidence remain unchanged.
+
+Post-execution P2 verification passed typecheck and 9 files / 124 tests, root
+formatting verification passed, and `git diff --check` passed after the handoff
+metadata was written.
+
+The next task is a fresh Docker-free read-only result review of the approved
+source identities, canonical attempt bytes/hash/mode, bounded projection, and
+exact root state. It must not call Docker, retry the pair, inspect runtime or
+historical state, read an evidence subtree, or change retained permissions. If
+accepted, it must list all three attempts side by side and update the tracked
+presentation projection/evidence map without erasing either earlier
+Inconclusive record.
+
+Selected Vite `20260719-03` result independent-review update (2026-07-19;
+supersedes the execution next-task clause above): the fresh Docker-free
+read-only review reproduced all sixteen approved source identities, the exact
+canonical non-symlink `0700` root and non-symlink mode `0600`, 661-byte
+`p2-vite-attempt/v2` record with SHA-256 `5f90a582...`, its bounded
+attached-start timeout diagnostic, and exact summary/constrained-root absence.
+The approved pure projectors reconstructed the recorded Inconclusive pair and
+entry projection with `PAIR_IDENTITY_MISMATCH`, one permissive written attempt,
+no receipt, and no inspected evidence. The review accepts this only as the third
+immutable Inconclusive execution attempt. The tracked presentation projection
+and evidence map now retain `20260719-01`, `20260719-02`, and `20260719-03`
+side by side without promoting selected Vite or experiment-matrix Observed.
+The review called no Docker command, performed no retry, accessed no runtime,
+historical, or evidence-subtree state, and changed no retained permission. The
+execution worker's standing-authorization use remains recorded; the
+non-executing result review did not use it. The selected Vite completion
+addendum and presentation MVP are complete. Next: none.
 
 ### Frozen research track
 

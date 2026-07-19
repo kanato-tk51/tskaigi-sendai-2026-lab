@@ -122,12 +122,12 @@ describe("P2 fixed Vite runner", () => {
     expect(resolveFixedViteScenario("vite-observe-p")).toEqual({
       scenarioId: "vite-observe-p",
       profileId: "permissive",
-      runId: "p2-vite-observe-p-20260719-02",
+      runId: "p2-vite-observe-p-20260719-03",
     });
     expect(resolveFixedViteScenario("vite-observe-c")).toEqual({
       scenarioId: "vite-observe-c",
       profileId: "constrained",
-      runId: "p2-vite-observe-c-20260719-02",
+      runId: "p2-vite-observe-c-20260719-03",
     });
     expect(() => resolveFixedViteScenario("codegen-observe-p")).toThrow(
       "P2_SCENARIO_INVALID",
@@ -216,7 +216,10 @@ describe("P2 fixed Vite runner", () => {
     expect(source).toContain('const FIXED_LOOPBACK_ADDRESS = "127.0.0.1"');
     expect(source).toContain("detached: true");
     expect(source).toContain("MAX_CHILD_OUTPUT_BYTES = 65_536");
-    expect(source).toContain("CHILD_TIMEOUT_MS = 30_000");
+    expect(source).toContain("childTimeoutMs: 30_000");
+    expect(source).toContain(
+      "CHILD_TIMEOUT_MS = FIXED_VITE_RUNNER_LIMITS.childTimeoutMs",
+    );
     expect(source).toContain("chmod(paths.eventPath, 0o444)");
     expect(source).toContain("chmod(outputPath, 0o444)");
     expect(source).toContain("chmod(paths.outputRoot, 0o555)");

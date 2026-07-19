@@ -1,6 +1,13 @@
 export type FixedViteScenarioId = "vite-observe-p" | "vite-observe-c";
 export type FixedViteProfileId = "permissive" | "constrained";
 
+export const FIXED_VITE_RUNNER_LIMITS: Readonly<{
+  childTimeoutMs: 30_000;
+  terminationGraceMs: 500;
+  forceSettlementMs: 1_000;
+  serverSettlementMs: 1_000;
+}>;
+
 export interface FixedViteScenario {
   readonly scenarioId: FixedViteScenarioId;
   readonly profileId: FixedViteProfileId;
