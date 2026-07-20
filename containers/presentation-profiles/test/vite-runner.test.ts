@@ -1,11 +1,12 @@
-import { readFile } from "node:fs/promises";
+import { chmod, lstat, mkdir, readFile, readdir, rm } from "node:fs/promises";
+import { fileURLToPath } from "node:url";
 
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 
 import {
   closeFixedViteServerWithBackendForTest,
   createFixedViteInvocation,
-  createFixedViteProgressLineForTest,
+  createFixedViteProgressWriterForTest,
   executeBoundedViteChildWithBackendForTest,
   executeFixedViteLifecycleWithBackendForTest,
   FixedViteRunnerError,
@@ -15,6 +16,15 @@ import {
   type FixedViteProcessBackend,
   type FixedViteProcessHandle,
 } from "../runner/vite-runner.js";
+
+const PROGRESS_FIXTURE_ROOT = fileURLToPath(
+  new URL(".vite-runner-progress-fixture/", import.meta.url),
+);
+
+afterEach(async () => {
+  await chmod(PROGRESS_FIXTURE_ROOT, 0o700).catch(() => undefined);
+  await rm(PROGRESS_FIXTURE_ROOT, { recursive: true, force: true });
+});
 
 class FakeViteProcess implements FixedViteProcessHandle {
   private stdoutListener: ((chunk: Buffer) => void) | undefined;
@@ -63,6 +73,7 @@ class FakeViteProcess implements FixedViteProcessHandle {
 class FakeViteProcessBackend implements FixedViteProcessBackend {
   readonly trace: string[] = [];
   groupPresent: boolean;
+  readonly groupChecks: boolean[] = [];
   waitResult: boolean;
   signalHandler: ((signal: "SIGTERM" | "SIGKILL") => void) | undefined;
 
@@ -84,7 +95,7 @@ class FakeViteProcessBackend implements FixedViteProcessBackend {
   processGroupExists(_processGroupId: number): boolean {
     void _processGroupId;
     this.trace.push("group-exists");
-    return this.groupPresent;
+    return this.groupChecks.shift() ?? this.groupPresent;
   }
 
   signalProcessGroup(
@@ -123,12 +134,12 @@ describe("P2 fixed Vite runner", () => {
     expect(resolveFixedViteScenario("vite-observe-p")).toEqual({
       scenarioId: "vite-observe-p",
       profileId: "permissive",
-      runId: "p2-vite-observe-p-20260720-01",
+      runId: "p2-vite-observe-p-20260720-02",
     });
     expect(resolveFixedViteScenario("vite-observe-c")).toEqual({
       scenarioId: "vite-observe-c",
       profileId: "constrained",
-      runId: "p2-vite-observe-c-20260720-01",
+      runId: "p2-vite-observe-c-20260720-02",
     });
     expect(() => resolveFixedViteScenario("codegen-observe-p")).toThrow(
       "P2_SCENARIO_INVALID",
@@ -163,6 +174,8 @@ describe("P2 fixed Vite runner", () => {
     expect(constrained.arguments).toEqual(permissive.arguments);
     expect(constrained.arguments).not.toContain("--experimental-permission");
     expect(constrained.arguments).not.toContain("--watch");
+    expect(JSON.stringify(permissive)).not.toContain("p2-progress");
+    expect(JSON.stringify(constrained)).not.toContain("p2-progress");
   });
 
   it("exposes only the fixed canary difference between child environments", () => {
@@ -229,36 +242,124 @@ describe("P2 fixed Vite runner", () => {
     expect(source).toContain("shell: false");
   });
 
-  it("emits only canonical bounded progress identities", () => {
+  it("atomically publishes canonical bounded v2 progress snapshots", async () => {
     const definition = resolveFixedViteScenario("vite-observe-p");
-    const lines = Array.from({ length: 7 }, (_, sequence) =>
-      createFixedViteProgressLineForTest(definition, sequence),
+    await mkdir(PROGRESS_FIXTURE_ROOT, { mode: 0o1777 });
+    await chmod(PROGRESS_FIXTURE_ROOT, 0o1777);
+    const writer = await createFixedViteProgressWriterForTest(
+      definition,
+      PROGRESS_FIXTURE_ROOT,
     );
-    expect(lines.map((line) => JSON.parse(line))).toEqual(
-      [
-        "runner-entered",
-        "inputs-prepared",
-        "service-ready",
-        "child-launched",
-        "child-settled",
-        "service-settled",
-        "output-exported",
-      ].map((stage, sequence) => ({
-        schemaVersion: "p2-vite-progress/v1",
-        expectedRevision: "p2-vite-expected-20260720-01",
-        scenarioId: "vite-observe-p",
-        profileId: "permissive",
-        runId: "p2-vite-observe-p-20260720-01",
-        sequence,
-        stage,
-      })),
+    await writer.publish("runner-entered", "accepted");
+    await writer.publish("inputs-prepared", "accepted");
+    await writer.fail(new FixedViteRunnerError("P2_RESULT_INVALID", "known"));
+    await writer.close();
+    const raw = await readFile(
+      `${PROGRESS_FIXTURE_ROOT}/runner-progress.json`,
+      "utf8",
     );
-    expect(lines.every((line) => Buffer.byteLength(line) <= 1_024)).toBe(true);
-    expect(Buffer.byteLength(lines.join(""))).toBeLessThanOrEqual(4_096);
-    expect(JSON.stringify(lines)).not.toMatch(
+    const snapshot = JSON.parse(raw) as Record<string, unknown>;
+    expect(snapshot).toMatchObject({
+      schemaVersion: "p2-vite-progress/v2",
+      expectedRevision: "p2-vite-expected-20260720-02",
+      scenarioId: "vite-observe-p",
+      profileId: "permissive",
+      runId: "p2-vite-observe-p-20260720-02",
+      records: [
+        { sequence: 0, stage: "runner-entered", value: "accepted" },
+        { sequence: 1, stage: "inputs-prepared", value: "accepted" },
+      ],
+      terminal: {
+        status: "failure",
+        failureCode: "P2_RESULT_INVALID",
+        settlement: "known",
+        settlementCode: null,
+      },
+    });
+    await expect(
+      readFile(`${PROGRESS_FIXTURE_ROOT}/runner-progress.next`, "utf8"),
+    ).rejects.toMatchObject({ code: "ENOENT" });
+    expect(await readdir(PROGRESS_FIXTURE_ROOT)).toEqual([
+      "runner-progress.json",
+    ]);
+    expect(
+      (await lstat(`${PROGRESS_FIXTURE_ROOT}/runner-progress.json`)).mode &
+        0o7777,
+    ).toBe(0o444);
+    expect(Buffer.byteLength(raw)).toBeLessThanOrEqual(4_096);
+    expect(raw).not.toMatch(
       /path|command|environment|canary|timestamp|duration|raw/u,
     );
+    await expect(
+      createFixedViteProgressWriterForTest(definition, PROGRESS_FIXTURE_ROOT),
+    ).rejects.toMatchObject({ message: "P2_TRANSFER_WRITE_FAILED" });
   });
+
+  it("durably records close-first residue disappearance before force delivery", async () => {
+    const process = new FakeViteProcess();
+    const backend = new FakeViteProcessBackend(process);
+    backend.groupChecks.push(true, false);
+    const records: string[] = [];
+    const result = executeBoundedViteChildWithBackendForTest(
+      fixedInvocation(),
+      backend,
+      TEST_LIMITS,
+      {
+        async publish(stage, value) {
+          records.push(`${stage}:${value}`);
+        },
+      },
+    );
+    process.close(0);
+    await expect(result).rejects.toMatchObject({
+      failureCode: "P2_CHILD_FAILED",
+      settlement: "known",
+    });
+    expect(records.slice(-5)).toEqual([
+      "child-close-observed:exit-0",
+      "child-residue-detected:post-close-group-present",
+      "child-force-sent:group-already-absent",
+      "child-group-absent:confirmed",
+      "child-settled:known-failure",
+    ]);
+    expect(backend.trace).not.toContain("SIGKILL");
+  });
+
+  it.each(["sent", "group-already-absent"] as const)(
+    "durably records post-SIGTERM force disposition %s",
+    async (forceDisposition) => {
+      const process = new FakeViteProcess();
+      const backend = new FakeViteProcessBackend(process);
+      backend.groupChecks.push(true, true, forceDisposition === "sent");
+      backend.signalHandler = (signal) => {
+        if (signal === "SIGTERM") process.close(null, "SIGTERM");
+      };
+      const records: string[] = [];
+      const result = executeBoundedViteChildWithBackendForTest(
+        fixedInvocation(),
+        backend,
+        TEST_LIMITS,
+        {
+          async publish(stage, value) {
+            records.push(`${stage}:${value}`);
+          },
+        },
+      );
+      process.stdout(9);
+      await expect(result).rejects.toMatchObject({
+        failureCode: "P2_OUTPUT_LIMIT",
+        settlement: "known",
+      });
+      expect(records.slice(-6)).toEqual([
+        "child-failure-detected:output-limit",
+        "child-terminate-sent:sent",
+        "child-close-observed:sigterm",
+        `child-force-sent:${forceDisposition}`,
+        "child-group-absent:confirmed",
+        "child-settled:known-failure",
+      ]);
+    },
+  );
 
   it("accepts normal close only after the process group is absent", async () => {
     const process = new FakeViteProcess();
@@ -313,6 +414,7 @@ describe("P2 fixed Vite runner", () => {
     expect(processBackend.trace).toEqual([
       "child",
       "launch",
+      "group-exists",
       "group-exists",
       "SIGKILL",
       "wait-group",

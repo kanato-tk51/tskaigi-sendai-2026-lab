@@ -30,16 +30,16 @@ describe("P2 selected profile plan", () => {
       "codegen-observe-c",
     ]);
     expect(plans.map((plan) => plan.runId)).toEqual([
-      "p2-vite-observe-p-20260720-01",
-      "p2-vite-observe-c-20260720-01",
+      "p2-vite-observe-p-20260720-02",
+      "p2-vite-observe-c-20260720-02",
       "p2-codegen-observe-p-20260719-01",
       "p2-codegen-observe-c-20260719-01",
     ]);
     expect(
       plans.map((plan) => argumentValue(plan.create.arguments, "--name")),
     ).toEqual([
-      "tskaigi-p2-vite-observe-p-20260720-01",
-      "tskaigi-p2-vite-observe-c-20260720-01",
+      "tskaigi-p2-vite-observe-p-20260720-02",
+      "tskaigi-p2-vite-observe-c-20260720-02",
       "tskaigi-p2-codegen-observe-p",
       "tskaigi-p2-codegen-observe-c",
     ]);
@@ -84,7 +84,7 @@ describe("P2 selected profile plan", () => {
       expect(command.arguments[0]).toBe("create");
       expect(argumentValue(command.arguments, "--name")).toBe(
         plan.adapterId === "vite"
-          ? `tskaigi-p2-${plan.scenarioId}-20260720-01`
+          ? `tskaigi-p2-${plan.scenarioId}-20260720-02`
           : `tskaigi-p2-${plan.scenarioId}`,
       );
       expect(argumentValue(command.arguments, "--pull")).toBe("never");
@@ -115,16 +115,22 @@ describe("P2 selected profile plan", () => {
     }
   });
 
-  it("mounts only fixed staging and three separated run-owned outputs", () => {
+  it("mounts fixed staging, separated outputs, and only the Vite progress root", () => {
     for (const plan of createFixedSelectedScenarioPlans()) {
       const mounts = plan.create.arguments.filter(
         (value, index, values) => index > 0 && values[index - 1] === "--mount",
       );
-      expect(mounts).toHaveLength(4);
-      expect(mounts[0]).toBe(
+      expect(mounts).toHaveLength(plan.adapterId === "vite" ? 5 : 4);
+      const stagingIndex = plan.adapterId === "vite" ? 1 : 0;
+      if (plan.adapterId === "vite") {
+        expect(mounts[0]).toBe(
+          `type=bind,src=${path.join(plan.resultRoot, "progress")},dst=/tmp/p2-progress`,
+        );
+      }
+      expect(mounts[stagingIndex]).toBe(
         `type=bind,src=${plan.stagingRoot},dst=/opt/p2/input,readonly`,
       );
-      expect(mounts.slice(1)).toEqual([
+      expect(mounts.slice(stagingIndex + 1)).toEqual([
         `type=bind,src=${path.join(plan.resultRoot, "result")},dst=/tmp/p2-result`,
         `type=bind,src=${path.join(plan.resultRoot, "tool")},dst=/tmp/p2-tool`,
         `type=bind,src=${path.join(plan.resultRoot, "direct-write")},dst=/tmp/p2-direct-write${plan.profileId === "constrained" ? ",readonly" : ""}`,

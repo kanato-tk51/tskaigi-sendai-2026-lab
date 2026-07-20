@@ -75,22 +75,41 @@ export class FixedViteRunnerError extends Error {
     "P2_CHILD_SETTLEMENT_UNKNOWN" | "P2_SERVER_SETTLEMENT_UNKNOWN" | null;
 }
 
+export class FixedViteTransferWriteError extends Error {}
+
 export function resolveFixedViteScenario(scenarioId: string): FixedViteScenario;
 
 export function createFixedViteInvocation(
   definition: FixedViteScenario,
 ): FixedViteInvocation;
 
-export function createFixedViteProgressLineForTest(
+export function createFixedViteProgressWriterForTest(
   definition: FixedViteScenario,
-  sequence: number,
-): string;
+  progressRoot: string,
+): Promise<
+  Readonly<{
+    publish(stage: string, value: string): Promise<void>;
+    complete(
+      summary: Readonly<{
+        sourceBeforeHash: string;
+        sourceAfterHash: string;
+        entryOutputBytes: number;
+      }>,
+    ): Promise<void>;
+    fail(error: FixedViteRunnerError): Promise<void>;
+    close(): Promise<void>;
+  }>
+>;
 
 export function executeBoundedViteChildWithBackendForTest(
   invocation: FixedViteInvocation,
   backend: FixedViteProcessBackend,
   limits: FixedViteProcessLimits,
-  onLaunched?: () => void,
+  progress?:
+    | (() => void)
+    | Readonly<{
+        publish(stage: string, value: string): Promise<void>;
+      }>,
 ): Promise<void>;
 
 export function closeFixedViteServerWithBackendForTest(
