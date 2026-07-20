@@ -23,7 +23,7 @@ describe("presentation evidence map", () => {
     );
   });
 
-  it("keeps seven claims, three talk tables, and all four Vite gaps visible", async () => {
+  it("keeps seven claims, three talk tables, and all five Vite gaps visible", async () => {
     const rendered = renderEvidenceMap(await loadPresentationEvidence());
 
     expect(rendered.match(/^## Talk table /gm)).toHaveLength(3);
@@ -35,10 +35,13 @@ describe("presentation evidence map", () => {
     expect(rendered).toContain("20260719-02");
     expect(rendered).toContain("20260719-03");
     expect(rendered).toContain("20260720-01");
+    expect(rendered).toContain("20260720-02");
     expect(rendered).toContain(
       "valid-prefix: runner-entered > inputs-prepared > service-ready > child-launched",
     );
     expect(rendered).toContain("attached-start / P2_EXECUTOR_DOCKER_TIMEOUT");
+    expect(rendered).toContain("container-wait / P2_EXECUTOR_DOCKER_TIMEOUT");
+    expect(rendered).toContain("P2_TRANSFER_SEQUENCE_INVALID");
     expect(rendered).not.toContain("results/runs/");
   });
 });

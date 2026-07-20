@@ -107,17 +107,17 @@ export function validatePresentationEvidence({ routes, profiles, artifact }) {
   );
   assert(
     profiles.pairs?.vite?.evidenceClass ===
-      "four observed Inconclusive execution attempts only",
-    "Vite four-attempt evidence scope",
+      "five observed Inconclusive execution attempts only",
+    "Vite five-attempt evidence scope",
   );
   const viteAttempts = profiles.pairs?.vite?.attempts;
   assert(
-    Array.isArray(viteAttempts) && viteAttempts.length === 4,
-    "four Vite attempts",
+    Array.isArray(viteAttempts) && viteAttempts.length === 5,
+    "five Vite attempts",
   );
   assert(
     viteAttempts.map(({ attemptId }) => attemptId).join(",") ===
-      "20260719-01,20260719-02,20260719-03,20260720-01",
+      "20260719-01,20260719-02,20260719-03,20260720-01,20260720-02",
     "fixed Vite attempt order",
   );
   assert(
@@ -142,6 +142,15 @@ export function validatePresentationEvidence({ routes, profiles, artifact }) {
       viteAttempts[3]?.diagnosticProgress ===
         "valid-prefix: runner-entered > inputs-prepared > service-ready > child-launched",
     "Vite v3 diagnostic identity and progress",
+  );
+  assert(
+    viteAttempts[4]?.canonicalRecord ===
+      "p2-vite-attempt/v4 / SHA-256 842b914eeb1a92241787d718523d2d3c76eaeede164531ef20eb8314391cd201" &&
+      viteAttempts[4]?.primaryDiagnostic ===
+        "container-wait / P2_EXECUTOR_DOCKER_TIMEOUT" &&
+      viteAttempts[4]?.diagnosticProgress ===
+        "invalid/P2_TRANSFER_SEQUENCE_INVALID; retained prefix: runner-entered > inputs-prepared > service-ready > child-launched > child-watch-armed > child-close-observed > child-residue-detected > child-force-sent",
+    "Vite v4 diagnostic identity and progress",
   );
   assert(
     Array.isArray(profiles.capabilities) && profiles.capabilities.length === 5,
@@ -293,7 +302,7 @@ Docker, network, or deployment operation.
 The evidence classes below are deliberate. M0 remains overall **Inconclusive**
 with scenario-level Observed marker counts; the four adapter rows are **reviewed
 local adapter evidence**; the codegen pair is selected-profile **Observed** only
-at one-local-pair scope; all four Vite pair attempts are observed
+at one-local-pair scope; all five Vite pair attempts are observed
 **Inconclusive attempts**, not capability results; and P3 is **Observed** only
 at one-local-run scope.
 
@@ -312,12 +321,12 @@ ${profileTable}
 [\`profiles.json\`](../results/examples/presentation-mvp/profiles.json) preserves
 five capabilities and keeps the separate source-hash integrity attempt out of
 their denominator. The codegen cells come from the independently accepted exact
-same-image pair. The four exhausted Vite attempts have no receipt or
+same-image pair. The five exhausted Vite attempts have no receipt or
 constrained run:
 \`not-inspected\` and \`missing\` are displayed rather than converted to zero,
 denial, or success.
 
-All four immutable attempts remain side by side in the tracked projection:
+All five immutable attempts remain side by side in the tracked projection:
 ${viteAttemptHistory}.
 
 ## Talk table 3 — build once, verify, copy, reject
@@ -367,8 +376,8 @@ are not OS-level egress-enforcement evidence.
 - Limitation: same-image and pair-identical staging have the narrow bindings in
   the [codegen receipt review](reviews/p2-selected-profile-codegen-receipts.md);
   they do not prove a general sandbox or repeated-run reproducibility. The
-  [latest Vite result review](reviews/p2-vite-new-measurement-result.md) accepts
-  only four Inconclusive attempts, so the selected Vite comparison is explicitly
+  [latest Vite result review](reviews/p2-vite-detached-transfer-result.md) accepts
+  only five Inconclusive attempts, so the selected Vite comparison is explicitly
   missing.
 
 ### C-05 — direct writes differ from official tool API changes
@@ -403,7 +412,7 @@ are not OS-level egress-enforcement evidence.
 - \`npm run p4:generate\` deterministically renders only this tracked document
   from the three tracked JSON files.
 - \`npm run p4:verify\` validates fixed route/capability counts, codegen
-  \`same-image\`, the ordered four-attempt Vite history and its
+  \`same-image\`, the ordered five-attempt Vite history and its
   \`not-inspected\` / \`missing\` boundary, artifact build count 1, zero
   deployment builds, one-byte rejection, source-record boundaries, and exact
   document regeneration.

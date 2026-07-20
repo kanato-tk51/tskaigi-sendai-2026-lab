@@ -62,7 +62,7 @@ durations, raw paths, canary values, raw content, stdout/stderr, and
 run-ID-bearing marker hashes are intentionally omitted.
 
 | Route and fixed local variant | Reviewed route/checkpoint count | Trigger projection | Capability/tool-change projection | Evidence class and boundary |
-|---|---:|---|---|---|
+| --- | ------------------------------------------------------------------------------: | --- | --- | --- |
 | npm `12.0.1` install lifecycle: unapproved / approved rebuild / scripts-disabled / reinstall / `npm ci` | marker `0 / 1 / 0 / 1 / 1` | `automatic`, install lifecycle | Marker only; no environment, file-read, loopback, child, or profile measurement | **Inconclusive** M0 run with scenario-level Observed counts; local tarball and failed required transfer must remain visible |
 | ESLint `9.39.5`: lint-only | route hooks `1 module + 1 initialization + 1 rule create + 1 visitor + 1 fixer` | dependency load/callbacks `configured`; official fix option/change `explicit` when used | 6 separate capability attempts; 1 skipped fixer change | **local adapter evidence**; version/fixture/options specific |
 | ESLint `9.39.5`: fix | route hooks `1 + 1 + 2 + 2 + 1` | same trigger mapping | 6 separate capability attempts; 1 changed fixer result/materialization; second lint pass retained | **local adapter evidence**; direct marker, fixer return, and source materialization remain distinct |
@@ -211,7 +211,15 @@ Docker-free
 its exact canonical v3 permissive record only as the fourth immutable
 Inconclusive attempt and retained the `child-launched` valid progress prefix as
 diagnostic secondary state. The tracked presentation projection now lists all
-four attempts side by side; Vite capabilities remain `not-inspected` /
+four attempts through `20260720-01` side by side.
+
+The later `20260720-02` detached-transfer outcome also passed a fresh
+Docker-free
+[`result review`](reviews/p2-vite-detached-transfer-result.md). The review
+accepted its exact canonical v4 permissive record only as the fifth immutable
+Inconclusive attempt and retained the invalid eight-record progress prefix as
+diagnostic secondary state. The tracked presentation projection now lists all
+five attempts side by side; Vite capabilities remain `not-inspected` /
 `missing`, and no same-image or Observed promotion exists.
 
 Next: none
