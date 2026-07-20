@@ -24,12 +24,12 @@ interface SelectedContextDefinition {
 const SELECTED_CONTEXTS: readonly SelectedContextDefinition[] = Object.freeze([
   Object.freeze({
     scenarioId: SELECTED_PROFILE_SCENARIO_IDS[0],
-    runId: "p2-vite-observe-p-20260720-01",
+    runId: "p2-vite-observe-p-20260720-02",
     profileId: "permissive",
   }),
   Object.freeze({
     scenarioId: SELECTED_PROFILE_SCENARIO_IDS[1],
-    runId: "p2-vite-observe-c-20260720-01",
+    runId: "p2-vite-observe-c-20260720-02",
     profileId: "constrained",
   }),
 ]);

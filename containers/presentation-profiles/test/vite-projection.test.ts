@@ -74,8 +74,8 @@ function eventsFor(
 
 describe("P2 Vite profile projection", () => {
   it.each([
-    ["vite-observe-p", "permissive", "p2-vite-observe-p-20260720-01"],
-    ["vite-observe-c", "constrained", "p2-vite-observe-c-20260720-01"],
+    ["vite-observe-p", "permissive", "p2-vite-observe-p-20260720-02"],
+    ["vite-observe-c", "constrained", "p2-vite-observe-c-20260720-02"],
   ] as const)(
     "accepts the complete sanitized %s stream",
     (scenarioId, profileId, runId) => {
@@ -128,7 +128,7 @@ describe("P2 Vite profile projection", () => {
 
   it("preserves an unexpected constrained child denial as a mismatch", () => {
     const scenarioId = "vite-observe-c";
-    const runId = "p2-vite-observe-c-20260720-01";
+    const runId = "p2-vite-observe-c-20260720-02";
     const events = eventsFor(scenarioId, "constrained", runId).map((event) =>
       event.attemptId === "vite-attempt-child"
         ? {
@@ -155,7 +155,7 @@ describe("P2 Vite profile projection", () => {
 
   it("marks missing or reordered evidence inconclusive", () => {
     const scenarioId = "vite-observe-p";
-    const runId = "p2-vite-observe-p-20260720-01";
+    const runId = "p2-vite-observe-p-20260720-02";
     const result = projectViteProfileEvents({
       scenarioId,
       profileId: "permissive",
@@ -171,7 +171,7 @@ describe("P2 Vite profile projection", () => {
 
   it("rejects a relabeled scenario/profile/run tuple", () => {
     const scenarioId = "vite-observe-p";
-    const runId = "p2-vite-observe-p-20260720-01";
+    const runId = "p2-vite-observe-p-20260720-02";
     const result = projectViteProfileEvents({
       scenarioId,
       profileId: "constrained",
@@ -185,7 +185,7 @@ describe("P2 Vite profile projection", () => {
 
   it("does not carry unknown raw fields into the projection", () => {
     const scenarioId = "vite-observe-p";
-    const runId = "p2-vite-observe-p-20260720-01";
+    const runId = "p2-vite-observe-p-20260720-02";
     const events = eventsFor(scenarioId, "permissive", runId).map((event) => ({
       ...event,
       ...(event.attemptId === "vite-attempt-environment"
@@ -206,7 +206,7 @@ describe("P2 Vite profile projection", () => {
 
   it("parses a bounded JSONL segment into the same small projection", () => {
     const scenarioId = "vite-observe-c";
-    const runId = "p2-vite-observe-c-20260720-01";
+    const runId = "p2-vite-observe-c-20260720-02";
     const rawSegment = `${eventsFor(scenarioId, "constrained", runId)
       .map((event) => JSON.stringify({ ...event, rawSecret: "discard-me" }))
       .join("\n")}\n`;
@@ -230,11 +230,11 @@ describe("P2 Vite profile projection", () => {
       const result = projectViteProfileSegment({
         scenarioId: "vite-observe-p",
         profileId: "permissive",
-        runId: "p2-vite-observe-p-20260720-01",
+        runId: "p2-vite-observe-p-20260720-02",
         rawSegment,
       });
       expect(result.validity).toBe("inconclusive");
-      expect(result.runId).toBe("p2-vite-observe-p-20260720-01");
+      expect(result.runId).toBe("p2-vite-observe-p-20260720-02");
       expect(result.counts.total).toBe(0);
     }
   });

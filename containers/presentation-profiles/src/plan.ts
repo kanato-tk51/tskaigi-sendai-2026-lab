@@ -7,7 +7,7 @@ export const FIXED_NODE_IMAGE =
 export const FIXED_NODE_IMAGE_ID =
   "sha256:4ada13d4258db3809cbff56d605f80af8383bf1f823168d0518d8dce799e7cf0" as const;
 export const FIXED_VITE_EXPECTED_REVISION =
-  "p2-vite-expected-20260720-01" as const;
+  "p2-vite-expected-20260720-02" as const;
 export const FIXED_CONTAINER_USER = "65532:65532" as const;
 
 export type SelectedScenarioId =
@@ -77,16 +77,16 @@ const DEFINITIONS: readonly ScenarioDefinition[] = Object.freeze([
     scenarioId: "vite-observe-p",
     profileId: "permissive",
     adapterId: "vite",
-    runId: "p2-vite-observe-p-20260720-01",
-    containerName: "tskaigi-p2-vite-observe-p-20260720-01",
+    runId: "p2-vite-observe-p-20260720-02",
+    containerName: "tskaigi-p2-vite-observe-p-20260720-02",
     expectedRevision: FIXED_VITE_EXPECTED_REVISION,
   }),
   Object.freeze({
     scenarioId: "vite-observe-c",
     profileId: "constrained",
     adapterId: "vite",
-    runId: "p2-vite-observe-c-20260720-01",
-    containerName: "tskaigi-p2-vite-observe-c-20260720-01",
+    runId: "p2-vite-observe-c-20260720-02",
+    containerName: "tskaigi-p2-vite-observe-c-20260720-02",
     expectedRevision: FIXED_VITE_EXPECTED_REVISION,
   }),
   Object.freeze({
@@ -158,6 +158,7 @@ function createCommand(
   const toolRoot = path.join(resultRoot, "tool");
   const eventRoot = path.join(resultRoot, "result");
   const directWriteRoot = path.join(resultRoot, "direct-write");
+  const progressRoot = path.join(resultRoot, "progress");
   return Object.freeze({
     executable: FIXED_DOCKER_EXECUTABLE,
     arguments: Object.freeze([
@@ -183,6 +184,9 @@ function createCommand(
       "1",
       "--tmpfs",
       "/tmp:rw,noexec,nosuid,nodev,size=64m,uid=65532,gid=65532,mode=0700",
+      ...(definition.adapterId === "vite"
+        ? ["--mount", bindMount(progressRoot, "/tmp/p2-progress", false)]
+        : []),
       "--mount",
       bindMount(stagingRoot, CONTAINER_INPUT_ROOT, true),
       "--mount",

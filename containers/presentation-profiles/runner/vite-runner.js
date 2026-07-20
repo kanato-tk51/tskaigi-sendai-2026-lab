@@ -1,12 +1,15 @@
 import { Buffer } from "node:buffer";
 import { spawn } from "node:child_process";
 import { createHash } from "node:crypto";
+import { constants as fsConstants } from "node:fs";
 import {
   chmod,
   lstat,
   mkdir,
+  open,
   readFile,
   readdir,
+  rename,
   writeFile,
 } from "node:fs/promises";
 import { createServer } from "node:http";
@@ -17,7 +20,7 @@ import { clearTimeout, setTimeout } from "node:timers";
 import { fileURLToPath, pathToFileURL, URL } from "node:url";
 
 const FIXED_NODE_VERSION = "v20.18.2";
-const FIXED_VITE_EXPECTED_REVISION = "p2-vite-expected-20260720-01";
+const FIXED_VITE_EXPECTED_REVISION = "p2-vite-expected-20260720-02";
 const FIXED_LOOPBACK_ADDRESS = "127.0.0.1";
 const FIXED_LOOPBACK_PORT = 47_832;
 const FIXED_VITE_CLI_PATH = "/opt/p2/input/node_modules/vite/bin/vite.js";
@@ -36,6 +39,12 @@ const FIXED_SOURCE_CONTENT =
 const FIXED_FILE_CANARY = "m2d disposable file canary\n";
 const FIXED_ENVIRONMENT_CANARY = "m2d-disposable-environment-canary";
 const FIXED_OUTPUT_FILE = "entry.js";
+const FIXED_PROGRESS_ROOT = "/tmp/p2-progress";
+const FIXED_PROGRESS_FILE = "runner-progress.json";
+const FIXED_PROGRESS_NEXT = "runner-progress.next";
+const FIXED_PROGRESS_SCHEMA = "p2-vite-progress/v2";
+const MAX_PROGRESS_BYTES = 4_096;
+const MAX_PROGRESS_RECORDS = 13;
 const MAX_CHILD_OUTPUT_BYTES = 65_536;
 const MAX_EVENT_SEGMENT_BYTES = 65_536;
 const MAX_OUTPUT_FILE_BYTES = 65_536;
@@ -50,16 +59,6 @@ const TERMINATION_GRACE_MS = FIXED_VITE_RUNNER_LIMITS.terminationGraceMs;
 const FORCE_SETTLEMENT_MS = FIXED_VITE_RUNNER_LIMITS.forceSettlementMs;
 const SERVER_SETTLEMENT_MS = FIXED_VITE_RUNNER_LIMITS.serverSettlementMs;
 const PROCESS_POLL_MS = 25;
-const FIXED_PROGRESS_STAGES = Object.freeze([
-  "runner-entered",
-  "inputs-prepared",
-  "service-ready",
-  "child-launched",
-  "child-settled",
-  "service-settled",
-  "output-exported",
-]);
-
 const FIXED_OUTPUT_PATHS = Object.freeze({
   sourcePath: FIXED_SOURCE_PATH,
   eventPath: FIXED_EVENT_SEGMENT,
@@ -94,12 +93,12 @@ const DEFINITIONS = Object.freeze([
   Object.freeze({
     scenarioId: "vite-observe-p",
     profileId: "permissive",
-    runId: "p2-vite-observe-p-20260720-01",
+    runId: "p2-vite-observe-p-20260720-02",
   }),
   Object.freeze({
     scenarioId: "vite-observe-c",
     profileId: "constrained",
-    runId: "p2-vite-observe-c-20260720-01",
+    runId: "p2-vite-observe-c-20260720-02",
   }),
 ]);
 
@@ -167,6 +166,222 @@ export class FixedViteRunnerError extends Error {
   }
 }
 
+export class FixedViteTransferWriteError extends Error {
+  constructor() {
+    super("P2_TRANSFER_WRITE_FAILED");
+    this.name = "FixedViteTransferWriteError";
+  }
+}
+
+/** @param {unknown} error */
+function missingPath(error) {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    error.code === "ENOENT"
+  );
+}
+
+/**
+ * @param {Readonly<{scenarioId: ScenarioId, profileId: ProfileId, runId: string}>} definition
+ * @param {string} progressRoot
+ */
+async function createFixedViteProgressWriter(definition, progressRoot) {
+  const canonicalPath = path.join(progressRoot, FIXED_PROGRESS_FILE);
+  const nextPath = path.join(progressRoot, FIXED_PROGRESS_NEXT);
+  /** @type {import("node:fs/promises").FileHandle | null} */
+  let directoryHandle = null;
+  /** @type {readonly Readonly<{sequence: number, stage: string, value: string}>[]} */
+  let records = Object.freeze([]);
+  let terminalPublished = false;
+  let writeFailed = false;
+  /** @type {Readonly<{dev: bigint | number, ino: bigint | number}> | null} */
+  let directoryIdentity = null;
+
+  /** @returns {never} */
+  const fail = () => {
+    writeFailed = true;
+    throw new FixedViteTransferWriteError();
+  };
+  const verifyDirectory = async () => {
+    if (directoryHandle === null || directoryIdentity === null) fail();
+    const identity = directoryIdentity;
+    /** @type {import("node:fs").BigIntStats} */
+    let current;
+    try {
+      current = await lstat(progressRoot, { bigint: true });
+    } catch {
+      fail();
+    }
+    if (
+      !current.isDirectory() ||
+      current.isSymbolicLink() ||
+      (current.mode & 0o7777n) !== 0o1777n ||
+      current.dev !== identity.dev ||
+      current.ino !== identity.ino
+    ) {
+      fail();
+    }
+  };
+  /**
+   * @param {null | Readonly<Record<string, unknown>>} terminal
+   */
+  const publishSnapshot = async (terminal) => {
+    if (
+      writeFailed ||
+      terminalPublished ||
+      records.length > MAX_PROGRESS_RECORDS
+    )
+      fail();
+    const snapshot = {
+      schemaVersion: FIXED_PROGRESS_SCHEMA,
+      expectedRevision: FIXED_VITE_EXPECTED_REVISION,
+      scenarioId: definition.scenarioId,
+      profileId: definition.profileId,
+      runId: definition.runId,
+      records,
+      terminal,
+    };
+    const line = `${JSON.stringify(snapshot)}\n`;
+    if (Buffer.byteLength(line) > MAX_PROGRESS_BYTES) fail();
+    /** @type {import("node:fs/promises").FileHandle | null} */
+    let nextHandle = null;
+    try {
+      await verifyDirectory();
+      try {
+        await lstat(nextPath);
+        fail();
+      } catch (error) {
+        if (!missingPath(error)) throw error;
+      }
+      nextHandle = await open(
+        nextPath,
+        fsConstants.O_WRONLY |
+          fsConstants.O_CREAT |
+          fsConstants.O_EXCL |
+          fsConstants.O_NOFOLLOW,
+        0o644,
+      );
+      await nextHandle.writeFile(line, "utf8");
+      await nextHandle.sync();
+      await nextHandle.chmod(terminal === null ? 0o644 : 0o444);
+      const nextStat = await nextHandle.stat();
+      if (
+        !nextStat.isFile() ||
+        (nextStat.mode & 0o7777) !== (terminal === null ? 0o644 : 0o444)
+      ) {
+        fail();
+      }
+      await nextHandle.close();
+      nextHandle = null;
+      await rename(nextPath, canonicalPath);
+      const activeDirectoryHandle = directoryHandle;
+      if (activeDirectoryHandle === null) fail();
+      await activeDirectoryHandle.sync();
+      if (terminal !== null) terminalPublished = true;
+    } catch (error) {
+      if (nextHandle !== null) await nextHandle.close().catch(() => undefined);
+      if (error instanceof FixedViteTransferWriteError) throw error;
+      fail();
+    }
+  };
+
+  try {
+    const directory = await lstat(progressRoot, { bigint: true });
+    if (
+      !directory.isDirectory() ||
+      directory.isSymbolicLink() ||
+      (directory.mode & 0o7777n) !== 0o1777n
+    ) {
+      fail();
+    }
+    await Promise.all([requireAbsent(canonicalPath), requireAbsent(nextPath)]);
+    directoryHandle = await open(
+      progressRoot,
+      fsConstants.O_RDONLY | fsConstants.O_DIRECTORY | fsConstants.O_NOFOLLOW,
+    );
+    const opened = await directoryHandle.stat({ bigint: true });
+    if (
+      !opened.isDirectory() ||
+      opened.dev !== directory.dev ||
+      opened.ino !== directory.ino
+    ) {
+      fail();
+    }
+    directoryIdentity = Object.freeze({ dev: opened.dev, ino: opened.ino });
+  } catch (error) {
+    if (directoryHandle !== null)
+      await directoryHandle.close().catch(() => undefined);
+    if (error instanceof FixedViteTransferWriteError) throw error;
+    fail();
+  }
+
+  return Object.freeze({
+    /** @param {string} stage @param {string} value */
+    async publish(stage, value) {
+      if (
+        terminalPublished ||
+        records.some((record) => record.stage === stage) ||
+        records.length >= MAX_PROGRESS_RECORDS
+      ) {
+        fail();
+      }
+      records = Object.freeze([
+        ...records,
+        Object.freeze({ sequence: records.length, stage, value }),
+      ]);
+      await publishSnapshot(null);
+    },
+    /**
+     * @param {Readonly<{sourceBeforeHash: string, sourceAfterHash: string, entryOutputBytes: number}>} summary
+     */
+    async complete(summary) {
+      await publishSnapshot(
+        Object.freeze({
+          status: "completed",
+          failureCode: null,
+          settlement: "known",
+          settlementCode: null,
+          sourceBeforeHash: summary.sourceBeforeHash,
+          sourceAfterHash: summary.sourceAfterHash,
+          entryOutputBytes: summary.entryOutputBytes,
+        }),
+      );
+    },
+    /** @param {FixedViteRunnerError} error */
+    async fail(error) {
+      await publishSnapshot(
+        Object.freeze({
+          status: "failure",
+          failureCode: error.failureCode,
+          settlement: error.settlement,
+          settlementCode: error.settlementCode,
+        }),
+      );
+    },
+    async close() {
+      if (directoryHandle !== null) {
+        const handle = directoryHandle;
+        directoryHandle = null;
+        try {
+          await handle.close();
+        } catch {
+          fail();
+        }
+      }
+    },
+  });
+}
+
+/**
+ * @param {Readonly<{scenarioId: ScenarioId, profileId: ProfileId, runId: string}>} definition
+ * @param {string} progressRoot
+ */
+export function createFixedViteProgressWriterForTest(definition, progressRoot) {
+  return createFixedViteProgressWriter(definition, progressRoot);
+}
+
 /** @param {string | Buffer} value */
 function sha256(value) {
   return `sha256:${createHash("sha256").update(value).digest("hex")}`;
@@ -211,34 +426,6 @@ export function createFixedViteInvocation(definition) {
     cwd: FIXED_ADAPTER_ROOT,
     shell: false,
   });
-}
-
-/**
- * @param {Readonly<{scenarioId: ScenarioId, profileId: ProfileId, runId: string}>} definition
- * @param {number} sequence
- */
-function createFixedViteProgressLine(definition, sequence) {
-  const stage = FIXED_PROGRESS_STAGES[sequence];
-  if (stage === undefined) {
-    throw new Error("P2_PROGRESS_INVALID");
-  }
-  return `${JSON.stringify({
-    schemaVersion: "p2-vite-progress/v1",
-    expectedRevision: FIXED_VITE_EXPECTED_REVISION,
-    scenarioId: definition.scenarioId,
-    profileId: definition.profileId,
-    runId: definition.runId,
-    sequence,
-    stage,
-  })}\n`;
-}
-
-/**
- * @param {Readonly<{scenarioId: ScenarioId, profileId: ProfileId, runId: string}>} definition
- * @param {number} sequence
- */
-export function createFixedViteProgressLineForTest(definition, sequence) {
-  return createFixedViteProgressLine(definition, sequence);
 }
 
 /** @param {string} filePath */
@@ -406,13 +593,8 @@ function signalProcessGroup(processGroupId, signal) {
   try {
     process.kill(-processGroupId, signal);
     return true;
-  } catch (error) {
-    return (
-      typeof error === "object" &&
-      error !== null &&
-      "code" in error &&
-      error.code === "ESRCH"
-    );
+  } catch {
+    return false;
   }
 }
 
@@ -468,32 +650,105 @@ function childFailure(failureCode, settlement) {
   );
 }
 
+/** @param {FixedChildFailureCode} failureCode */
+function childFailureValue(failureCode) {
+  return failureCode === "P2_CHILD_TIMEOUT"
+    ? "deadline"
+    : failureCode === "P2_OUTPUT_LIMIT"
+      ? "output-limit"
+      : "process-error";
+}
+
+/** @param {Readonly<{code: number | null, signal: NodeJS.Signals | null}>} result */
+function closeValue(result) {
+  if (isNaturalClose(result)) {
+    return result.code === 0 ? "exit-0" : "exit-nonzero";
+  }
+  if (isSignalClose(result, "SIGTERM")) return "sigterm";
+  if (isSignalClose(result, "SIGKILL")) return "sigkill";
+  return null;
+}
+
+/**
+ * @param {FixedProcessBackend} backend
+ * @param {number} processGroupId
+ * @param {"SIGTERM" | "SIGKILL"} signal
+ * @param {(stage: string, value: string) => Promise<void>} publish
+ */
+async function signalWithProgress(backend, processGroupId, signal, publish) {
+  const stage =
+    signal === "SIGTERM" ? "child-terminate-sent" : "child-force-sent";
+  if (!backend.processGroupExists(processGroupId)) {
+    await publish(stage, "group-already-absent");
+    return "group-already-absent";
+  }
+  if (!backend.signalProcessGroup(processGroupId, signal)) return null;
+  await publish(stage, "sent");
+  return "sent";
+}
+
+/**
+ * @param {FixedProcessBackend} backend
+ * @param {number} processGroupId
+ * @param {Promise<Readonly<{code: number | null, signal: NodeJS.Signals | null}>>} close
+ * @param {FixedProcessLimits} limits
+ */
+async function settleChildAfterTransferFailure(
+  backend,
+  processGroupId,
+  close,
+  limits,
+) {
+  if (!backend.processGroupExists(processGroupId)) return;
+  backend.signalProcessGroup(processGroupId, "SIGTERM");
+  const termClose = await within(close, limits.terminationGraceMs);
+  if (termClose !== undefined && !backend.processGroupExists(processGroupId)) {
+    return;
+  }
+  if (backend.processGroupExists(processGroupId)) {
+    backend.signalProcessGroup(processGroupId, "SIGKILL");
+  }
+  await Promise.all([
+    within(close, limits.settlementMs),
+    backend.waitForProcessGroupExit(processGroupId, limits.settlementMs),
+  ]);
+}
+
 /**
  * @param {FixedInvocation} invocation
  * @param {FixedProcessBackend} backend
  * @param {FixedProcessLimits} limits
- * @param {() => void} [onLaunched]
+ * @param {(() => void) | Readonly<{publish(stage: string, value: string): Promise<void>}>} [progress]
  * @returns {Promise<void>}
  */
 async function executeBoundedChild(
   invocation,
   backend,
   limits,
-  onLaunched = () => undefined,
+  progress = () => undefined,
 ) {
+  /** @param {string} stage @param {string} value */
+  const publish = async (stage, value) => {
+    if (typeof progress === "function") {
+      if (stage === "child-launched") progress();
+      return;
+    }
+    await progress.publish(stage, value);
+  };
   /** @type {FixedProcessHandle} */
   let child;
   try {
     child = backend.launch(invocation);
   } catch {
+    await publish("child-failure-detected", "spawn-error");
     throw childFailure("P2_CHILD_FAILED", "known");
   }
   const processGroupId = child.pid;
   if (processGroupId === undefined || processGroupId <= 0) {
     child.onceError(() => undefined);
+    await publish("child-failure-detected", "invalid-process-group");
     throw childFailure("P2_CHILD_FAILED", "unknown");
   }
-  onLaunched();
 
   /** @type {(value: FixedChildFailureCode) => void} */
   let fail = () => undefined;
@@ -537,6 +792,19 @@ async function executeBoundedChild(
     () => beginFailure("P2_CHILD_TIMEOUT"),
     limits.timeoutMs,
   );
+  try {
+    await publish("child-launched", "positive-process-group");
+    await publish("child-watch-armed", "close-error-output-deadline");
+  } catch (error) {
+    clearTimeout(timer);
+    await settleChildAfterTransferFailure(
+      backend,
+      processGroupId,
+      close,
+      limits,
+    );
+    throw error;
+  }
   const first = await Promise.race([
     close.then((value) => /** @type {const} */ ({ kind: "close", value })),
     failure.then((code) => /** @type {const} */ ({ kind: "failure", code })),
@@ -545,10 +813,23 @@ async function executeBoundedChild(
 
   if (first.kind === "close") {
     const result = first.value;
+    const observedClose = closeValue(result);
+    if (observedClose !== null) {
+      await publish("child-close-observed", observedClose);
+    }
     const postCloseResidue = backend.processGroupExists(processGroupId);
     let groupExited = !postCloseResidue;
     if (postCloseResidue) {
-      backend.signalProcessGroup(processGroupId, "SIGKILL");
+      await publish("child-residue-detected", "post-close-group-present");
+      const forceDisposition = await signalWithProgress(
+        backend,
+        processGroupId,
+        "SIGKILL",
+        publish,
+      );
+      if (forceDisposition === null) {
+        throw childFailure("P2_CHILD_FAILED", "unknown");
+      }
       groupExited = await backend.waitForProcessGroupExit(
         processGroupId,
         limits.settlementMs,
@@ -556,24 +837,53 @@ async function executeBoundedChild(
       if (!groupExited || !isNaturalClose(result)) {
         throw childFailure("P2_CHILD_FAILED", "unknown");
       }
+      await publish("child-group-absent", "confirmed");
+      await publish("child-settled", "known-failure");
       throw childFailure("P2_CHILD_FAILED", "known");
     }
     if (!isNaturalClose(result)) {
       throw childFailure("P2_CHILD_FAILED", "unknown");
     }
+    await publish("child-group-absent", "confirmed");
     if (result.code === 0) {
+      await publish("child-settled", "success");
       return;
     }
+    await publish("child-settled", "known-failure");
     throw childFailure("P2_CHILD_FAILED", "known");
   }
 
-  backend.signalProcessGroup(processGroupId, "SIGTERM");
+  await publish("child-failure-detected", childFailureValue(first.code));
+  const termDisposition = await signalWithProgress(
+    backend,
+    processGroupId,
+    "SIGTERM",
+    publish,
+  );
+  if (termDisposition === null) {
+    throw childFailure(first.code, "unknown");
+  }
   const termClose = await within(close, limits.terminationGraceMs);
   if (termClose !== undefined) {
-    const acceptedClose = isSignalClose(termClose, "SIGTERM");
+    const acceptedClose =
+      termDisposition === "group-already-absent"
+        ? isNaturalClose(termClose)
+        : isSignalClose(termClose, "SIGTERM");
+    const observedClose = closeValue(termClose);
+    if (observedClose !== null) {
+      await publish("child-close-observed", observedClose);
+    }
     let groupExited = !backend.processGroupExists(processGroupId);
     if (!groupExited) {
-      backend.signalProcessGroup(processGroupId, "SIGKILL");
+      const forceDisposition = await signalWithProgress(
+        backend,
+        processGroupId,
+        "SIGKILL",
+        publish,
+      );
+      if (forceDisposition === null) {
+        throw childFailure(first.code, "unknown");
+      }
       groupExited = await backend.waitForProcessGroupExit(
         processGroupId,
         limits.settlementMs,
@@ -582,10 +892,20 @@ async function executeBoundedChild(
     if (!acceptedClose || !groupExited) {
       throw childFailure(first.code, "unknown");
     }
+    await publish("child-group-absent", "confirmed");
+    await publish("child-settled", "known-failure");
     throw childFailure(first.code, "known");
   }
 
-  backend.signalProcessGroup(processGroupId, "SIGKILL");
+  const forceDisposition = await signalWithProgress(
+    backend,
+    processGroupId,
+    "SIGKILL",
+    publish,
+  );
+  if (forceDisposition === null) {
+    throw childFailure(first.code, "unknown");
+  }
   const [killClose, groupExited] = await Promise.all([
     within(close, limits.settlementMs),
     backend.waitForProcessGroupExit(processGroupId, limits.settlementMs),
@@ -597,6 +917,9 @@ async function executeBoundedChild(
   ) {
     throw childFailure(first.code, "unknown");
   }
+  await publish("child-close-observed", "sigkill");
+  await publish("child-group-absent", "confirmed");
+  await publish("child-settled", "known-failure");
   throw childFailure(first.code, "known");
 }
 
@@ -843,72 +1166,124 @@ export async function executeFixedViteScenario() {
   }
   const definition = resolveFixedViteScenario(scenarioId);
   const invocation = createFixedViteInvocation(definition);
-  let nextProgressSequence = 0;
-  /** @param {number} sequence */
-  const emitProgress = (sequence) => {
-    if (sequence !== nextProgressSequence) {
-      return;
+  const writer = await createFixedViteProgressWriter(
+    definition,
+    FIXED_PROGRESS_ROOT,
+  );
+  /** @type {import("node:http").Server | null} */
+  let server = null;
+  let sourceBeforeHash = "";
+  let terminalPublished = false;
+  /** @param {FixedViteRunnerError} error */
+  const publishFailure = async (error) => {
+    if (!terminalPublished) {
+      await writer.fail(error);
+      terminalPublished = true;
     }
-    process.stdout.write(createFixedViteProgressLine(definition, sequence));
-    nextProgressSequence += 1;
   };
-  emitProgress(0);
-  const sourceBeforeHash = await prepareFixedInputs(definition.profileId);
-  emitProgress(1);
-  const server =
-    definition.profileId === "permissive"
-      ? await startFixedLoopbackServer()
-      : null;
-  emitProgress(2);
-  let childLaunched = false;
-  const output = await executeSettledViteLifecycle({
-    async executeChild() {
+  try {
+    await writer.publish("runner-entered", "accepted");
+    try {
+      sourceBeforeHash = await prepareFixedInputs(definition.profileId);
+    } catch {
+      const failure = new FixedViteRunnerError("P2_RESULT_INVALID", "known");
+      await publishFailure(failure);
+      throw failure;
+    }
+    await writer.publish("inputs-prepared", "accepted");
+    if (definition.profileId === "permissive") {
       try {
-        await executeBoundedChild(
-          invocation,
-          PRODUCTION_PROCESS_BACKEND,
-          PRODUCTION_PROCESS_LIMITS,
-          () => {
-            childLaunched = true;
-            emitProgress(3);
-          },
+        server = await startFixedLoopbackServer();
+      } catch {
+        const failure = new FixedViteRunnerError(
+          "P2_SERVER_CLOSE_FAILED",
+          "unknown",
+          "P2_SERVER_SETTLEMENT_UNKNOWN",
         );
-        emitProgress(4);
+        await publishFailure(failure);
+        throw failure;
+      }
+      try {
+        await writer.publish("service-ready", "listening");
       } catch (error) {
-        if (
-          childLaunched &&
-          error instanceof FixedViteRunnerError &&
-          error.settlement === "known"
-        ) {
-          emitProgress(4);
-        }
+        await closeServer(server);
         throw error;
       }
-    },
-    async verifyOutput() {
-      const verified = await verifyFixedOutput();
-      emitProgress(6);
-      return verified;
-    },
-    async closeServer() {
-      const settled = await closeServer(server);
-      if (settled) {
-        emitProgress(5);
+    } else {
+      await writer.publish("service-ready", "not-required");
+    }
+
+    /** @type {FixedViteRunnerError | null} */
+    let childError = null;
+    try {
+      await executeBoundedChild(
+        invocation,
+        PRODUCTION_PROCESS_BACKEND,
+        PRODUCTION_PROCESS_LIMITS,
+        writer,
+      );
+    } catch (error) {
+      if (error instanceof FixedViteTransferWriteError) {
+        await closeServer(server);
+        throw error;
       }
-      return settled;
-    },
-    makeEventSegmentHostReadable,
-  });
-  process.stdout.write(
-    `${JSON.stringify({
-      status: "completed",
-      scenarioId: definition.scenarioId,
-      profileId: definition.profileId,
+      childError =
+        error instanceof FixedViteRunnerError
+          ? error
+          : new FixedViteRunnerError(
+              "P2_CHILD_FAILED",
+              "unknown",
+              "P2_CHILD_SETTLEMENT_UNKNOWN",
+            );
+    }
+
+    if (childError?.settlement === "unknown") {
+      await publishFailure(childError);
+      throw childError;
+    }
+    const serverSettled = await closeServer(server);
+    if (!serverSettled) {
+      const failure = new FixedViteRunnerError(
+        childError?.failureCode ?? "P2_SERVER_CLOSE_FAILED",
+        "unknown",
+        "P2_SERVER_SETTLEMENT_UNKNOWN",
+      );
+      await publishFailure(failure);
+      throw failure;
+    }
+    await writer.publish(
+      "service-settled",
+      definition.profileId === "permissive" ? "closed" : "not-started",
+    );
+    if (childError !== null) {
+      await makeEventSegmentHostReadable();
+      await publishFailure(childError);
+      throw childError;
+    }
+
+    let output;
+    try {
+      output = await verifyFixedOutput();
+    } catch {
+      const failure = new FixedViteRunnerError("P2_RESULT_INVALID", "known");
+      await makeEventSegmentHostReadable();
+      await publishFailure(failure);
+      throw failure;
+    }
+    await writer.publish("output-exported", "validated-and-sealed");
+    const outputEntry = output.outputFiles[0];
+    if (outputEntry === undefined) {
+      throw new FixedViteRunnerError("P2_RESULT_INVALID", "known");
+    }
+    await writer.complete({
       sourceBeforeHash,
       sourceAfterHash: output.sourceAfterHash,
-      outputFiles: output.outputFiles,
-    })}\n`,
-  );
+      entryOutputBytes: outputEntry.bytes,
+    });
+    terminalPublished = true;
+  } finally {
+    await writer.close();
+  }
 }
 
 const invokedPath = process.argv[1];
@@ -919,9 +1294,16 @@ if (
   try {
     await executeFixedViteScenario();
   } catch (error) {
-    process.stderr.write(
-      `${JSON.stringify(projectFixedViteRunnerFailure(error))}\n`,
-    );
-    process.exitCode = 1;
+    if (error instanceof FixedViteTransferWriteError) {
+      process.stderr.write(
+        '{"status":"failure","code":"P2_TRANSFER_WRITE_FAILED"}\n',
+      );
+      process.exitCode = 70;
+    } else {
+      process.stderr.write(
+        `${JSON.stringify(projectFixedViteRunnerFailure(error))}\n`,
+      );
+      process.exitCode = 1;
+    }
   }
 }
