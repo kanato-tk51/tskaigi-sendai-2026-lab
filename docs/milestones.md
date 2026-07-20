@@ -1117,6 +1117,127 @@ The exhausted pairは全resultが`inconclusive / COMMAND_FAILURE`、completed st
 
 Next: none.
 
+### Selected Vite detached-transfer completion addendum (active 2026-07-20)
+
+The user explicitly resumed issue #54 for presentation-value work. The four
+existing selected-Vite attempts remain immutable `Inconclusive` evidence. A
+fifth, distinct measurement generation is reserved as follows:
+
+- Expected contract: `p2-vite-expected-20260720-02`
+- permissive run/root: `p2-vite-observe-p-20260720-02`
+- constrained run/root: `p2-vite-observe-c-20260720-02`
+- permissive container: `tskaigi-p2-vite-observe-p-20260720-02`
+- constrained container: `tskaigi-p2-vite-observe-c-20260720-02`
+
+The Docker-free diagnosis and proposed contract design for a detached lifecycle
+plus durable sanitized progress transfer received fresh independent review.
+That review confirmed the historical Docker CLI/container/runner/child
+settlement separation but **BLOCKED** implementation on P2-DT01 through
+P2-DT05. The contract-only remediation and fresh re-review are now complete.
+The re-review closes P2-DT01, P2-DT02, P2-DT04, and P2-DT05 and identifies two
+residual P2-DT03 force transitions. The residual contract remediation now
+assigns exact `child-force-sent` suffixes to the close-first residue race and
+both accepted-TERM-close force outcomes, retains the original failure, and
+keeps failed delivery or unproved absence unknown. P2-DT03 is closed only as
+remediated configuration intent. A fresh independent Docker-free re-review
+reproduced all force suffixes and canonical bounds, found no remaining finding,
+and approved only one bounded Docker-free implementation task. That task is now
+complete: the fixed bindings and mount, detached start/wait/final-inspect/remove
+graph, atomic v2 writer, stable bounded reader and closed validator, v4 gates,
+cooperative-fixture limitation marker, negative regressions, and exact staging
+rebuild are implemented. Docker-free verification passed with 112 P2 tests and
+79 M2-D tests. The rebuilt 128-file plan-order manifest digest is
+`17c0543f5a00c3952c632b5c07ccaffabb00dd8c7c0e46ece1eb798da1f92b9f`.
+Standing authorization was used only for the already-approved exact staging
+replacement/rebuild, not as a separate human review. Execution-gate approval,
+Docker execution, receipt review, and presentation promotion remain
+unauthorized.
+
+The fresh independent Docker-free execution-gate review is now complete and
+records `BLOCKED` on P2-DTG01 and P2-DTG02. The compiled host validator accepted
+unknown child/server settlement terminals whose failure code contradicted the
+durable record path, and a natural runner exit `70` with a valid prefix omitted
+`P2_ATTEMPT_TRANSFER_FAILED` from the canonical v4 attempt despite primary
+`P2_TRANSFER_WRITE_FAILED`. Existing focused/full checks passed but lacked
+those negative cases. No Docker action or execution gate was approved.
+
+The bounded Docker-free host remediation is now complete. The terminal
+validator binds unknown child settlement to invalid-PGID, bounded child
+failure, close-first residue, or unexpected post-acquisition runner failure;
+it separately binds unknown server settlement to pre-service close failure,
+the preserved known child failure, post-success server close failure, or an
+unexpected post-acquisition runner failure. Contradictory codes and
+child/server settlement-code substitutions fail closed. The v4 attempt now
+adds `P2_ATTEMPT_TRANSFER_FAILED` for established natural exit `70` even when
+the last durable artifact is a valid prefix. Focused regressions reproduce both
+original P2-DTG findings plus the closed path matrix. Docker-free P2
+verification passes 9 files / 114 tests. No staging byte was changed and no
+Docker action, result access, or execution gate occurred; standing
+authorization was not needed.
+
+The fresh independent Docker-free remediation re-review is now complete. Its
+compiled path-matrix assertion confirms that each unknown child/server path
+accepts only its durable failure code and rejects settlement-code
+substitution. Natural inspected exit `70` with a valid prefix now retains
+primary `progress-transfer / P2_TRANSFER_WRITE_FAILED` and the canonical
+`P2_ATTEMPT_TRANSFER_FAILED` issue without evidence access or a receipt.
+P2-DTG01/P2-DTG02 are closed with no new blocking or non-blocking finding. The
+unchanged 128-file staging digest remains `17c0543f...`, both exact active
+roots remain absent, and no Docker action occurred. The review approves only
+one later argument-free `npm run p2:execute:vite` pair attempt after fresh
+candidate/staging/script/root-absence revalidation, with no retry and
+permissive completion required before constrained setup.
+
+The exact one-shot execution is now complete. A fresh worker reproduced all 19
+approved tracked/compiled hashes, the exact 128-file source-equal non-symlink
+staging tree and `17c0543f...` manifest, the fixed tool versions and script,
+and both absent active roots. It then used the `continue-repository-work`
+standing authorization for exactly one argument-free
+`npm run p2:execute:vite` invocation. This was not a separate human review.
+The command exited 1 and was not retried. Its bounded direct stdout reports an
+`inconclusive` v4 pair with `PAIR_IDENTITY_MISMATCH`; only permissive is
+represented, its attempt is written, evidence is `not-inspected`, no receipt
+is written, and the direct issues retain Docker lifecycle failure, unknown
+runner settlement, transfer failure, and output not inspected. The worker did
+not access either result root or classify the candidate result.
+
+The required order is: contract, fresh independent Docker-free review,
+Docker-free implementation and static/unit verification, fresh execution gate,
+one exact one-shot execution without retry, and fresh result review. Permissive
+must complete before constrained may begin, and only a complete same-image pair
+may be promoted.
+
+The Docker-free diagnosis and proposed exact contract are now recorded in
+[`p2-vite-detached-transfer-contract.md`](p2-vite-detached-transfer-contract.md).
+They separate Docker CLI/container, runner, and child settlement; replace the
+attached evidence stream with a detached start and bounded durable snapshot;
+close the host transitions and the residual P2-DT03 force branches; and retain
+unchanged time/evidence/permission boundaries. The contract is now implemented
+and statically verified. The one-shot gate is exhausted, but the direct bounded
+projection is not a reviewed receipt or capability observation. No result-root
+access, receipt acceptance, selected-Vite promotion, or experiment-matrix
+`Observed` change has occurred for `20260720-02`.
+
+The exact result-review prompt is now saved at
+[`prompts/reviews/p2-vite-detached-transfer-result-review.md`](../prompts/reviews/p2-vite-detached-transfer-result-review.md).
+It binds the approved candidate, direct bounded stdout, and only the two fixed
+active result roots without rerun or repair.
+
+The
+[`fresh Docker-free result review`](reviews/p2-vite-detached-transfer-result.md)
+reproduced the exact 19-file candidate identity, 128-file staging manifest,
+fixed root/control modes and hashes, canonical v4 attempt and v2 progress
+bytes, and the pure 598-byte stdout projection. The actual null container exit
+makes the serialized terminal invalid under the approved validator; the
+canonical attempt therefore retains only its eight-record identity-bound
+prefix, no runner disposition, evidence not inspected, and no receipt. The
+review finds no blocking or non-blocking finding and accepts only the fifth
+immutable Inconclusive attempt. Selected Vite and experiment-matrix Observed
+remain unmeasured, the three-talk-table limit remains intact, and no retry or
+runtime recovery is authorized.
+
+Next: none.
+
 ### Goal
 
 同一のimmutable container inputとharmless control fixtureをpermissive/constrainedの固定runtime policyで実行し、environment、file、write、fixed loopback、fixed child、result channelのexposure/denialをhost inspectionとcontainer内evidenceの両方で検証する。Profile controlをadapter route、experiment-matrix route Observed、presentation evidenceへ昇格しない。

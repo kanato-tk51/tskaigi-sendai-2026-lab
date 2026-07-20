@@ -5,11 +5,13 @@ Inconclusive attempt, and the completed presentation baseline is unchanged.
 The independent `20260720-01` diagnosis, contract review, Docker-free
 P2-V12/P2-V13 implementation, execution-gate review, exact one-shot execution,
 and fresh Docker-free result review are complete. The new outcome is accepted
-only as the fourth immutable Inconclusive attempt.**
+only as the fourth immutable Inconclusive attempt. The independent
+`20260720-02` detached-transfer result review is also complete and accepts its
+outcome only as the fifth immutable Inconclusive attempt.**
 
 This addendum reopens only the selected Vite permissive/constrained comparison.
 The accepted codegen pair, P3 result, P4 projections, frozen M4 track, and the
-four exhausted Vite attempts remain explicit without changing selected Vite or
+five exhausted Vite attempts remain explicit without changing selected Vite or
 experiment-matrix Observed.
 
 ## Diagnosis
@@ -465,6 +467,120 @@ gate is open.
 
 Selected Vite Observed remains unmeasured, the updated talk projection retains
 the explicit three-attempt gap, and no retry or runtime recovery is authorized.
+
+Next: none.
+
+## Active completion generation: `20260720-02`
+
+Issue #54 is explicitly resumed. This generation does not reuse or mutate any
+prior run ID, result root, container name, receipt, progress prefix, or staged
+input. Its fixed identities are:
+
+- Expected: `p2-vite-expected-20260720-02`
+- permissive: `p2-vite-observe-p-20260720-02` /
+  `tskaigi-p2-vite-observe-p-20260720-02`
+- constrained: `p2-vite-observe-c-20260720-02` /
+  `tskaigi-p2-vite-observe-c-20260720-02`
+
+The previous generation established a sanitized prefix through
+`child-launched` and known settlement of the host attached-start CLI, but did
+not establish child, runner, or container settlement and therefore produced no
+receipt. The first fresh Docker-free contract review **BLOCKED** on P2-DT01
+through P2-DT05. The contract-only remediation and fresh re-review are now
+complete. The re-review closes P2-DT01, P2-DT02, P2-DT04, and P2-DT05 and
+identifies two residual P2-DT03 force-settlement races. The residual remediation
+now gives the close-first residue race and both accepted-TERM-close force
+outcomes exact record suffixes while retaining the original failure and
+unknown-settlement barriers. This closes P2-DT03 only as configuration intent.
+The fresh independent Docker-free residual re-review reproduces the suffixes
+and canonical bounds, finds no remaining finding, and approves only one bounded
+Docker-free implementation task.
+
+That bounded implementation is now complete. The active plan and adapter bind
+only `20260720-02`; the Vite create command adds exactly one fixed progress
+mount; the host uses detached start, remaining-budget wait, one final inspect,
+fixed removal, stable v2 transfer, and v4 attempt/receipt/pair gates. The runner
+uses atomic v2 publication and preserves the two reviewed force races. Every
+attempt, receipt, and pair projection carries the cooperative-fixture trust
+marker. Focused and full Docker-free verification passed, and the exact
+128-file staging closure was rebuilt with plan-order manifest digest
+`17c0543f5a00c3952c632b5c07ccaffabb00dd8c7c0e46ece1eb798da1f92b9f`.
+Standing authorization was used only for this already-approved exact staging
+replacement/rebuild; it was not a separate human review.
+
+The Docker-free diagnosis, proposed detached lifecycle/durable transfer
+contract, and blocking review are recorded in
+[`p2-vite-detached-transfer-contract.md`](p2-vite-detached-transfer-contract.md).
+The implementation and staging candidate are static/unit evidence only. No new
+runtime result exists. No Docker action, execution gate, constrained run,
+receipt, or `Observed` promotion is implied.
+
+The fresh independent Docker-free execution-gate review is now complete and
+records `BLOCKED` on P2-DTG01 and P2-DTG02. It reproduced that the host accepts
+unknown-settlement terminal failure codes that contradict their durable record
+paths, and that natural exit `70` with a valid prefix selects primary
+`P2_TRANSFER_WRITE_FAILED` without the canonical transfer-failure issue. The
+review did not run Docker or open an execution gate.
+
+The bounded Docker-free host remediation is now complete. Unknown child and
+server settlement terminals are validated against the durable path's exact
+failure code, including invalid process-group, bounded child failure,
+close-first residue, known child result, pre-service close, and unexpected
+post-acquisition runner branches. The v4 attempt also projects
+`P2_ATTEMPT_TRANSFER_FAILED` from established natural exit `70` when the last
+durable snapshot remains a valid prefix. Focused regressions reject both
+reviewed contradictory terminals and retain the exact exit-70 issue. Full P2
+verification passes 9 files / 114 tests. These are static/unit results only;
+the approved staging bytes were not changed and the remediation itself opened
+no runtime gate.
+
+The fresh independent Docker-free remediation re-review is now complete and
+closes P2-DTG01/P2-DTG02 with no new blocking or non-blocking finding. Its
+compiled matrix accepted only the durable failure code for each unknown child
+and server path and rejected settlement-code substitutions. Natural inspected
+exit `70` with a valid prefix retained primary
+`progress-transfer / P2_TRANSFER_WRITE_FAILED` and the canonical transfer
+issue without evidence access or a receipt. The exact 128-file staging digest
+remains `17c0543f...`, and both active roots remain absent. The review approves
+only one later argument-free `npm run p2:execute:vite` pair attempt after fresh
+candidate/staging/script/root-absence revalidation, with no retry and no
+constrained setup before a complete permissive receipt. At re-review time no
+fifth attempt or runtime result existed.
+
+The exact one-shot execution is now complete. A fresh worker reproduced all 19
+approved tracked/compiled hashes, the exact 128-file source-equal non-symlink
+staging tree and `17c0543f...` manifest, fixed tool versions and script, and
+both absent active roots. It then used the `continue-repository-work` standing
+authorization for exactly one argument-free `npm run p2:execute:vite`
+invocation. This was not a separate human review. The command exited 1 and was
+not retried. Its bounded direct stdout reports an `inconclusive`
+`p2-vite-pair/v4` projection with `PAIR_IDENTITY_MISMATCH`; only permissive is
+represented, its attempt is written, evidence is `not-inspected`, no receipt
+is written, and the direct issues retain Docker lifecycle failure, unknown
+runner settlement, transfer failure, and output not inspected. The worker did
+not access either active result root, accept a receipt, or classify the
+candidate result. Selected Vite and experiment-matrix `Observed` remain
+unchanged and unmeasured.
+
+The exact result-review prompt is now saved at
+[`prompts/reviews/p2-vite-detached-transfer-result-review.md`](../prompts/reviews/p2-vite-detached-transfer-result-review.md).
+It binds the approved candidate, direct bounded stdout, and only the two fixed
+active result roots without rerun or repair.
+
+The
+[`fresh Docker-free result review`](reviews/p2-vite-detached-transfer-result.md)
+reproduced all 19 candidate hashes, the exact 128-file staging identity, the
+non-symlink `0700` permissive root, canonical `0600` 1,462-byte v4 attempt,
+sealed `0555` progress directory, canonical `0444` 866-byte v2 control record,
+and absent summary, temporary progress file, and constrained root. With the
+actual null inspected container exit, the approved validator rejects the raw
+terminal as `P2_TRANSFER_SEQUENCE_INVALID` and retains only the eight-record
+identity-bound prefix in the canonical attempt. The pure projectors reproduce
+the exact 598-byte stdout. The review finds no blocking or non-blocking finding
+and accepts only the fifth immutable Inconclusive attempt. It changes no
+selected Vite or experiment-matrix Observed value and authorizes no retry or
+runtime recovery. The tracked projection retains all five attempts in exactly
+three talk tables.
 
 Next: none.
 

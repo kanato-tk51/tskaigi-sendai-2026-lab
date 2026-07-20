@@ -145,6 +145,32 @@ neither child settlement nor a capability result. The tracked talk projection
 now retains all four attempts while selected Vite and experiment-matrix
 Observed remain unmeasured.
 
+The explicitly resumed `20260720-02` generation now has a Docker-free detached
+lifecycle/durable-transfer implementation candidate and exact 128-file staging
+rebuild. Its v2 progress and v4 result gates retain the
+`repository-cooperative-fixture` limitation; they are static/unit evidence only.
+The fresh Docker-free execution-gate review is `BLOCKED` on host-side terminal
+failure-code binding and exit-70 transfer-issue projection findings P2-DTG01 and
+P2-DTG02. The bounded Docker-free host remediation now closes both findings in
+tracked source and focused tests: unknown child/server terminals preserve the
+durable path's exact failure code, and natural exit `70` carries the canonical
+transfer issue even with a valid prefix. The fresh independent Docker-free
+execution-gate re-review closes both findings with no new finding and approves
+only one later argument-free pair attempt after exact preflight, with no retry
+and permissive completion before constrained setup. A fresh worker reproduced
+that preflight and used standing authorization for the exact command once; it
+exited 1 and was not retried. The bounded v4 stdout is `Inconclusive`, contains
+only a written permissive attempt with evidence not inspected and no receipt,
+and does not represent constrained. Neither result root was accessed or
+classified. No selected-Vite promotion or experiment-matrix `Observed` change
+exists. The fresh Docker-free result review reproduced the exact canonical v4
+attempt, invalid eight-record retained progress prefix, fixed root states,
+candidate/staging identities, and pure bounded stdout. It accepts this outcome
+only as the fifth immutable Inconclusive attempt. The tracked talk projection
+now retains all five attempts in exactly three tables while selected Vite and
+experiment-matrix `Observed` remain unmeasured; no retry or runtime recovery is
+authorized.
+
 ## Purpose
 
 The repository has accumulated a reusable high-assurance lab track, especially
