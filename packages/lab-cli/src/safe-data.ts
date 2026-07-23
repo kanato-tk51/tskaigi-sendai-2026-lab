@@ -5,6 +5,22 @@ import { LabError } from "./errors.js";
 
 export type PlainRecord = Readonly<Record<string, unknown>>;
 
+const typedArrayPrototype = Object.getPrototypeOf(
+  Uint8Array.prototype,
+) as object;
+const typedArrayBufferGetter = Object.getOwnPropertyDescriptor(
+  typedArrayPrototype,
+  "buffer",
+)?.get;
+const typedArrayByteOffsetGetter = Object.getOwnPropertyDescriptor(
+  typedArrayPrototype,
+  "byteOffset",
+)?.get;
+const typedArrayByteLengthGetter = Object.getOwnPropertyDescriptor(
+  typedArrayPrototype,
+  "byteLength",
+)?.get;
+
 function fail(code: LabErrorCode): never {
   throw new LabError(code);
 }
@@ -131,4 +147,50 @@ export function compareIds(left: string, right: string): number {
   if (left < right) return -1;
   if (left > right) return 1;
   return 0;
+}
+
+export function copyPlainBytes(input: unknown, code: LabErrorCode): Uint8Array {
+  try {
+    if (
+      typeof input !== "object" ||
+      input === null ||
+      types.isProxy(input) ||
+      !types.isUint8Array(input) ||
+      typedArrayBufferGetter === undefined ||
+      typedArrayByteOffsetGetter === undefined ||
+      typedArrayByteLengthGetter === undefined
+    ) {
+      return fail(code);
+    }
+    const prototype = Object.getPrototypeOf(input);
+    if (prototype !== Uint8Array.prototype && prototype !== Buffer.prototype) {
+      return fail(code);
+    }
+    if (Object.getOwnPropertySymbols(input).length !== 0) return fail(code);
+    const buffer = typedArrayBufferGetter.call(input) as ArrayBufferLike;
+    if (types.isSharedArrayBuffer(buffer)) return fail(code);
+    const byteOffset = typedArrayByteOffsetGetter.call(input) as number;
+    const byteLength = typedArrayByteLengthGetter.call(input) as number;
+    if (
+      !Number.isSafeInteger(byteOffset) ||
+      !Number.isSafeInteger(byteLength) ||
+      byteOffset < 0 ||
+      byteLength < 0
+    ) {
+      return fail(code);
+    }
+    const ownNames = Object.getOwnPropertyNames(input);
+    if (
+      ownNames.length !== byteLength ||
+      ownNames.some((name, index) => name !== String(index))
+    ) {
+      return fail(code);
+    }
+    const output = new Uint8Array(byteLength);
+    output.set(new Uint8Array(buffer, byteOffset, byteLength));
+    return output;
+  } catch (error) {
+    if (error instanceof LabError) throw error;
+    return fail(code);
+  }
 }
