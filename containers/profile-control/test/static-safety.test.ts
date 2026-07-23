@@ -24,5 +24,6 @@ describe("M4 static safety", () => {
     );
     expect(stderr).toBe("");
     expect(stdout).toContain("M4 static contract verified");
+    expect(stdout).toContain("activation wrapper constructed but not invoked");
   });
 });

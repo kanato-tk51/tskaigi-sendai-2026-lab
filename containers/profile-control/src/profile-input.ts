@@ -1,7 +1,10 @@
-import { types } from "node:util";
-
 import { FIXED_CONTROL_IMAGE_DIGEST } from "./constants.js";
 import { failProfile } from "./errors.js";
+import {
+  assertExactKeys,
+  readPlainRecord,
+  snapshotBytes,
+} from "./safe-data.js";
 import type { ExecutionProfile, ProfileId } from "./types.js";
 import { validateExecutionProfile } from "./validation.js";
 
@@ -26,15 +29,13 @@ export function parseCanonicalExecutionProfileBytes(input: {
   readonly bytes: Uint8Array;
   readonly profileId: ProfileId;
 }): ExecutionProfile {
-  if (
-    !types.isUint8Array(input.bytes) ||
-    input.bytes.buffer instanceof SharedArrayBuffer ||
-    input.bytes.byteLength === 0 ||
-    input.bytes.byteLength > 65_536
-  ) {
-    return failProfile("INVALID_PROFILE");
-  }
-  const bytes = Uint8Array.from(input.bytes);
+  const wrapper = readPlainRecord(input, "INVALID_PROFILE");
+  assertExactKeys(wrapper, ["bytes", "profileId"], "INVALID_PROFILE");
+  const bytes = snapshotBytes(wrapper.bytes, {
+    code: "INVALID_PROFILE",
+    maximum: 65_536,
+    allowEmpty: false,
+  });
   let raw: unknown;
   try {
     const text = fatalDecoder.decode(bytes);
@@ -52,7 +53,7 @@ export function parseCanonicalExecutionProfileBytes(input: {
   }
   const profile = validateExecutionProfile(raw);
   if (
-    profile.profileId !== input.profileId ||
+    profile.profileId !== wrapper.profileId ||
     profile.containerImageDigest !== FIXED_CONTROL_IMAGE_DIGEST ||
     !equalBytes(bytes, serializeCanonicalExecutionProfile(profile))
   ) {

@@ -1,5 +1,3 @@
-import { types } from "node:util";
-
 import {
   parseCanonicalControlEvidenceBytes,
   parseCanonicalControlManifestBytes,
@@ -29,8 +27,10 @@ import { validateDockerInspectProjection } from "./inspect.js";
 import {
   assertBoolean,
   assertExactKeys,
+  captureAuthority,
   readPlainArray,
   readPlainRecord,
+  snapshotBytes,
 } from "./safe-data.js";
 import {
   assertAcceptedImageStagingSnapshot,
@@ -55,6 +55,7 @@ const COMMAND_RESULT_KEYS = Object.freeze([
   "exitCode",
   "timedOut",
   "outputLimitExceeded",
+  "closeObserved",
   "stdoutBytes",
   "stderrBytes",
   "payload",
@@ -62,12 +63,7 @@ const COMMAND_RESULT_KEYS = Object.freeze([
 const TRANSFER_KEYS = Object.freeze([
   "manifestBefore",
   "manifestAfter",
-  "manifestIdentityBefore",
-  "manifestIdentityAfter",
-  "manifestTypeBefore",
-  "manifestTypeAfter",
-  "manifestSymlinkBefore",
-  "manifestSymlinkAfter",
+  "manifestIdentityStable",
   "controlEvidence",
   "resultFiles",
   "scratchFiles",
@@ -183,8 +179,10 @@ async function runCommand(
   }
   const timedOut = assertExecutionBoolean(value.timedOut);
   const outputLimitExceeded = assertExecutionBoolean(value.outputLimitExceeded);
+  const closeObserved = assertExecutionBoolean(value.closeObserved);
   const stdoutBytes = nonNegativeInteger(value.stdoutBytes);
   const stderrBytes = nonNegativeInteger(value.stderrBytes);
+  if (!closeObserved) return failStep("COMMAND_FAILURE");
   if (outputLimitExceeded || stdoutBytes + stderrBytes > LIMITS.outputBytes) {
     return failStep("OUTPUT_LIMIT");
   }
@@ -211,15 +209,15 @@ function assertExecutionBoolean(input: unknown): boolean {
 }
 
 function immutableBytes(input: unknown): Uint8Array {
-  if (
-    !types.isUint8Array(input) ||
-    input.buffer instanceof SharedArrayBuffer ||
-    input.byteLength === 0 ||
-    input.byteLength > LIMITS.evidenceBytes
-  ) {
+  try {
+    return snapshotBytes(input, {
+      code: "EXECUTION_INCONCLUSIVE",
+      maximum: LIMITS.evidenceBytes,
+      allowEmpty: false,
+    });
+  } catch {
     return failStep("TRANSFER_FAILURE");
   }
-  return Uint8Array.from(input);
 }
 
 function equalBytes(left: Uint8Array, right: Uint8Array): boolean {
@@ -230,16 +228,17 @@ function equalBytes(left: Uint8Array, right: Uint8Array): boolean {
 }
 
 function validatePreBuildRuntimeVersion(result: CommandResult): void {
-  if (
-    !types.isUint8Array(result.payload) ||
-    result.payload.buffer instanceof SharedArrayBuffer ||
-    result.payload.byteLength === 0 ||
-    result.payload.byteLength !== result.stdoutBytes ||
-    result.payload.byteLength > LIMITS.outputBytes
-  ) {
+  let bytes: Uint8Array;
+  try {
+    bytes = snapshotBytes(result.payload, {
+      code: "EXECUTION_INCONCLUSIVE",
+      maximum: LIMITS.outputBytes,
+      allowEmpty: false,
+    });
+  } catch {
     failStep("COMMAND_FAILURE");
   }
-  const bytes = Uint8Array.from(result.payload);
+  if (bytes.byteLength !== result.stdoutBytes) failStep("COMMAND_FAILURE");
   let text: string;
   try {
     text = fatalDecoder.decode(bytes);
@@ -301,27 +300,10 @@ function exactFileInventory(input: unknown, expected: readonly string[]): void {
   }
 }
 
-function validateManifestIdentity(
+function validateManifestIdentityStable(
   value: Readonly<Record<string, unknown>>,
 ): void {
-  for (const key of [
-    "manifestIdentityBefore",
-    "manifestIdentityAfter",
-  ] as const) {
-    if (
-      typeof value[key] !== "string" ||
-      !/^m4-file-[a-f0-9]{32}$/u.test(value[key])
-    ) {
-      failStep("TRANSFER_FAILURE");
-    }
-  }
-  if (
-    value.manifestIdentityBefore !== value.manifestIdentityAfter ||
-    value.manifestTypeBefore !== "regular-file" ||
-    value.manifestTypeAfter !== "regular-file" ||
-    assertExecutionBoolean(value.manifestSymlinkBefore) ||
-    assertExecutionBoolean(value.manifestSymlinkAfter)
-  ) {
+  if (assertExecutionBoolean(value.manifestIdentityStable) !== true) {
     failStep("IMMUTABLE_INPUT_CHANGED");
   }
 }
@@ -409,7 +391,7 @@ async function executeProfile(input: {
     } catch {
       return failStep("TRANSFER_FAILURE");
     }
-    validateManifestIdentity(transfer);
+    validateManifestIdentityStable(transfer);
     const manifestBefore = immutableBytes(transfer.manifestBefore);
     const manifestAfter = immutableBytes(transfer.manifestAfter);
     const expectedManifest = serializeCanonicalControlManifest(
@@ -540,6 +522,43 @@ function validateExecutionPlan(input: FixedExecutionInput): ProfileControlPair {
   return pair;
 }
 
+function snapshotExecutionInput(input: unknown): Readonly<{
+  fixedInput: FixedExecutionInput;
+  pair: ProfileControlPair;
+}> {
+  const wrapper = readPlainRecord(input, "EXECUTION_INCONCLUSIVE");
+  assertExactKeys(
+    wrapper,
+    [
+      "acceptedSnapshot",
+      "pair",
+      "imageBuildPlan",
+      "profilePlans",
+      "permissiveLayout",
+      "constrainedLayout",
+      "backend",
+    ],
+    "EXECUTION_INCONCLUSIVE",
+  );
+  const fixedInput = Object.freeze({
+    acceptedSnapshot: wrapper.acceptedSnapshot as AcceptedImageStagingSnapshot,
+    pair: wrapper.pair as ProfileControlPair,
+    imageBuildPlan: wrapper.imageBuildPlan as ImageBuildPlan,
+    profilePlans: wrapper.profilePlans as ProfilePairDockerPlans,
+    permissiveLayout: wrapper.permissiveLayout as FixedRuntimeLayout,
+    constrainedLayout: wrapper.constrainedLayout as FixedRuntimeLayout,
+    backend: captureAuthority<FixedExecutionBackend>(
+      wrapper.backend,
+      ["stageBuildContext", "readBuildContext", "run", "transfer"],
+      "EXECUTION_INCONCLUSIVE",
+    ),
+  });
+  return Object.freeze({
+    fixedInput,
+    pair: validateExecutionPlan(fixedInput),
+  });
+}
+
 function validateExistingImageExecutionPlan(
   input: FixedExistingImageExecutionInput,
 ): ProfileControlPair {
@@ -572,43 +591,81 @@ function validateExistingImageExecutionPlan(
   return pair;
 }
 
+function snapshotExistingImageExecutionInput(input: unknown): Readonly<{
+  fixedInput: FixedExistingImageExecutionInput;
+  pair: ProfileControlPair;
+}> {
+  const wrapper = readPlainRecord(input, "EXECUTION_INCONCLUSIVE");
+  assertExactKeys(
+    wrapper,
+    [
+      "acceptedSnapshot",
+      "pair",
+      "profilePlans",
+      "permissiveLayout",
+      "constrainedLayout",
+      "backend",
+    ],
+    "EXECUTION_INCONCLUSIVE",
+  );
+  const fixedInput = Object.freeze({
+    acceptedSnapshot: wrapper.acceptedSnapshot as AcceptedImageStagingSnapshot,
+    pair: wrapper.pair as ProfileControlPair,
+    profilePlans: wrapper.profilePlans as ProfilePairDockerPlans,
+    permissiveLayout: wrapper.permissiveLayout as FixedRuntimeLayout,
+    constrainedLayout: wrapper.constrainedLayout as FixedRuntimeLayout,
+    backend: captureAuthority<FixedExistingImageExecutionBackend>(
+      wrapper.backend,
+      ["run", "transfer", "recordProfileResult", "cleanup"],
+      "EXECUTION_INCONCLUSIVE",
+    ),
+  });
+  return Object.freeze({
+    fixedInput,
+    pair: validateExistingImageExecutionPlan(fixedInput),
+  });
+}
+
 export async function executeFixedProfilePair(
   input: FixedExecutionInput,
 ): Promise<PairExecutionResult> {
   const completedSteps: string[] = [];
   let pair: ProfileControlPair;
+  let fixedInput: FixedExecutionInput;
   try {
-    pair = validateExecutionPlan(input);
+    const snapshot = snapshotExecutionInput(input);
+    fixedInput = snapshot.fixedInput;
+    pair = snapshot.pair;
     try {
-      await input.backend.stageBuildContext(
-        input.permissiveLayout.stagingRoot,
-        copyAcceptedStagingFiles(input.acceptedSnapshot),
+      await fixedInput.backend.stageBuildContext(
+        fixedInput.permissiveLayout.stagingRoot,
+        copyAcceptedStagingFiles(fixedInput.acceptedSnapshot),
       );
-      const stagedFiles = await input.backend.readBuildContext(
-        input.permissiveLayout.stagingRoot,
+      const stagedFiles = await fixedInput.backend.readBuildContext(
+        fixedInput.permissiveLayout.stagingRoot,
       );
-      verifyAcceptedStagingFiles(input.acceptedSnapshot, stagedFiles);
+      verifyAcceptedStagingFiles(fixedInput.acceptedSnapshot, stagedFiles);
     } catch {
       return failStep("STAGING_FAILURE");
     }
     completedSteps.push("stage-build-context");
     await runCommand(
-      input.backend,
+      fixedInput.backend,
       "doctor",
-      input.imageBuildPlan.doctor,
+      fixedInput.imageBuildPlan.doctor,
       completedSteps,
       validatePreBuildRuntimeVersion,
     );
     await runCommand(
-      input.backend,
+      fixedInput.backend,
       "build",
-      input.imageBuildPlan.build,
+      fixedInput.imageBuildPlan.build,
       completedSteps,
     );
     const imageInspection = await runCommand(
-      input.backend,
+      fixedInput.backend,
       "inspect-image",
-      input.imageBuildPlan.inspectImage,
+      fixedInput.imageBuildPlan.inspectImage,
       completedSteps,
     );
     if (imageInspection.payload !== pair.containerImageDigest) {
@@ -625,18 +682,18 @@ export async function executeFixedProfilePair(
   }
   const permissive = await executeProfile({
     definition: pair.permissive,
-    plan: input.profilePlans.permissive,
-    layout: input.permissiveLayout,
-    baseEnvironmentKeys: input.acceptedSnapshot.baseEnvironmentKeys,
-    backend: input.backend,
+    plan: fixedInput.profilePlans.permissive,
+    layout: fixedInput.permissiveLayout,
+    baseEnvironmentKeys: fixedInput.acceptedSnapshot.baseEnvironmentKeys,
+    backend: fixedInput.backend,
     allCompletedSteps: completedSteps,
   });
   const constrained = await executeProfile({
     definition: pair.constrained,
-    plan: input.profilePlans.constrained,
-    layout: input.constrainedLayout,
-    baseEnvironmentKeys: input.acceptedSnapshot.baseEnvironmentKeys,
-    backend: input.backend,
+    plan: fixedInput.profilePlans.constrained,
+    layout: fixedInput.constrainedLayout,
+    baseEnvironmentKeys: fixedInput.acceptedSnapshot.baseEnvironmentKeys,
+    backend: fixedInput.backend,
     allCompletedSteps: completedSteps,
   });
   const firstFailure =
@@ -658,39 +715,40 @@ export async function executeFixedExistingImageProfilePair(
   let primaryFailure: ExecutionFailureCode | null = null;
   let permissive: ProfileExecutionResult | null = null;
   let constrained: ProfileExecutionResult | null = null;
+  let fixedInput: FixedExistingImageExecutionInput | null = null;
   try {
-    pair = validateExistingImageExecutionPlan(input);
+    const snapshot = snapshotExistingImageExecutionInput(input);
+    fixedInput = snapshot.fixedInput;
+    pair = snapshot.pair;
     permissive = await executeProfile({
       definition: pair.permissive,
-      plan: input.profilePlans.permissive,
-      layout: input.permissiveLayout,
-      baseEnvironmentKeys: input.acceptedSnapshot.baseEnvironmentKeys,
-      backend: input.backend,
+      plan: fixedInput.profilePlans.permissive,
+      layout: fixedInput.permissiveLayout,
+      baseEnvironmentKeys: fixedInput.acceptedSnapshot.baseEnvironmentKeys,
+      backend: fixedInput.backend,
       allCompletedSteps: completedSteps,
-      recordProfileResult: input.backend.recordProfileResult.bind(
-        input.backend,
-      ),
+      recordProfileResult: fixedInput.backend.recordProfileResult,
     });
     constrained = await executeProfile({
       definition: pair.constrained,
-      plan: input.profilePlans.constrained,
-      layout: input.constrainedLayout,
-      baseEnvironmentKeys: input.acceptedSnapshot.baseEnvironmentKeys,
-      backend: input.backend,
+      plan: fixedInput.profilePlans.constrained,
+      layout: fixedInput.constrainedLayout,
+      baseEnvironmentKeys: fixedInput.acceptedSnapshot.baseEnvironmentKeys,
+      backend: fixedInput.backend,
       allCompletedSteps: completedSteps,
-      recordProfileResult: input.backend.recordProfileResult.bind(
-        input.backend,
-      ),
+      recordProfileResult: fixedInput.backend.recordProfileResult,
     });
     primaryFailure =
       permissive.primaryFailure ?? constrained.primaryFailure ?? null;
   } catch (error) {
     primaryFailure = failureCode(error);
   } finally {
-    try {
-      await input.backend.cleanup();
-    } catch {
-      primaryFailure ??= "CLEANUP_FAILURE";
+    if (fixedInput !== null) {
+      try {
+        await fixedInput.backend.cleanup();
+      } catch {
+        primaryFailure ??= "CLEANUP_FAILURE";
+      }
     }
   }
   return Object.freeze({

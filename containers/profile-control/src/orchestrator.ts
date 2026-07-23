@@ -1,4 +1,5 @@
 import { failProfile } from "./errors.js";
+import { readPlainArray } from "./safe-data.js";
 
 export const ORCHESTRATOR_OPERATIONS = Object.freeze([
   "doctor",
@@ -13,13 +14,14 @@ export type OrchestratorOperation = (typeof ORCHESTRATOR_OPERATIONS)[number];
 export function parseOrchestratorArguments(
   argv: readonly string[],
 ): OrchestratorOperation {
+  const args = readPlainArray(argv, "ORCHESTRATOR_ARGUMENT_REJECTED");
   if (
-    argv.length !== 1 ||
-    !ORCHESTRATOR_OPERATIONS.includes(argv[0] as OrchestratorOperation)
+    args.length !== 1 ||
+    !ORCHESTRATOR_OPERATIONS.includes(args[0] as OrchestratorOperation)
   ) {
     return failProfile("ORCHESTRATOR_ARGUMENT_REJECTED");
   }
-  return argv[0] as OrchestratorOperation;
+  return args[0] as OrchestratorOperation;
 }
 
 export async function runApprovedOrchestrator(

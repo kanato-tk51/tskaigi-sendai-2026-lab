@@ -1,5 +1,4 @@
 import { createHash } from "node:crypto";
-import { types } from "node:util";
 
 import { CONTROL_COMPLETION_SCHEMA_VERSION, CONTROL_IDS } from "./constants.js";
 import {
@@ -7,6 +6,8 @@ import {
   parseCanonicalControlManifestBytes,
 } from "./canonical.js";
 import { failProfile } from "./errors.js";
+import { validateControlEvidence } from "./evidence.js";
+import { validateHostInspection } from "./inspect.js";
 import {
   assertBoolean,
   assertExactKeys,
@@ -15,6 +16,7 @@ import {
   assertString,
   readPlainArray,
   readPlainRecord,
+  snapshotBytes,
 } from "./safe-data.js";
 import type {
   ControlCompletion,
@@ -23,6 +25,7 @@ import type {
   HostInspection,
   ProfileId,
 } from "./types.js";
+import { validateControlManifest } from "./validation.js";
 
 const COMPLETION_KEYS = Object.freeze([
   "schemaVersion",
@@ -58,14 +61,11 @@ const PERMISSIVE_INVENTORY = Object.freeze([
 ] as const);
 
 function immutableBytes(input: unknown): Uint8Array {
-  if (
-    !types.isUint8Array(input) ||
-    input.buffer instanceof SharedArrayBuffer ||
-    input.byteLength === 0
-  ) {
-    return failProfile("INVALID_CONTROL_COMPLETION");
-  }
-  return Uint8Array.from(input);
+  return snapshotBytes(input, {
+    code: "INVALID_CONTROL_COMPLETION",
+    maximum: 65_536,
+    allowEmpty: false,
+  });
 }
 
 function digest(input: unknown): `sha256:${string}` {
@@ -157,13 +157,30 @@ export function crossValidateCompleteBundle(input: {
   readonly hostInspectionBytes: Uint8Array;
   readonly controlEvidenceBytes: Uint8Array;
 }): void {
-  const { manifest, inspection, evidence, completion } = input;
-  const parsedManifest = parseCanonicalControlManifestBytes(
-    input.manifestBytes,
+  const wrapper = readPlainRecord(input, "INVALID_CONTROL_COMPLETION");
+  assertExactKeys(
+    wrapper,
+    [
+      "manifest",
+      "inspection",
+      "evidence",
+      "completion",
+      "manifestBytes",
+      "hostInspectionBytes",
+      "controlEvidenceBytes",
+    ],
+    "INVALID_CONTROL_COMPLETION",
   );
-  const parsedEvidence = parseCanonicalControlEvidenceBytes(
-    input.controlEvidenceBytes,
-  );
+  const manifest = validateControlManifest(wrapper.manifest);
+  const inspection = validateHostInspection(wrapper.inspection);
+  const evidence = validateControlEvidence(wrapper.evidence);
+  const completion = validateControlCompletion(wrapper.completion);
+  const manifestBytes = immutableBytes(wrapper.manifestBytes);
+  const hostInspectionBytes = immutableBytes(wrapper.hostInspectionBytes);
+  const controlEvidenceBytes = immutableBytes(wrapper.controlEvidenceBytes);
+  const parsedManifest = parseCanonicalControlManifestBytes(manifestBytes);
+  const parsedEvidence =
+    parseCanonicalControlEvidenceBytes(controlEvidenceBytes);
   if (
     [inspection, evidence, completion].some(
       (entry) =>
@@ -174,12 +191,11 @@ export function crossValidateCompleteBundle(input: {
     ) ||
     parsedManifest.runId !== manifest.runId ||
     parsedEvidence.runId !== evidence.runId ||
-    completion.manifestSha256 !== digest(input.manifestBytes) ||
-    completion.hostInspectionSha256 !== digest(input.hostInspectionBytes) ||
-    completion.controlEvidenceSha256 !== digest(input.controlEvidenceBytes) ||
-    new TextDecoder("utf-8", { fatal: true }).decode(
-      immutableBytes(input.hostInspectionBytes),
-    ) !== `${JSON.stringify(inspection)}\n` ||
+    completion.manifestSha256 !== digest(manifestBytes) ||
+    completion.hostInspectionSha256 !== digest(hostInspectionBytes) ||
+    completion.controlEvidenceSha256 !== digest(controlEvidenceBytes) ||
+    new TextDecoder("utf-8", { fatal: true }).decode(hostInspectionBytes) !==
+      `${JSON.stringify(inspection)}\n` ||
     evidence.complete !== true ||
     completion.complete !== true
   ) {
@@ -195,25 +211,52 @@ export function createControlCompletion(input: {
   readonly hostInspectionBytes: Uint8Array;
   readonly controlEvidenceBytes: Uint8Array;
 }): ControlCompletion {
+  const wrapper = readPlainRecord(input, "INVALID_CONTROL_COMPLETION");
+  assertExactKeys(
+    wrapper,
+    [
+      "manifest",
+      "inspection",
+      "evidence",
+      "manifestBytes",
+      "hostInspectionBytes",
+      "controlEvidenceBytes",
+    ],
+    "INVALID_CONTROL_COMPLETION",
+  );
+  const manifest = validateControlManifest(wrapper.manifest);
+  const inspection = validateHostInspection(wrapper.inspection);
+  const evidence = validateControlEvidence(wrapper.evidence);
+  const manifestBytes = immutableBytes(wrapper.manifestBytes);
+  const hostInspectionBytes = immutableBytes(wrapper.hostInspectionBytes);
+  const controlEvidenceBytes = immutableBytes(wrapper.controlEvidenceBytes);
   const inventory =
-    input.manifest.profileId === "permissive"
+    manifest.profileId === "permissive"
       ? PERMISSIVE_INVENTORY
       : CONSTRAINED_INVENTORY;
   const completion = validateControlCompletion({
     schemaVersion: CONTROL_COMPLETION_SCHEMA_VERSION,
-    runId: input.manifest.runId,
-    controlId: input.manifest.controlId,
-    profileId: input.manifest.profileId,
-    containerImageDigest: input.manifest.containerImageDigest,
+    runId: manifest.runId,
+    controlId: manifest.controlId,
+    profileId: manifest.profileId,
+    containerImageDigest: manifest.containerImageDigest,
     hostInspectionComplete: true,
     controlEvidenceComplete: true,
     evidenceTransferred: true,
-    manifestSha256: digest(input.manifestBytes),
-    hostInspectionSha256: digest(input.hostInspectionBytes),
-    controlEvidenceSha256: digest(input.controlEvidenceBytes),
+    manifestSha256: digest(manifestBytes),
+    hostInspectionSha256: digest(hostInspectionBytes),
+    controlEvidenceSha256: digest(controlEvidenceBytes),
     inventory,
     complete: true,
   });
-  crossValidateCompleteBundle({ ...input, completion });
+  crossValidateCompleteBundle({
+    manifest,
+    inspection,
+    evidence,
+    completion,
+    manifestBytes,
+    hostInspectionBytes,
+    controlEvidenceBytes,
+  });
   return completion;
 }

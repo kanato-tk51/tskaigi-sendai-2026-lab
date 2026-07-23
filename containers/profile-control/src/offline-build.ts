@@ -1,5 +1,3 @@
-import { types } from "node:util";
-
 import {
   FIXED_BASE_ENVIRONMENT_KEYS,
   FIXED_BASE_IMAGE_DIGEST,
@@ -20,8 +18,10 @@ import { failProfile } from "./errors.js";
 import {
   assertExactKeys,
   assertSha256,
+  captureAuthority,
   readPlainArray,
   readPlainRecord,
+  snapshotBytes,
 } from "./safe-data.js";
 import {
   assertAcceptedImageStagingSnapshot,
@@ -171,14 +171,14 @@ function nonNegativeInteger(input: unknown): number {
 }
 
 function immutableOutputBytes(input: unknown): Uint8Array {
-  if (
-    !types.isUint8Array(input) ||
-    input.buffer instanceof SharedArrayBuffer ||
-    input.byteLength > LIMITS.outputBytes
-  ) {
+  try {
+    return snapshotBytes(input, {
+      code: "INVALID_OFFLINE_BUILD_RESULT",
+      maximum: LIMITS.outputBytes,
+    });
+  } catch {
     return failBuild("COMMAND_FAILURE");
   }
-  return Uint8Array.from(input);
 }
 
 function equalBytes(left: Uint8Array, right: Uint8Array): boolean {
@@ -376,25 +376,39 @@ export function createFixedOfflineBuildInput(input: {
   readonly layout: FixedRuntimeLayout;
   readonly backend: FixedOfflineBuildBackend;
 }): FixedOfflineBuildInput {
-  const acceptedSnapshot = exactProductionSnapshot(input.acceptedSnapshot);
+  const wrapper = readPlainRecord(input, "INVALID_OFFLINE_BUILD_RESULT");
+  assertExactKeys(
+    wrapper,
+    ["acceptedSnapshot", "imageBuildPlan", "layout", "backend"],
+    "INVALID_OFFLINE_BUILD_RESULT",
+  );
+  const acceptedSnapshot = exactProductionSnapshot(
+    wrapper.acceptedSnapshot as AcceptedImageStagingSnapshot,
+  );
+  const layout = wrapper.layout as FixedRuntimeLayout;
   const imageBuildPlan = assertFixedImageBuildPlan(
-    input.imageBuildPlan,
+    wrapper.imageBuildPlan as ImageBuildPlan,
     acceptedSnapshot,
-    input.layout,
+    layout,
+  );
+  const backend = captureAuthority<FixedOfflineBuildBackend>(
+    wrapper.backend,
+    ["stageBuildContext", "readBuildContext", "run", "cleanup"],
+    "INVALID_OFFLINE_BUILD_RESULT",
   );
   const fixedInput = Object.freeze({
     acceptedSnapshot,
     imageBuildPlan,
-    layout: input.layout,
-    backend: input.backend,
+    layout,
+    backend,
   }) as unknown as FixedOfflineBuildInput;
   fixedInputBindings.set(
     fixedInput,
     Object.freeze({
       acceptedSnapshot,
       imageBuildPlan,
-      layout: input.layout,
-      backend: input.backend,
+      layout,
+      backend,
     }),
   );
   return fixedInput;
@@ -572,15 +586,11 @@ export function serializeCanonicalOfflineBuildResult(
 export function parseCanonicalOfflineBuildResultBytes(
   input: unknown,
 ): OfflineBuildResult {
-  if (
-    !types.isUint8Array(input) ||
-    input.buffer instanceof SharedArrayBuffer ||
-    input.byteLength === 0 ||
-    input.byteLength > LIMITS.evidenceBytes
-  ) {
-    return failProfile("INVALID_OFFLINE_BUILD_RESULT");
-  }
-  const bytes = Uint8Array.from(input);
+  const bytes = snapshotBytes(input, {
+    code: "INVALID_OFFLINE_BUILD_RESULT",
+    maximum: LIMITS.evidenceBytes,
+    allowEmpty: false,
+  });
   let text: string;
   try {
     text = fatalDecoder.decode(bytes);
