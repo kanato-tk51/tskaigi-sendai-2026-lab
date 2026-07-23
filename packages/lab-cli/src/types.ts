@@ -10,6 +10,11 @@ import type {
 
 import type {
   CANONICAL_EVENT_SCHEMA_VERSION,
+  CODEGEN_HASH_EVIDENCE_SCHEMA_VERSION,
+  CODEGEN_RUN_METADATA_SCHEMA_VERSION,
+  CODEGEN_SCENARIO_DEFINITION_SCHEMA_VERSION,
+  CODEGEN_SCENARIO_SNAPSHOT_SCHEMA_VERSION,
+  CODEGEN_SUMMARY_SCHEMA_VERSION,
   HASH_EVIDENCE_SCHEMA_VERSION,
   LabErrorCode,
   RUN_COMPLETION_SCHEMA_VERSION,
@@ -307,4 +312,260 @@ export interface PersistedRunInput {
   readonly snapshot: ScenarioSnapshot;
   readonly completion: RunCompletion;
   readonly segments: Readonly<Record<string, Uint8Array>>;
+}
+
+export type CodegenProfileId = "permissive" | "constrained";
+
+export interface CodegenRouteExpectation {
+  readonly routeInvocationId: string;
+  readonly phase: string;
+  readonly outcome: "success";
+  readonly normalizedErrorCodes: readonly [null];
+}
+
+export interface CodegenAttemptExpectation {
+  readonly attemptId: string;
+  readonly attemptType: AttemptType;
+  readonly outcome: Outcome;
+  readonly normalizedErrorCodes: readonly (string | null)[];
+}
+
+export interface CodegenToolExpectation {
+  readonly toolApiChangeId: string;
+  readonly changeKind: ToolApiChangeKind;
+  readonly targetId: string;
+  readonly targetClassification: HashClassification;
+  readonly outcome: "skipped";
+  readonly normalizedErrorCodes: readonly ["NOT_APPLICABLE"];
+  readonly changeState: "unavailable";
+}
+
+export interface CodegenHashExpectation {
+  readonly evidenceKind: HashEvidenceKind;
+  readonly producerId: string;
+  readonly targetId: string;
+  readonly classification: HashClassification;
+  readonly state: HashDeltaState;
+}
+
+export interface CodegenScenarioExpected {
+  readonly routes: readonly CodegenRouteExpectation[];
+  readonly attempts: readonly CodegenAttemptExpectation[];
+  readonly toolChanges: readonly CodegenToolExpectation[];
+  readonly hashes: readonly CodegenHashExpectation[];
+}
+
+export interface CodegenScenarioDefinition {
+  readonly schemaVersion: typeof CODEGEN_SCENARIO_DEFINITION_SCHEMA_VERSION;
+  readonly scenarioId: "codegen-observe-p" | "codegen-observe-c";
+  readonly adapterId: "codegen";
+  readonly evidenceClass: "adapter-run";
+  readonly profileId: CodegenProfileId;
+  readonly outputLocation: "results/runs/m3-codegen";
+  readonly producerId: "codegen-cli-producer";
+  readonly segmentId: "codegen-cli-producer";
+  readonly expected: CodegenScenarioExpected;
+}
+
+export interface CodegenRuntimeContext {
+  readonly profileRevision: string;
+  readonly containerInput: Sha256Digest;
+  readonly segmentRetention: "immutable-raw-input";
+}
+
+export interface CodegenScenarioSnapshot extends Omit<
+  CodegenScenarioDefinition,
+  "schemaVersion"
+> {
+  readonly schemaVersion: typeof CODEGEN_SCENARIO_SNAPSHOT_SCHEMA_VERSION;
+  readonly runId: string;
+  readonly runtimeContext: CodegenRuntimeContext;
+  readonly segments: readonly [SegmentDefinition];
+}
+
+export interface CodegenRawInputIdentity {
+  readonly location:
+    | "raw/manifest.snapshot.json"
+    | "raw/run-completion.snapshot.json"
+    | "raw/segments/codegen-cli-producer.jsonl";
+  readonly byteLength: number;
+  readonly sha256: Sha256Digest;
+}
+
+export interface CodegenObservedRoute {
+  readonly routeInvocationId: string;
+  readonly phase: string;
+  readonly outcome: Outcome;
+  readonly normalizedErrorCode: string | null;
+}
+
+export interface CodegenObservedAttempt {
+  readonly attemptId: string;
+  readonly attemptType: AttemptType;
+  readonly outcome: Outcome;
+  readonly normalizedErrorCode: string | null;
+}
+
+export interface CodegenObservedToolChange {
+  readonly toolApiChangeId: string;
+  readonly changeKind: ToolApiChangeKind;
+  readonly targetId: string;
+  readonly targetClassification: HashClassification;
+  readonly outcome: Outcome;
+  readonly normalizedErrorCode: string | null;
+  readonly changeState: HashDeltaState;
+}
+
+export interface CodegenHashEvidenceRecord {
+  readonly evidenceKind: HashEvidenceKind;
+  readonly producerId: string;
+  readonly targetId: string;
+  readonly classification: HashClassification;
+  readonly state: HashDeltaState;
+  readonly beforeHash: Sha256Digest | null;
+  readonly afterHash: Sha256Digest | null;
+  readonly globalSequences: readonly number[];
+}
+
+export interface CodegenComparisonRecord {
+  readonly identity: string;
+  readonly expected: string;
+  readonly observed: string;
+  readonly matches: boolean;
+}
+
+export interface CodegenCompleteRunMetadata {
+  readonly schemaVersion: typeof CODEGEN_RUN_METADATA_SCHEMA_VERSION;
+  readonly runId: string;
+  readonly scenarioId: "codegen-observe-p" | "codegen-observe-c";
+  readonly adapterId: "codegen";
+  readonly evidenceClass: "adapter-run";
+  readonly profileId: CodegenProfileId;
+  readonly validity: "complete";
+  readonly timedOut: false;
+  readonly errorCodes: readonly [];
+  readonly ordering: {
+    readonly key: "producer-id-then-segment-id";
+    readonly preservesSegmentLineOrder: true;
+    readonly causalOrder: false;
+  };
+  readonly runtimeContext: CodegenRuntimeContext;
+  readonly rawInputs: readonly CodegenRawInputIdentity[];
+  readonly evidenceLocations: {
+    readonly manifest: "raw/manifest.snapshot.json";
+    readonly completion: "raw/run-completion.snapshot.json";
+    readonly events: "derived/events.jsonl";
+    readonly summary: "derived/summary.json";
+    readonly comparison: "derived/comparison.md";
+    readonly hashes: "derived/hashes.json";
+    readonly segment: "raw/segments/codegen-cli-producer.jsonl";
+  };
+}
+
+export interface CodegenInconclusiveRunMetadata {
+  readonly schemaVersion: typeof CODEGEN_RUN_METADATA_SCHEMA_VERSION;
+  readonly runId: string | null;
+  readonly scenarioId: "codegen-observe-p" | "codegen-observe-c" | null;
+  readonly adapterId: "codegen" | null;
+  readonly evidenceClass: "adapter-run" | null;
+  readonly profileId: CodegenProfileId | null;
+  readonly validity: "inconclusive";
+  readonly timedOut: boolean;
+  readonly errorCodes: readonly LabErrorCode[];
+  readonly ordering: null;
+  readonly runtimeContext: null;
+  readonly rawInputs: null;
+  readonly evidenceLocations: {
+    readonly manifest: "raw/manifest.snapshot.json" | null;
+    readonly completion: "raw/run-completion.snapshot.json" | null;
+    readonly events: null;
+    readonly summary: "derived/summary.json";
+    readonly comparison: null;
+    readonly hashes: null;
+    readonly segment: "raw/segments/codegen-cli-producer.jsonl";
+  };
+}
+
+export interface CodegenCompleteSummary {
+  readonly schemaVersion: typeof CODEGEN_SUMMARY_SCHEMA_VERSION;
+  readonly runId: string;
+  readonly scenarioId: "codegen-observe-p" | "codegen-observe-c";
+  readonly validity: "complete";
+  readonly counts: {
+    readonly totalEvents: number;
+    readonly routeInvocations: number;
+    readonly capabilityAttempts: number;
+    readonly toolApiChanges: number;
+  };
+  readonly routes: readonly CodegenObservedRoute[];
+  readonly attempts: readonly CodegenObservedAttempt[];
+  readonly toolChanges: readonly CodegenObservedToolChange[];
+  readonly hashes: readonly CodegenHashEvidenceRecord[];
+  readonly comparison: {
+    readonly matches: boolean;
+    readonly records: readonly CodegenComparisonRecord[];
+  };
+  readonly evidenceLocation: "derived/events.jsonl";
+}
+
+export interface CodegenInconclusiveSummary {
+  readonly schemaVersion: typeof CODEGEN_SUMMARY_SCHEMA_VERSION;
+  readonly runId: string | null;
+  readonly scenarioId: "codegen-observe-p" | "codegen-observe-c" | null;
+  readonly validity: "inconclusive";
+  readonly counts: null;
+  readonly routes: null;
+  readonly attempts: null;
+  readonly toolChanges: null;
+  readonly hashes: null;
+  readonly comparison: null;
+  readonly evidenceLocation: null;
+  readonly errorCodes: readonly LabErrorCode[];
+}
+
+export interface CodegenHashEvidence {
+  readonly schemaVersion: typeof CODEGEN_HASH_EVIDENCE_SCHEMA_VERSION;
+  readonly runId: string;
+  readonly scenarioId: "codegen-observe-p" | "codegen-observe-c";
+  readonly records: readonly CodegenHashEvidenceRecord[];
+}
+
+export interface CodegenCompleteCollection {
+  readonly validity: "complete";
+  readonly snapshot: CodegenScenarioSnapshot;
+  readonly completion: RunCompletion;
+  readonly events: readonly CanonicalEventEnvelope[];
+  readonly metadata: CodegenCompleteRunMetadata;
+  readonly summary: CodegenCompleteSummary;
+  readonly hashes: CodegenHashEvidence;
+  readonly files: Readonly<{
+    "run-metadata.json": string;
+    "events.jsonl": string;
+    "summary.json": string;
+    "comparison.md": string;
+    "hashes.json": string;
+  }>;
+}
+
+export interface CodegenInconclusiveCollection {
+  readonly validity: "inconclusive";
+  readonly snapshot: CodegenScenarioSnapshot | null;
+  readonly completion: RunCompletion | null;
+  readonly events: null;
+  readonly metadata: CodegenInconclusiveRunMetadata;
+  readonly summary: CodegenInconclusiveSummary;
+  readonly hashes: null;
+  readonly files: Readonly<{
+    "run-metadata.json": string;
+    "summary.json": string;
+  }>;
+}
+
+export type CodegenCollectionResult =
+  CodegenCompleteCollection | CodegenInconclusiveCollection;
+
+export interface CodegenCollectInput {
+  readonly manifestSnapshotBytes: unknown;
+  readonly completionSnapshotBytes: unknown;
+  readonly segmentBytes: unknown;
 }

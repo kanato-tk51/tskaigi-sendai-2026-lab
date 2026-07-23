@@ -1,0 +1,109 @@
+{
+  "schemaVersion": "lab-scenario-definition/v3",
+  "scenarioId": "codegen-observe-p",
+  "adapterId": "codegen",
+  "evidenceClass": "adapter-run",
+  "profileId": "permissive",
+  "outputLocation": "results/runs/m3-codegen",
+  "producerId": "codegen-cli-producer",
+  "segmentId": "codegen-cli-producer",
+  "expected": {
+    "routes": [
+      {
+        "routeInvocationId": "codegen-cli-startup",
+        "phase": "cli-startup",
+        "outcome": "success",
+        "normalizedErrorCodes": [null]
+      },
+      {
+        "routeInvocationId": "codegen-argument-parse",
+        "phase": "argument-parse",
+        "outcome": "success",
+        "normalizedErrorCodes": [null]
+      },
+      {
+        "routeInvocationId": "codegen-generation-start",
+        "phase": "generation-start",
+        "outcome": "success",
+        "normalizedErrorCodes": [null]
+      },
+      {
+        "routeInvocationId": "codegen-file-write",
+        "phase": "file-write",
+        "outcome": "success",
+        "normalizedErrorCodes": [null]
+      },
+      {
+        "routeInvocationId": "codegen-completion",
+        "phase": "completion",
+        "outcome": "success",
+        "normalizedErrorCodes": [null]
+      }
+    ],
+    "attempts": [
+      {
+        "attemptId": "codegen-attempt-environment",
+        "attemptType": "environment-canary-read",
+        "outcome": "success",
+        "normalizedErrorCodes": [null]
+      },
+      {
+        "attemptId": "codegen-attempt-file-read",
+        "attemptType": "canary-file-read",
+        "outcome": "success",
+        "normalizedErrorCodes": [null]
+      },
+      {
+        "attemptId": "codegen-attempt-file-hash",
+        "attemptType": "file-hash",
+        "outcome": "success",
+        "normalizedErrorCodes": [null]
+      },
+      {
+        "attemptId": "codegen-attempt-file-write",
+        "attemptType": "direct-filesystem-write",
+        "outcome": "success",
+        "normalizedErrorCodes": [null]
+      },
+      {
+        "attemptId": "codegen-attempt-loopback",
+        "attemptType": "loopback-connect",
+        "outcome": "success",
+        "normalizedErrorCodes": [null]
+      },
+      {
+        "attemptId": "codegen-attempt-child",
+        "attemptType": "child-node-process",
+        "outcome": "success",
+        "normalizedErrorCodes": [null]
+      }
+    ],
+    "toolChanges": [
+      {
+        "toolApiChangeId": "codegen-generation-api-change",
+        "changeKind": "emitted-asset",
+        "targetId": "codegen-generated-artifact",
+        "targetClassification": "artifact",
+        "outcome": "skipped",
+        "normalizedErrorCodes": ["NOT_APPLICABLE"],
+        "changeState": "unavailable"
+      }
+    ],
+    "hashes": [
+      {
+        "evidenceKind": "file-hash",
+        "producerId": "codegen-cli-producer",
+        "targetId": "codegen-input-snapshot",
+        "classification": "source",
+        "state": "unavailable"
+      },
+      {
+        "evidenceKind": "tool-api-change",
+        "producerId": "codegen-cli-producer",
+        "targetId": "codegen-generated-artifact",
+        "classification": "artifact",
+        "state": "unavailable"
+      }
+    ]
+  }
+}
