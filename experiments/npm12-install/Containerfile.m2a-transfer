@@ -1,0 +1,16 @@
+ARG BASE_IMAGE=node:24.18.0-bookworm-slim@sha256:cb4e8f7c443347358b7875e717c29e27bf9befc8f5a26cf18af3c3dec80e58c5
+
+FROM ${BASE_IMAGE}
+
+COPY --chown=0:0 m2a-context/npm/ /usr/local/lib/node_modules/npm/
+COPY --chown=0:0 m2a-context/npm-cli.js /usr/local/bin/npm
+COPY --chown=0:0 m2a-context/probe-core/ /opt/m2a-adapter/node_modules/@tskaigi-lab/probe-core/
+COPY --chown=0:0 m2a-context/npm-lifecycle-probe/ /opt/m2a-adapter/
+COPY --chown=0:0 m2a-context/consumer/package.json /opt/m2a-input/consumer/package.json
+COPY --chown=0:0 m2a-context/m2a-install-probe-1.0.0.tgz /opt/m2a-input/m2a-install-probe-1.0.0.tgz
+COPY --chown=0:0 container/initialize-m2a-volume.mjs /opt/m2a-transfer/initialize-m2a-volume.mjs
+COPY --chown=0:0 container/run-m2a-transfer.mjs /opt/m2a-transfer/run-m2a-transfer.mjs
+
+USER 1000:1000
+
+CMD ["node", "/opt/m2a-transfer/run-m2a-transfer.mjs"]
