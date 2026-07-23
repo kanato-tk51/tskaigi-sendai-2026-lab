@@ -32,7 +32,7 @@ research task must not retroactively promote an earlier Inconclusive result.
 | 2     | [#46 M4 public-input hardening](https://github.com/kanato-tk51/tskaigi-sendai-2026-lab/issues/46)            | **closed at reviewed Docker-free static/unit boundary**        | The fresh remediation re-review closes M4-PI01 with no finding; M4-PI02 through M4-PI05 remain closed. No runtime gate, enforcement evidence, or `Observed` result was established.                                                                                                                                                     |
 | 3     | [#47 production raw-to-derived collector](https://github.com/kanato-tk51/tskaigi-sendai-2026-lab/issues/47)  | **closed at reviewed Docker-free static/unit boundary**        | The fresh remediation re-review closes M3-PC01 through M3-PC06 with no finding after reproducing exact cross-kind order comparison, immediate post-open descriptor ownership, and 9 files / 54 tests. No ingestion, activation, runtime result, or `Observed` evidence was established.                                                   |
 | 4     | [#43 M0/M2-A evidence transfer](https://github.com/kanato-tk51/tskaigi-sendai-2026-lab/issues/43)            | **closed at reviewed Inconclusive npm-acquisition boundary**   | The exact `20260721-01` occurrence exited 1 with the fixed failure line and no retry. The fresh fixed-root review found a stable empty retained root and accepted no archive, receipt, construction input, runtime result, or `Observed` evidence.                                                                                         |
-| 5     | [#54 P2 selected Vite](https://github.com/kanato-tk51/tskaigi-sendai-2026-lab/issues/54)                     | **active; fresh-generation contract next**                     | New generation only; full permissive/constrained receipts, same-image pair, and accepted evidence chain are required for Observed.                                                                                                                                                                                                      |
+| 5     | [#54 P2 selected Vite](https://github.com/kanato-tk51/tskaigi-sendai-2026-lab/issues/54)                     | **active; implementation candidate awaits independent review** | New generation only; full permissive/constrained receipts, same-image pair, and accepted evidence chain are required for Observed.                                                                                                                                                                                                      |
 | 6     | M4 profile-control new measurement generation                                                                | not yet filed                                                  | Create a dedicated issue with new identities, exact runtime-enforcement gate, one-shot pair, and fresh result review.                                                                                                                                                                                                                   |
 | 7     | [#48 generic artifact/provenance pipeline](https://github.com/kanato-tk51/tskaigi-sendai-2026-lab/issues/48) | frozen                                                         | Versioned schema, offline build/verify/deploy separation, normalization, negative tests, sanitized example, and fresh independent review.                                                                                                                                                                                               |
 | 8     | [#49 all experiment-matrix rows](https://github.com/kanato-tk51/tskaigi-sendai-2026-lab/issues/49)           | frozen                                                         | One adapter/profile pair per gate; every row ends as accepted Observed or a reviewed reproducibility limit.                                                                                                                                                                                                                             |
@@ -2336,3 +2336,105 @@ presentation projection, or standing authorization was used.
 Next: implement the approved `20260723-01` Vite-only `--init` and six-field
 inspect binding with focused Docker-free regressions, then rebuild only the
 fixed Vite staging candidate; do not call Docker or access result roots.
+
+## Issue #54 `20260723-01` init/reaping implementation handoff
+
+The exact bounded Docker-free candidate is implemented. Selected Vite alone
+uses one literal `--init` before `--name`; the six-field owned-container
+inspect binds only literal `HostConfig.Init=true` at created and final state.
+The plan, M2-D context, runner, projection, executor, and tests accept only the
+new Expected/run/container tuple. All historical generations remain rejected,
+both codegen create arrays remain unchanged, and post-close residue still
+cannot become child success after later group absence.
+
+Focused P2 verification passed 4 files / 77 tests, focused M2-D context
+verification passed 1 file / 19 tests, P2 verification passed 9 files / 122
+tests, and P2 build/import checks passed. M2-D typecheck/build/static passed;
+the full test phase then observed 23 `M2D_VERSION_MISMATCH` failures because
+host Node `v22.23.1` differs from fixed Node `v20.18.2`, with 9 files / 60
+tests passing. No fixed version was weakened.
+
+The already reviewed exact staging action used
+`continue-repository-work` standing authorization, not a separate human
+review. It preserved the prior ignored tree and rebuilt exactly 128
+source-equal fixed-mode Vite files with plan-order manifest
+`8803f5b5cec7dedb2168a03087f9e574f1d380e81602ebc2c8d722783859bd20`.
+No Docker, runtime/result access, Expected event-value change, `Observed`
+promotion, historical evidence mutation, or external communication occurred.
+
+Next: perform the fresh independent Docker-free read-only implementation and
+execution-gate review under
+`../prompts/reviews/p2-vite-init-reaper-implementation-review.md`; do not
+repair source/tests, call Docker, execute the pair, or access historical
+result roots.
+
+## Issue #54 `20260723-01` init/reaping implementation/execution-gate review
+
+The fresh independent Docker-free review in
+[`reviews/p2-vite-init-reaper-implementation.md`](reviews/p2-vite-init-reaper-implementation.md)
+is `APPROVED` with no blocking or non-blocking finding. It reproduced the ten
+fixed candidate identities, two unchanged codegen arrays, exact 128-file
+source-equal fixed-mode Vite staging manifest `8803f5b5...`, fixed tool
+versions, compiled import safety, and absence of only the two exact new roots.
+Focused P2 and M2-D context tests, full P2 verification, and P2 build passed.
+
+The optional full M2-D command again passed typecheck/build/static before
+exiting 1 on the unchanged fixed-version boundary: host Node `v22.23.1` versus
+contract Node `v20.18.2`, 23 `M2D_VERSION_MISMATCH` failures, and 9 files / 60
+tests passed. No contract value was changed.
+
+The review preserves configured init as intent, post-close residue as child
+failure, every settlement/transfer/evidence/receipt predicate,
+permissive-first order, same-image pairing, cooperative trust, and no retry.
+It ran no Docker, accessed no result root or retained history, and created no
+runtime evidence. Standing authorization was not used in the review.
+
+Next: in a fresh worker, revalidate the approved hashes, exact staging, fixed
+argument-free script, and only the two exact new-root absences, then invoke
+`npm run p2:execute:vite` at most once under standing authorization; do not
+retry.
+
+## Issue #54 `20260723-01` init/reaping exact one-shot execution
+
+The fresh worker reproduced all ten approved hashes, the exact 128-file
+source-equal regular non-symlink staging tree and
+`8803f5b5cec7dedb2168a03087f9e574f1d380e81602ebc2c8d722783859bd20`
+manifest, fixed Vite/Rollup/esbuild versions, the fixed argument-free script,
+and absence of only the two exact new roots. It then used
+`continue-repository-work` standing authorization for exactly one
+`npm run p2:execute:vite` invocation. This was not a separate human review.
+
+The command exited 0 and was not retried. Its 684-byte bounded direct stdout,
+SHA-256
+`683b78cd5f181e083657c76382eb94612ccdb989cea1bc8efe6075d9b6997aac`,
+reports `p2-vite-pair/v4`, exact revision `20260723-01`, `same-image`, the
+fixed image ID, cooperative progress trust, and no pair issue. Both exact
+members report complete attempts, inspected evidence, written receipts,
+`matches-expected`, and no issue.
+
+This direct projection is an unreviewed candidate result. The worker did not
+access or classify either new result root after execution, inspect historical
+retained state, accept a receipt, update selected-Vite or experiment-matrix
+`Observed`, change Expected values, or update the presentation projection. The
+occurrence is exhausted with no retry.
+
+Next: perform the fresh independent Docker-free fixed-root result review under
+`../prompts/reviews/p2-vite-init-reaper-result-review.md`; do not rerun,
+repair, call Docker, or access historical result roots.
+
+## Issue #54 `20260723-01` init/reaping fixed-root result review
+
+The fresh independent Docker-free review in
+[`reviews/p2-vite-init-reaper-result.md`](reviews/p2-vite-init-reaper-result.md)
+is `ACCEPTED` with no finding. It reproduced the approved candidate, exact
+staging, fixed roots, both canonical attempts and receipts, the valid-terminal
+progress projections, same-image pair, and exact 684-byte stdout without
+Docker, retry, repair, or historical-root access.
+
+Selected Vite is accepted only at the exact one-local-pair scope. The five
+earlier Inconclusive attempts remain immutable, configured init is not a
+demonstrated cause, the cooperative progress and constrained-child limitations
+remain explicit, and neither Expected values nor `experiment-matrix.md`
+changed. Issue #54 is complete in the local repository ledger.
+
+Next: none.

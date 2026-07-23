@@ -4,9 +4,9 @@ These three JSON files are the tracked, talk-facing inputs for P4:
 
 - `routes.json`: the five-route trigger/phase/count projection accepted by the
   P1 inventory review;
-- `profiles.json`: the accepted one-local-pair codegen observations and all
-  five exhausted Vite attempts' explicit `not-inspected` / `missing`
-  limitation; and
+- `profiles.json`: the accepted exact one-local-pair codegen and Vite
+  observations plus all five earlier exhausted Vite attempts' immutable
+  Inconclusive history; and
 - `artifact.json`: the accepted one-local-run P3 build/verify/copy/tamper
   projection.
 
@@ -32,4 +32,8 @@ accepted the fourth Inconclusive attempt and its bounded progress prefix without
 promoting selected Vite Observed. The later
 [`20260720-02` detached-transfer result review](../../../docs/reviews/p2-vite-detached-transfer-result.md)
 accepted the fifth Inconclusive attempt and its invalid retained progress
-prefix without promoting selected Vite Observed.
+prefix without promoting selected Vite Observed. The later
+[`20260723-01` init/reaping result review](../../../docs/reviews/p2-vite-init-reaper-result.md)
+accepted the exact same-image pair at one-local-pair scope while retaining all
+five earlier attempts and the cooperative-progress, constrained-child, and
+non-causal-init limitations.

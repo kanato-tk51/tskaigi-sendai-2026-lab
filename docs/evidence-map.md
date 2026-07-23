@@ -1,6 +1,6 @@
 # Presentation evidence map
 
-Status: **complete; P4 baseline and selected Vite completion-addendum result reviews approved**.
+Status: **complete; P4 baseline and selected Vite `20260723-01` result review approved**.
 
 This document is generated from the three tracked, sanitized JSON projections
 under [`results/examples/presentation-mvp`](../results/examples/presentation-mvp/README.md).
@@ -11,10 +11,10 @@ Docker, network, or deployment operation.
 
 The evidence classes below are deliberate. M0 remains overall **Inconclusive**
 with scenario-level Observed marker counts; the four adapter rows are **reviewed
-local adapter evidence**; the codegen pair is selected-profile **Observed** only
-at one-local-pair scope; all five Vite pair attempts are observed
-**Inconclusive attempts**, not capability results; and P3 is **Observed** only
-at one-local-run scope.
+local adapter evidence**; the codegen and Vite pairs are selected-profile
+**Observed** only at their exact one-local-pair scopes; the five earlier Vite
+pair attempts remain immutable **Inconclusive attempts**; and P3 is **Observed**
+only at one-local-run scope.
 
 ## Talk table 1 — five routes, phases, triggers, and counts
 
@@ -34,22 +34,31 @@ code ran; they do not imply the privilege of the executing process.
 
 | Capability | Codegen permissive | Codegen constrained | Vite permissive | Vite constrained |
 |---|---|---|---|---|
-| Environment | success | failure (ENVIRONMENT_VARIABLE_ABSENT) | not-inspected | missing |
-| File read | success | failure (READ_DENIED) | not-inspected | missing |
-| Direct write | success | failure (WRITE_DENIED) | not-inspected | missing |
-| Loopback | success | failure (NETWORK_FAILURE) | not-inspected | missing |
-| Fixed child | success | failure (CHILD_PROCESS_FAILURE) | not-inspected | missing |
+| Environment | success | failure (ENVIRONMENT_VARIABLE_ABSENT) | success | failure (ENVIRONMENT_VARIABLE_ABSENT) |
+| File read | success | failure (READ_DENIED) | success | failure (READ_DENIED) |
+| Direct write | success | failure (WRITE_DENIED) | success | failure (WRITE_DENIED) |
+| Loopback | success | failure (NETWORK_FAILURE) | success | failure (NETWORK_FAILURE) |
+| Fixed child | success | failure (CHILD_PROCESS_FAILURE) | success | success |
 
 [`profiles.json`](../results/examples/presentation-mvp/profiles.json) preserves
 five capabilities and keeps the separate source-hash integrity attempt out of
-their denominator. The codegen cells come from the independently accepted exact
-same-image pair. The five exhausted Vite attempts have no receipt or
-constrained run:
-`not-inspected` and `missing` are displayed rather than converted to zero,
-denial, or success.
+their denominator. Both tool columns come from independently accepted exact
+same-image pairs. Vite constrained child execution remains successful because
+the fixed tool requires it; this is displayed with its limitation rather than
+rewritten as a denial.
 
 All five immutable attempts remain side by side in the tracked projection:
 `20260719-01` — not established; not recorded; progress not established; Inconclusive; partial permissive output; constrained missing | `20260719-02` — p2-vite-attempt/v1 / SHA-256 1dd63280f8d665547de613fe732f6205aceccfd92a9a4f3b156d36b3c47c70c6; not recorded by v1; progress not established; Inconclusive; permissive not-inspected; constrained missing | `20260719-03` — p2-vite-attempt/v2 / SHA-256 5f90a582664b1f5d068a01341dfb71fc029c9a5f445e64b930729dd6a4f398b6; attached-start / P2_EXECUTOR_DOCKER_TIMEOUT; progress not established; Inconclusive; permissive not-inspected; constrained missing | `20260720-01` — p2-vite-attempt/v3 / SHA-256 9175487c2ed92eb8265e9047c362bc1d0a42d79e1911ba951fcf235530f6eada; attached-start / P2_EXECUTOR_DOCKER_TIMEOUT; progress valid-prefix: runner-entered > inputs-prepared > service-ready > child-launched; Inconclusive; permissive not-inspected; constrained missing | `20260720-02` — p2-vite-attempt/v4 / SHA-256 842b914eeb1a92241787d718523d2d3c76eaeede164531ef20eb8314391cd201; container-wait / P2_EXECUTOR_DOCKER_TIMEOUT; progress invalid/P2_TRANSFER_SEQUENCE_INVALID; retained prefix: runner-entered > inputs-prepared > service-ready > child-launched > child-watch-armed > child-close-observed > child-residue-detected > child-force-sent; Inconclusive; permissive not-inspected; constrained missing.
+
+Selected-profile limitations:
+
+- Trigger labels describe causation, not process privilege.
+- The codegen evidence is one local same-image pair, not repeated-run reproducibility or a general-purpose sandbox claim.
+- The Vite evidence is one local same-image pair under a repository-cooperative progress writer; it does not establish repeated-run reproducibility, adversarial same-UID isolation, or a general-purpose sandbox.
+- The constrained Vite child outcome is success because the fixed tool requires it; CONSTRAINED_CHILD_REQUIRED_BY_TOOL remains an explicit limitation rather than being hidden as a denial.
+- The five earlier exhausted Vite attempts remain immutable Inconclusive history and are not repaired or reinterpreted by the accepted 20260723-01 pair.
+- Configured init and successful settlement do not establish that init/reaping caused the result or that earlier residue was a zombie.
+- No raw canary value, file content, host path, command output, or unsanitized error is included.
 
 ## Talk table 3 — build once, verify, copy, reject
 
@@ -81,31 +90,31 @@ are not OS-level egress-enforcement evidence.
 ### C-02 — trigger label is not process privilege
 
 - Evidence: trigger metadata in [talk table 1](../results/examples/presentation-mvp/routes.json)
-  plus the accepted codegen and Inconclusive Vite state in
+  plus the accepted codegen and Vite selected-profile pairs in
   [talk table 2](../results/examples/presentation-mvp/profiles.json).
-- Limitation: only codegen has an accepted profile comparison. Vite produced no
-  capability receipt or constrained attempt, and configuration intent is not
-  runtime enforcement.
+- Limitation: both comparisons are single exact local pairs. Trigger labels do
+  not imply privilege, and configured init does not establish that reaping
+  caused the Vite result.
 
 ### C-03 — capabilities are separate outcomes
 
 - Evidence: the five independent cells per profile in
   [talk table 2](../results/examples/presentation-mvp/profiles.json) and the
-  [codegen receipt review](reviews/p2-selected-profile-codegen-receipts.md).
-- Limitation: the codegen source-hash attempt is integrity evidence, not a sixth
-  capability. Raw canaries, contents, host paths, output, and unsanitized errors
-  are omitted; Vite capability outcomes are unmeasured.
+  [codegen receipt review](reviews/p2-selected-profile-codegen-receipts.md) and
+  [Vite result review](reviews/p2-vite-init-reaper-result.md).
+- Limitation: each source-hash attempt is integrity evidence, not a sixth
+  capability. Raw canaries, contents, host paths, output, and unsanitized
+  errors are omitted.
 
 ### C-04 — the same fixture can reach different capabilities
 
-- Evidence: the accepted one-local-pair codegen `same-image` result in
-  [talk table 2](../results/examples/presentation-mvp/profiles.json).
-- Limitation: same-image and pair-identical staging have the narrow bindings in
-  the [codegen receipt review](reviews/p2-selected-profile-codegen-receipts.md);
-  they do not prove a general sandbox or repeated-run reproducibility. The
-  [latest Vite result review](reviews/p2-vite-detached-transfer-result.md) accepts
-  only five Inconclusive attempts, so the selected Vite comparison is explicitly
-  missing.
+- Evidence: the accepted one-local-pair codegen and Vite `same-image` results
+  in [talk table 2](../results/examples/presentation-mvp/profiles.json).
+- Limitation: the exact bindings in the
+  [codegen receipt review](reviews/p2-selected-profile-codegen-receipts.md) and
+  [Vite result review](reviews/p2-vite-init-reaper-result.md) do not prove a
+  general sandbox or repeated-run reproducibility. The Vite progress channel
+  also retains its repository-cooperative-fixture limitation.
 
 ### C-05 — direct writes differ from official tool API changes
 
@@ -139,10 +148,10 @@ are not OS-level egress-enforcement evidence.
 - `npm run p4:generate` deterministically renders only this tracked document
   from the three tracked JSON files.
 - `npm run p4:verify` validates fixed route/capability counts, codegen
-  `same-image`, the ordered five-attempt Vite history and its
-  `not-inspected` / `missing` boundary, artifact build count 1, zero
-  deployment builds, one-byte rejection, source-record boundaries, and exact
-  document regeneration.
+  and Vite `same-image` pairs, exact Vite outcomes, the ordered immutable
+  five-attempt history, artifact build count 1, zero deployment builds,
+  one-byte rejection, source-record boundaries, and exact document
+  regeneration.
 - P4 does not rerun P2 or P3, read ignored raw evidence, edit
   `experiment-matrix.md`, access Docker/runtime sockets, use external network
   or credentials, publish, or deploy.

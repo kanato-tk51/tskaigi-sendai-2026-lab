@@ -7,6 +7,7 @@
     "docs/reviews/p2-vite-diagnostic-result.md",
     "docs/reviews/p2-vite-new-measurement-result.md",
     "docs/reviews/p2-vite-detached-transfer-result.md",
+    "docs/reviews/p2-vite-init-reaper-result.md",
     "docs/p2-selected-profile-contract.md"
   ],
   "pairs": {
@@ -19,13 +20,15 @@
       "integrityAttempt": "source hash succeeded in both profiles and is not counted as a sixth capability"
     },
     "vite": {
-      "evidenceClass": "five observed Inconclusive execution attempts only",
-      "validity": "inconclusive",
-      "permissiveRunId": "p2-vite-observe-p-20260720-02",
-      "constrainedRunId": "p2-vite-observe-c-20260720-02",
-      "completion": "inconclusive / missing",
-      "permissiveEvidence": "not-inspected",
-      "constrainedEvidence": "missing",
+      "evidenceClass": "selected profile Observed at the exact one-local-pair scope",
+      "validity": "same-image",
+      "permissiveRunId": "p2-vite-observe-p-20260723-01",
+      "constrainedRunId": "p2-vite-observe-c-20260723-01",
+      "completion": "matches-expected / matches-expected",
+      "permissiveEvidence": "inspected",
+      "constrainedEvidence": "inspected",
+      "integrityAttempt": "source hash succeeded and remained unchanged in both profiles and is not counted as a sixth capability",
+      "progressTrust": "repository-cooperative-fixture",
       "attempts": [
         {
           "attemptId": "20260719-01",
@@ -88,12 +91,12 @@
         "reason": "ENVIRONMENT_VARIABLE_ABSENT"
       },
       "vitePermissive": {
-        "outcome": "not-inspected",
+        "outcome": "success",
         "reason": null
       },
       "viteConstrained": {
-        "outcome": "missing",
-        "reason": null
+        "outcome": "failure",
+        "reason": "ENVIRONMENT_VARIABLE_ABSENT"
       }
     },
     {
@@ -108,12 +111,12 @@
         "reason": "READ_DENIED"
       },
       "vitePermissive": {
-        "outcome": "not-inspected",
+        "outcome": "success",
         "reason": null
       },
       "viteConstrained": {
-        "outcome": "missing",
-        "reason": null
+        "outcome": "failure",
+        "reason": "READ_DENIED"
       }
     },
     {
@@ -128,12 +131,12 @@
         "reason": "WRITE_DENIED"
       },
       "vitePermissive": {
-        "outcome": "not-inspected",
+        "outcome": "success",
         "reason": null
       },
       "viteConstrained": {
-        "outcome": "missing",
-        "reason": null
+        "outcome": "failure",
+        "reason": "WRITE_DENIED"
       }
     },
     {
@@ -148,12 +151,12 @@
         "reason": "NETWORK_FAILURE"
       },
       "vitePermissive": {
-        "outcome": "not-inspected",
+        "outcome": "success",
         "reason": null
       },
       "viteConstrained": {
-        "outcome": "missing",
-        "reason": null
+        "outcome": "failure",
+        "reason": "NETWORK_FAILURE"
       }
     },
     {
@@ -168,11 +171,11 @@
         "reason": "CHILD_PROCESS_FAILURE"
       },
       "vitePermissive": {
-        "outcome": "not-inspected",
+        "outcome": "success",
         "reason": null
       },
       "viteConstrained": {
-        "outcome": "missing",
+        "outcome": "success",
         "reason": null
       }
     }
@@ -180,7 +183,10 @@
   "limitations": [
     "Trigger labels describe causation, not process privilege.",
     "The codegen evidence is one local same-image pair, not repeated-run reproducibility or a general-purpose sandbox claim.",
-    "The five exhausted Vite pair attempts produced no receipt, constrained attempt, same-image pair, or selected-profile Observed evidence; not-inspected and missing are not zero or success.",
+    "The Vite evidence is one local same-image pair under a repository-cooperative progress writer; it does not establish repeated-run reproducibility, adversarial same-UID isolation, or a general-purpose sandbox.",
+    "The constrained Vite child outcome is success because the fixed tool requires it; CONSTRAINED_CHILD_REQUIRED_BY_TOOL remains an explicit limitation rather than being hidden as a denial.",
+    "The five earlier exhausted Vite attempts remain immutable Inconclusive history and are not repaired or reinterpreted by the accepted 20260723-01 pair.",
+    "Configured init and successful settlement do not establish that init/reaping caused the result or that earlier residue was a zombie.",
     "No raw canary value, file content, host path, command output, or unsanitized error is included."
   ]
 }

@@ -1246,3 +1246,24 @@ No retry, runtime-state recovery, or further selected Vite execution is
 authorized.
 
 Next: none.
+
+## `20260723-01` selected Vite result acceptance addendum
+
+The separately contracted init/reaping generation completed one reviewed
+argument-free execution and a
+[`fresh Docker-free fixed-root result review`](reviews/p2-vite-init-reaper-result.md).
+The review reproduced two canonical complete v4 receipts, valid-terminal
+progress records, the fixed image and Expected identities, sanitized
+`matches-expected` capability projections, the same-image pair, and exact
+684-byte stdout without rerun or repair.
+
+Selected Vite is accepted as Observed only at this exact one-local-pair scope.
+The deterministic presentation projection now carries the reviewed outcomes
+while retaining all five earlier immutable Inconclusive attempts. The source
+hash remains separate integrity evidence, constrained fixed-child success
+retains `CONSTRAINED_CHILD_REQUIRED_BY_TOOL`, configured init is not a
+demonstrated cause, and cooperative progress is not adversarial writer
+isolation. `experiment-matrix.md` and all pre-run Expected values remain
+unchanged.
+
+Next: none.
