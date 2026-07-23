@@ -248,6 +248,15 @@ export interface ControlCompletion {
   readonly complete: true;
 }
 
+export interface ControlTransferProjection {
+  readonly manifestBefore: Uint8Array;
+  readonly manifestAfter: Uint8Array;
+  readonly manifestIdentityStable: true;
+  readonly controlEvidence: Uint8Array;
+  readonly resultFiles: readonly ["control-evidence.json", "result-marker.txt"];
+  readonly scratchFiles: readonly [] | readonly ["scratch-marker.txt"];
+}
+
 export type ExecutionFailureCode =
   | "STAGING_FAILURE"
   | "COMMAND_FAILURE"

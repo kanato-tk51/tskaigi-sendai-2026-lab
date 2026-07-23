@@ -4,6 +4,8 @@ import path from "node:path";
 import process from "node:process";
 import { fileURLToPath, URL } from "node:url";
 
+import ts from "typescript";
+
 const controlRoot = path.resolve(
   fileURLToPath(new URL("../", import.meta.url)),
 );
@@ -27,6 +29,864 @@ const sourceEntries = await Promise.all(
 );
 const sources = Object.fromEntries(sourceEntries);
 const allSource = sourceEntries.map(([, source]) => source).join("\n");
+const activationBasename = "frozen-research-profile-control-entry";
+const activationExecutorBasename = "frozen-research-profile-control-executor";
+const exactActivationSource = `import process from "node:process";
+
+import { ProfileControlError } from "./errors.js";
+import { parseOrchestratorArguments } from "./orchestrator.js";
+import {
+  runFixedProductionControls,
+  serializeCanonicalPairExecutionResult,
+} from "./run-controls.js";
+
+try {
+  if (parseOrchestratorArguments(process.argv.slice(2)) !== "run-controls") {
+    throw new Error("M4_CONTROL_OPERATION");
+  }
+  const result = await runFixedProductionControls();
+  process.stdout.write(serializeCanonicalPairExecutionResult(result));
+  process.exitCode = result.validity === "complete" ? 0 : 1;
+} catch (error) {
+  const code =
+    error instanceof ProfileControlError
+      ? error.code
+      : "M4_CONTROL_EXECUTION_FAILED";
+  process.stderr.write(\`\${code}\\n\`);
+  process.exitCode = 1;
+}
+`;
+const exactSourceModules = [
+  "canonical",
+  "completion",
+  "constants",
+  "control-host-backend",
+  "definitions",
+  "docker-formats",
+  "docker-plan",
+  "errors",
+  "evidence",
+  "execution",
+  "filesystem-identity",
+  activationBasename,
+  "image-input",
+  "inspect",
+  "offline-build-process",
+  "orchestrator",
+  "profile-input",
+  "run-controls",
+  "safe-data",
+  "staging",
+  "types",
+  "validation",
+];
+const exactExecutableModules = exactSourceModules.filter(
+  (name) => name !== "types",
+);
+const issue46SourceAllowlist = new Set([
+  "safe-data",
+  "canonical",
+  "completion",
+  "definitions",
+  "docker-plan",
+  "doctor",
+  "evidence",
+  "execution",
+  "image-input",
+  "inspect",
+  "offline-build-process",
+  "offline-build",
+  "offline-build-recovery",
+  "orchestrator",
+  "profile-input",
+  "run-controls",
+  "staging",
+  "types",
+  "validation",
+]);
+const historicalUnchangedSourceIdentities = Object.freeze({
+  constants: Object.freeze([
+    4_635,
+    "60d0512bd55c87b990f1476fa4634e54661feac81d2abf59dc7975058ac96f65",
+  ]),
+  "control-host-backend": Object.freeze([
+    39_867,
+    "a37baa7dd651a1346c9f38b6116a38a7ddc0c4e33f83f4ceae3d804c6bfd646f",
+  ]),
+  "docker-formats": Object.freeze([
+    2_519,
+    "6f24020cdd1a54b9fa8abfbee665babf99fc3a0a0240f7892b5b924f7c945725",
+  ]),
+  errors: Object.freeze([
+    369,
+    "d4e96236380e93154e8c9e1cb70680bb731fb67e28fbe9c0ba37594ca38de709",
+  ]),
+  "filesystem-identity": Object.freeze([
+    25_227,
+    "1dad4648451daaf3681a1eb07a196f6c361513e75f63a0eff94ebe665a67abf1",
+  ]),
+  [activationBasename]: Object.freeze([
+    774,
+    "580c2926e9904213eb8db1d89367ce438f1bc88aadaeb1111c84964f5621578d",
+  ]),
+});
+const historicalActivationConstruction = Object.freeze({
+  sourceManifest: Object.freeze([
+    2_582,
+    "d9e68b20edfc7d46af59e91a25ebc4c179f24dcae5080c6182860842a80c6158",
+  ]),
+  sourceEdgeManifest: Object.freeze([
+    1_789,
+    "d83d8d353fcdddfc95eca1d4cb044627172fafe52d3bc71677d094f9bd690495",
+  ]),
+  compiledManifest: Object.freeze([
+    5_232,
+    "04623a67b7b8129dda41ecae2eee524e0e8dcb0e7d3d2b0f38844ed9136b8953",
+  ]),
+  combinedManifest: Object.freeze([
+    7_814,
+    "7ef97d35e8d9f8e04e1134dabd558ce7c2d757ad0d334616048f4e0f222362ec",
+  ]),
+});
+const exactSourceInventory = [
+  "canonical.ts",
+  "completion.ts",
+  "constants.ts",
+  "control-host-backend.ts",
+  "definitions.ts",
+  "docker-formats.ts",
+  "docker-plan.ts",
+  "doctor-host-backend.ts",
+  "doctor.ts",
+  "errors.ts",
+  "evidence.ts",
+  "execution.ts",
+  "filesystem-identity.ts",
+  `${activationBasename}.ts`,
+  `${activationExecutorBasename}.ts`,
+  "image-input.ts",
+  "index.ts",
+  "inspect.ts",
+  "offline-build-host-backend.ts",
+  "offline-build-process.ts",
+  "offline-build-recovery-entry.ts",
+  "offline-build-recovery-host-backend.ts",
+  "offline-build-recovery.ts",
+  "offline-build.ts",
+  "orchestrator-entry.ts",
+  "orchestrator.ts",
+  "profile-input.ts",
+  "run-controls.ts",
+  "safe-data.ts",
+  "staging.ts",
+  "types.ts",
+  "validation.ts",
+];
+const exactCompiledInventory = exactSourceInventory
+  .flatMap((name) => {
+    const basename = name.slice(0, -3);
+    return [`${basename}.d.ts`, `${basename}.js`];
+  })
+  .sort();
+
+function sha256(bytes) {
+  return createHash("sha256").update(bytes).digest("hex");
+}
+
+function exactOrderedSet(label, actual, expected) {
+  if (
+    actual.length !== expected.length ||
+    actual.some((entry, index) => entry !== expected[index])
+  ) {
+    fail(`activation ${label}`);
+  }
+}
+
+function moduleBasename(specifier) {
+  return path.posix.basename(specifier).replace(/\.(?:d\.)?[cm]?[jt]s$/u, "");
+}
+
+function syntaxEdges(source, scriptKind) {
+  const file = ts.createSourceFile(
+    scriptKind === ts.ScriptKind.TS ? "module.ts" : "module.js",
+    source,
+    ts.ScriptTarget.Latest,
+    true,
+    scriptKind,
+  );
+  const edges = [];
+  function visit(node) {
+    if (
+      ts.isCallExpression(node) &&
+      (node.expression.kind === ts.SyntaxKind.ImportKeyword ||
+        (ts.isIdentifier(node.expression) &&
+          node.expression.text === "require"))
+    ) {
+      fail("activation forbidden loading form");
+    }
+    if (
+      (ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) &&
+      node.moduleSpecifier !== undefined
+    ) {
+      if (!ts.isStringLiteral(node.moduleSpecifier)) {
+        fail("activation computed import");
+      }
+      const specifier = node.moduleSpecifier.text;
+      if (specifier.startsWith("node:")) return;
+      if (!specifier.startsWith("./")) {
+        fail("activation package import");
+      }
+      const typeOnly = ts.isImportDeclaration(node)
+        ? (node.importClause?.isTypeOnly ?? false) ||
+          (node.importClause?.namedBindings !== undefined &&
+            ts.isNamedImports(node.importClause.namedBindings) &&
+            node.importClause.namedBindings.elements.every(
+              (element) => element.isTypeOnly,
+            ))
+        : node.isTypeOnly;
+      edges.push({ target: moduleBasename(specifier), typeOnly });
+    }
+    ts.forEachChild(node, visit);
+  }
+  visit(file);
+  return edges;
+}
+
+async function deriveClosure(directory, extension, scriptKind) {
+  const graph = new Map();
+  const pending = [activationBasename];
+  while (pending.length > 0) {
+    const current = pending.shift();
+    if (current === undefined || graph.has(current)) continue;
+    const source = await readFile(
+      path.join(controlRoot, directory, `${current}.${extension}`),
+      "utf8",
+    );
+    const edges = syntaxEdges(source, scriptKind);
+    graph.set(current, edges);
+    for (const edge of edges) {
+      if (!graph.has(edge.target)) pending.push(edge.target);
+    }
+  }
+  return graph;
+}
+
+function graphManifest(graph) {
+  return [...graph.entries()]
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(
+      ([moduleName, edges]) =>
+        `${moduleName}\0${edges
+          .map(
+            ({ target, typeOnly }) =>
+              `${target}:${typeOnly ? "type" : "value"}`,
+          )
+          .sort()
+          .join(",")}\n`,
+    )
+    .join("");
+}
+
+function manifestRow(logicalPath, bytes) {
+  return `${logicalPath}\0${bytes.byteLength}\0${sha256(bytes)}\n`;
+}
+
+if (
+  sources[`${activationBasename}.ts`] !== exactActivationSource ||
+  Buffer.byteLength(exactActivationSource) !== 774 ||
+  sha256(exactActivationSource) !==
+    "580c2926e9904213eb8db1d89367ce438f1bc88aadaeb1111c84964f5621578d"
+) {
+  fail("activation exact source bytes");
+}
+exactOrderedSet("source inventory", sourceNames, exactSourceInventory);
+const compiledNames = (await readdir(path.join(controlRoot, "dist"))).sort();
+exactOrderedSet("compiled inventory", compiledNames, exactCompiledInventory);
+
+const sourceGraph = await deriveClosure("src", "ts", ts.ScriptKind.TS);
+exactOrderedSet(
+  "source closure",
+  [...sourceGraph.keys()].sort(),
+  exactSourceModules,
+);
+const sourceTypeEdges = [...sourceGraph.values()]
+  .flat()
+  .filter(({ target }) => target === "types");
+if (
+  sourceTypeEdges.length === 0 ||
+  sourceTypeEdges.some(({ typeOnly }) => !typeOnly)
+) {
+  fail("activation type-only source edge");
+}
+const sourceEdgeManifest = graphManifest(sourceGraph);
+if (
+  Buffer.byteLength(sourceEdgeManifest) !== 2_002 ||
+  sha256(sourceEdgeManifest) !==
+    "b6da821f37515e16405de29b29486b2f9081b6d3d238b2d46207563396852434"
+) {
+  fail("current issue #46 source edge manifest");
+}
+
+const executableGraph = await deriveClosure("dist", "js", ts.ScriptKind.JS);
+exactOrderedSet(
+  "executable closure",
+  [...executableGraph.keys()].sort(),
+  exactExecutableModules,
+);
+if (
+  [...executableGraph.values()].flat().some(({ target }) => target === "types")
+) {
+  fail("activation construction-only types runtime edge");
+}
+const executableEdgeManifest = graphManifest(executableGraph);
+if (
+  Buffer.byteLength(executableEdgeManifest) !== 1_528 ||
+  sha256(executableEdgeManifest) !==
+    "c0c33de9b2b1625625c31d598fd0bf1a904f1207075c4c24c6591b1573042ff3"
+) {
+  fail("activation executable edge manifest");
+}
+
+let sourceManifest = "";
+let compiledManifest = "";
+for (const moduleName of exactSourceModules) {
+  const sourceLogicalPath = `containers/profile-control/src/${moduleName}.ts`;
+  const javascriptLogicalPath = `containers/profile-control/dist/${moduleName}.js`;
+  const declarationLogicalPath = `containers/profile-control/dist/${moduleName}.d.ts`;
+  const sourceBytes = await readFile(
+    path.join(repositoryRoot, sourceLogicalPath),
+  );
+  const unchangedIdentity = historicalUnchangedSourceIdentities[moduleName];
+  if (
+    unchangedIdentity !== undefined &&
+    (sourceBytes.byteLength !== unchangedIdentity[0] ||
+      sha256(sourceBytes) !== unchangedIdentity[1])
+  ) {
+    fail("historical source changed outside issue #46 allowlist");
+  }
+  if (
+    unchangedIdentity === undefined &&
+    !issue46SourceAllowlist.has(moduleName)
+  ) {
+    fail("unclassified current source divergence");
+  }
+  sourceManifest += manifestRow(sourceLogicalPath, sourceBytes);
+  compiledManifest += manifestRow(
+    javascriptLogicalPath,
+    await readFile(path.join(repositoryRoot, javascriptLogicalPath)),
+  );
+  compiledManifest += manifestRow(
+    declarationLogicalPath,
+    await readFile(path.join(repositoryRoot, declarationLogicalPath)),
+  );
+}
+if (
+  Buffer.byteLength(sourceManifest) !== 2_585 ||
+  sha256(sourceManifest) !==
+    "65bd9c122281c8934d603afbd1aca07ca8d56c8a39b4cec12e1511528d76a445" ||
+  Buffer.byteLength(compiledManifest) !== 5_232 ||
+  sha256(compiledManifest) !==
+    "04623a67b7b8129dda41ecae2eee524e0e8dcb0e7d3d2b0f38844ed9136b8953" ||
+  Buffer.byteLength(sourceManifest + compiledManifest) !== 7_817 ||
+  sha256(sourceManifest + compiledManifest) !==
+    "29b8d0710f4dc2d7291e108df0ab0e718c9f7c80655000a0b0b743d0aa5e57cc" ||
+  historicalActivationConstruction.sourceManifest[0] !== 2_582 ||
+  historicalActivationConstruction.sourceManifest[1] !==
+    "d9e68b20edfc7d46af59e91a25ebc4c179f24dcae5080c6182860842a80c6158" ||
+  historicalActivationConstruction.sourceEdgeManifest[0] !== 1_789 ||
+  historicalActivationConstruction.sourceEdgeManifest[1] !==
+    "d83d8d353fcdddfc95eca1d4cb044627172fafe52d3bc71677d094f9bd690495" ||
+  historicalActivationConstruction.compiledManifest[0] !== 5_232 ||
+  historicalActivationConstruction.compiledManifest[1] !==
+    "04623a67b7b8129dda41ecae2eee524e0e8dcb0e7d3d2b0f38844ed9136b8953" ||
+  historicalActivationConstruction.combinedManifest[0] !== 7_814 ||
+  historicalActivationConstruction.combinedManifest[1] !==
+    "7ef97d35e8d9f8e04e1134dabd558ce7c2d757ad0d334616048f4e0f222362ec"
+) {
+  fail("historical/current activation construction separation");
+}
+
+const issue46ProductionModules = [
+  "safe-data",
+  "canonical",
+  "completion",
+  "definitions",
+  "docker-plan",
+  "doctor",
+  "evidence",
+  "execution",
+  "image-input",
+  "inspect",
+  "offline-build-process",
+  "offline-build",
+  "offline-build-recovery",
+  "orchestrator",
+  "profile-input",
+  "run-controls",
+  "staging",
+  "types",
+  "validation",
+];
+exactOrderedSet(
+  "issue #46 production allowlist",
+  [...issue46SourceAllowlist].sort(),
+  [...issue46ProductionModules].sort(),
+);
+const requiredIssue46IngressFunctions = new Set([
+  "readPlainRecord",
+  "readPlainArray",
+  "snapshotBytes",
+  "captureAuthority",
+  "validateExecutionProfile",
+  "validateControlManifest",
+  "validateProfileControlPair",
+  "crossValidateProfileManifest",
+  "validateApprovedImageInput",
+  "validateVersionedImageInput",
+  "validateBaseEnvironmentKeys",
+  "prepareStagingInput",
+  "verifyAcceptedStagingFiles",
+  "crossValidateApprovedStaging",
+  "createAcceptedImageStagingSnapshot",
+  "validateControlEvidence",
+  "compareControlEvidence",
+  "validateControlCompletion",
+  "createControlCompletion",
+  "crossValidateCompleteBundle",
+  "serializeCanonicalControlManifest",
+  "serializeCanonicalControlEvidence",
+  "parseCanonicalControlManifestBytes",
+  "parseCanonicalControlEvidenceBytes",
+  "serializeCanonicalExecutionProfile",
+  "parseCanonicalExecutionProfileBytes",
+  "validateDockerInspectProjection",
+  "validateHostInspection",
+  "parseOrchestratorArguments",
+  "runApprovedOrchestrator",
+  "serializeCanonicalPairExecutionResult",
+  "validatePairExecutionResult",
+  "createControlManifest",
+  "createProfileControlPair",
+  "createImageBuildPlan",
+  "createProfileDockerPlan",
+  "createProfilePairDockerPlans",
+  "assertFixedImageBuildPlan",
+  "assertFixedProfilePairDockerPlans",
+  "createFixedOfflineBuildInput",
+  "createFixedOfflineBuildRecoveryInput",
+  "executeFixedDoctor",
+  "executeFixedProfilePair",
+  "executeFixedExistingImageProfilePair",
+  "executeFixedOfflineBuild",
+  "executeFixedOfflineBuildRecovery",
+  "validateOfflineBuildResult",
+  "serializeCanonicalOfflineBuildResult",
+  "parseCanonicalOfflineBuildResultBytes",
+  "validateOfflineBuildRecoveryResult",
+  "serializeCanonicalOfflineBuildRecoveryResult",
+  "parseCanonicalOfflineBuildRecoveryResultBytes",
+  "observeOfflineBuildProcessFailure",
+  "observeOfflineBuildProcessOutput",
+]);
+const actualIssue46Functions = new Set();
+for (const moduleName of issue46ProductionModules) {
+  const source = sources[`${moduleName}.ts`];
+  const file = ts.createSourceFile(
+    `${moduleName}.ts`,
+    source,
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TS,
+  );
+  function visitIssue46(node) {
+    if (ts.isFunctionDeclaration(node) && node.name !== undefined) {
+      actualIssue46Functions.add(node.name.text);
+    }
+    ts.forEachChild(node, visitIssue46);
+  }
+  visitIssue46(file);
+  if (
+    moduleName !== "safe-data" &&
+    /types\.isUint8Array|instanceof\s+SharedArrayBuffer|Uint8Array\.from/u.test(
+      source,
+    )
+  ) {
+    fail("issue #46 byte ingress bypass");
+  }
+}
+for (const functionName of requiredIssue46IngressFunctions) {
+  if (!actualIssue46Functions.has(functionName)) {
+    fail(`issue #46 ingress missing: ${functionName}`);
+  }
+}
+
+function namedFunction(moduleName, functionName) {
+  const source = sources[`${moduleName}.ts`];
+  const file = ts.createSourceFile(
+    `${moduleName}.ts`,
+    source,
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TS,
+  );
+  let match;
+  function visit(node) {
+    if (ts.isFunctionDeclaration(node) && node.name?.text === functionName) {
+      match = node;
+    }
+    ts.forEachChild(node, visit);
+  }
+  visit(file);
+  if (match === undefined) fail(`issue #46 selector missing: ${functionName}`);
+  return match;
+}
+
+function isExactProfileRejection(expression, parameterName) {
+  if (
+    !ts.isBinaryExpression(expression) ||
+    expression.operatorToken.kind !== ts.SyntaxKind.AmpersandAmpersandToken
+  ) {
+    return false;
+  }
+  const rejected = new Set();
+  for (const comparison of [expression.left, expression.right]) {
+    if (
+      !ts.isBinaryExpression(comparison) ||
+      comparison.operatorToken.kind !==
+        ts.SyntaxKind.ExclamationEqualsEqualsToken ||
+      !ts.isIdentifier(comparison.left) ||
+      comparison.left.text !== parameterName ||
+      !ts.isStringLiteral(comparison.right)
+    ) {
+      return false;
+    }
+    rejected.add(comparison.right.text);
+  }
+  return (
+    rejected.size === 2 &&
+    rejected.has("permissive") &&
+    rejected.has("constrained")
+  );
+}
+
+function containsFailProfile(statement, errorCode) {
+  let found = false;
+  function visit(node) {
+    if (
+      ts.isCallExpression(node) &&
+      ts.isIdentifier(node.expression) &&
+      node.expression.text === "failProfile" &&
+      node.arguments.length === 1 &&
+      ts.isStringLiteral(node.arguments[0]) &&
+      node.arguments[0].text === errorCode
+    ) {
+      found = true;
+    }
+    ts.forEachChild(node, visit);
+  }
+  visit(statement);
+  return found;
+}
+
+for (const [moduleName, functionName, errorCode] of [
+  ["definitions", "expectedControls", "INVALID_PROFILE"],
+  ["docker-plan", "fixedContainerArguments", "INVALID_DOCKER_PLAN"],
+]) {
+  const selector = namedFunction(moduleName, functionName);
+  const parameter = selector.parameters[0]?.name;
+  const firstStatement = selector.body?.statements[0];
+  if (
+    parameter === undefined ||
+    !ts.isIdentifier(parameter) ||
+    firstStatement === undefined ||
+    !ts.isIfStatement(firstStatement) ||
+    !isExactProfileRejection(firstStatement.expression, parameter.text) ||
+    !containsFailProfile(firstStatement.thenStatement, errorCode)
+  ) {
+    fail(`issue #46 selector exact rejection: ${functionName}`);
+  }
+}
+for (const moduleName of [
+  "doctor",
+  "execution",
+  "offline-build",
+  "offline-build-recovery",
+]) {
+  const source = sources[`${moduleName}.ts`];
+  if (!source.includes("captureAuthority") || source.includes(".bind(")) {
+    fail(`issue #46 authority capture: ${moduleName}`);
+  }
+}
+
+const activationExecutorSource =
+  sources[`${activationExecutorBasename}.ts`] ?? "";
+const activationExecutorJavascript = await text(
+  `dist/${activationExecutorBasename}.js`,
+);
+const activationExecutorDeclaration = await text(
+  `dist/${activationExecutorBasename}.d.ts`,
+);
+const executionGateContractSource = await readFile(
+  path.join(
+    repositoryRoot,
+    "docs/m4-distinct-activation-object-execution-gate.md",
+  ),
+  "utf8",
+);
+const exactExecutorImportPrefix = `import { spawn } from "node:child_process";
+import { createHash } from "node:crypto";
+import { constants, type BigIntStats } from "node:fs";
+import {
+  lstat,
+  open,
+  readdir,
+  realpath,
+  type FileHandle,
+} from "node:fs/promises";
+import path from "node:path";
+import process from "node:process";
+import { fileURLToPath } from "node:url";
+`;
+const exactExecutorSpecifiers = [
+  "node:child_process",
+  "node:crypto",
+  "node:fs",
+  "node:fs/promises",
+  "node:path",
+  "node:process",
+  "node:url",
+];
+function executorSpecifiers(source, scriptKind) {
+  const file = ts.createSourceFile(
+    "executor",
+    source,
+    ts.ScriptTarget.Latest,
+    true,
+    scriptKind,
+  );
+  const specifiers = [];
+  function visit(node) {
+    if (
+      (ts.isCallExpression(node) || ts.isNewExpression(node)) &&
+      (node.expression.kind === ts.SyntaxKind.ImportKeyword ||
+        (ts.isIdentifier(node.expression) &&
+          ["require", "eval", "createRequire", "Function"].includes(
+            node.expression.text,
+          )) ||
+        (ts.isPropertyAccessExpression(node.expression) &&
+          ["require", "eval", "createRequire", "getBuiltinModule"].includes(
+            node.expression.name.text,
+          )) ||
+        (ts.isElementAccessExpression(node.expression) &&
+          ts.isStringLiteral(node.expression.argumentExpression) &&
+          ["require", "eval", "createRequire", "getBuiltinModule"].includes(
+            node.expression.argumentExpression.text,
+          )))
+    ) {
+      fail("activation executor forbidden loading form");
+    }
+    if (
+      (ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) &&
+      node.moduleSpecifier !== undefined
+    ) {
+      if (!ts.isStringLiteral(node.moduleSpecifier)) {
+        fail("activation executor computed import");
+      }
+      specifiers.push(node.moduleSpecifier.text);
+    }
+    ts.forEachChild(node, visit);
+  }
+  visit(file);
+  return specifiers;
+}
+if (
+  !activationExecutorSource.startsWith(exactExecutorImportPrefix) ||
+  Buffer.byteLength(activationExecutorSource) !== 42_865 ||
+  sha256(activationExecutorSource) !==
+    "80829982f10266f27382393cb07faa8c41eff1de677788e018f671b7752a3174" ||
+  Buffer.byteLength(activationExecutorJavascript) !== 41_159 ||
+  sha256(activationExecutorJavascript) !==
+    "ab36b509837ea32353df60f5319bbdca865c284ed809b313c0de32692dd7294d" ||
+  Buffer.byteLength(activationExecutorDeclaration) !== 1_244 ||
+  sha256(activationExecutorDeclaration) !==
+    "ed1e6145b9f3adc43234bd82720e22041f61a514124b3531cf99560dbd9d92f5"
+) {
+  fail("activation executor construction");
+}
+for (const requiredTrustBoundary of [
+  "final filesystem-reading",
+  "descriptor baseline alone",
+  "No compiler,",
+  "filesystem write, repository mutation",
+]) {
+  if (!executionGateContractSource.includes(requiredTrustBoundary)) {
+    fail(`activation executor trust boundary ${requiredTrustBoundary}`);
+  }
+}
+exactOrderedSet(
+  "executor source imports",
+  executorSpecifiers(activationExecutorSource, ts.ScriptKind.TS),
+  exactExecutorSpecifiers,
+);
+exactOrderedSet(
+  "executor JavaScript imports",
+  executorSpecifiers(activationExecutorJavascript, ts.ScriptKind.JS),
+  exactExecutorSpecifiers,
+);
+for (const forbidden of [
+  'from "./',
+  'from "../',
+  "file:",
+  "module.createRequire",
+  "process.env",
+  "20260720-01",
+  "/var/run/docker.sock",
+]) {
+  if (activationExecutorSource.includes(forbidden)) {
+    fail(`activation executor forbidden marker ${forbidden}`);
+  }
+}
+for (const required of [
+  'spawn(process.execPath, [activationPath, "run-controls"]',
+  "env: Object.freeze({})",
+  "shell: false",
+  "windowsHide: true",
+  "detached: true",
+  'stdio: ["ignore", "pipe", "pipe"]',
+  "TIMEOUT_MS = 90_000",
+  "OUTPUT_LIMIT = 65_536",
+  "process.kill(-pid, signalName)",
+  "ACTIVATION_TIMEOUT",
+  "ACTIVATION_OUTPUT_LIMIT",
+  "ACTIVATION_PROCESS_FAILURE",
+  "CONTROL_RESULT_INVALID",
+  "CONTROL_INCONCLUSIVE",
+  "M4_ACTIVATION_SPAWN_FAILED\\n",
+  "M4_ACTIVATION_IDENTITY_CHANGED\\n",
+  "await lease.validate()",
+  "await lease.close()",
+  "identity-preflight",
+  "child-spawned",
+  "child-closed",
+  "identity-postflight",
+  "control-result-validated",
+]) {
+  if (!activationExecutorSource.includes(required)) {
+    fail(`activation executor required marker ${required}`);
+  }
+}
+
+const exactCompiledDelta = {
+  "control-host-backend.d.ts": [
+    942,
+    "6c47c9ab43b57ad1ff673f6f4e4dead732408f458fa2afbcf08cb647a0ebef1f",
+  ],
+  "control-host-backend.js": [
+    37_690,
+    "e4685e4fda539e35ef3bdfb984191fd6fbefc4ee3bab9fffc41635e610a51125",
+  ],
+  "execution.d.ts": [
+    2_364,
+    "dc85a74e27a8108f0946326bcec4e9a19f46d13e4819159d72e59e0025b167b9",
+  ],
+  "execution.js": [
+    17_918,
+    "3e178ab0293e575b0755f70274eba4248109f19a48b6781b1af6a7c4bf8354ac",
+  ],
+  "filesystem-identity.d.ts": [
+    4_644,
+    "a987a326d7659aa49dc69b60b4c744912a141e1f6c6892641e2296a9263a6daa",
+  ],
+  "filesystem-identity.js": [
+    22_909,
+    "a6692c54e71a4d3b54ed8f29f66b40cdc2a1eb8fc1d5f1660fe5c439c4453385",
+  ],
+  [`${activationBasename}.d.ts`]: [
+    11,
+    "8e609bb71c20b858c77f0e9f90bb1319db8477b13f9f965f1a1e18524bf50881",
+  ],
+  [`${activationBasename}.js`]: [
+    788,
+    "34ecc462630642d136d42fe8724d4872b9b36d9d378787595fd57496d9fa92d7",
+  ],
+  "offline-build-host-backend.js": [
+    37_593,
+    "13d617a5ae1637e1a48723ffda962ab831e5737cb52bf6fb7ad84fe73b36d6c0",
+  ],
+  "offline-build-recovery-host-backend.d.ts": [
+    2_938,
+    "194b13f397c87d6add1399e1137fe9809b83eb9f757ca691576ef5277b735c49",
+  ],
+  "offline-build-recovery-host-backend.js": [
+    16_102,
+    "6abcb89d9bcfa24fa21d8ced0919e2c8f7cc058fe89475bd441b6fd910147cd3",
+  ],
+  "run-controls.js": [
+    7_457,
+    "e53ec9ecf25c020a138aecd3ca4e5c1b6363e553591f1056c118daf88eeb020d",
+  ],
+  "types.d.ts": [
+    9_768,
+    "e5485ee736d5b42ad81258a2f8e7a8dfb75d27d3ae2ec1ee757108142adc13cd",
+  ],
+};
+for (const [name, [byteLength, hash]] of Object.entries(exactCompiledDelta)) {
+  const bytes = await readFile(path.join(controlRoot, "dist", name));
+  if (bytes.byteLength !== byteLength || sha256(bytes) !== hash) {
+    fail(`activation compiler delta ${name}`);
+  }
+}
+
+if (ts.version !== "5.9.3") fail("activation TypeScript version");
+const buildConfigPath = path.join(controlRoot, "tsconfig.build.json");
+const buildConfig = ts.readConfigFile(buildConfigPath, ts.sys.readFile);
+if (buildConfig.error !== undefined) fail("activation build configuration");
+const parsedBuildConfig = ts.parseJsonConfigFileContent(
+  buildConfig.config,
+  ts.sys,
+  controlRoot,
+  undefined,
+  buildConfigPath,
+);
+const inMemoryOutputs = new Map();
+const buildProgram = ts.createProgram(
+  parsedBuildConfig.fileNames,
+  parsedBuildConfig.options,
+);
+const emitResult = buildProgram.emit(undefined, (fileName, data) => {
+  inMemoryOutputs.set(path.basename(fileName), Buffer.from(data, "utf8"));
+});
+if (
+  emitResult.emitSkipped ||
+  ts.getPreEmitDiagnostics(buildProgram).length !== 0 ||
+  emitResult.diagnostics.length !== 0
+) {
+  fail("activation in-memory construction diagnostics");
+}
+exactOrderedSet(
+  "in-memory construction inventory",
+  [...inMemoryOutputs.keys()].sort(),
+  exactCompiledInventory,
+);
+const currentIssue46OutputDivergences = [];
+for (const outputName of exactCompiledInventory) {
+  const actual = await readFile(path.join(controlRoot, "dist", outputName));
+  const expected = inMemoryOutputs.get(outputName);
+  if (
+    expected === undefined ||
+    expected.byteLength !== actual.byteLength ||
+    !expected.equals(actual)
+  ) {
+    const moduleName = outputName.replace(/\.(?:d\.ts|js)$/u, "");
+    if (!issue46SourceAllowlist.has(moduleName)) {
+      fail(`activation in-memory construction ${outputName}`);
+    }
+    currentIssue46OutputDivergences.push(outputName);
+  }
+}
+if (!currentIssue46OutputDivergences.includes("safe-data.js")) {
+  fail("issue #46 compile-not-performed boundary");
+}
 const [
   rootPackageSource,
   rootTsconfigSource,
@@ -281,6 +1141,90 @@ for (const script of [
     fail(`missing root script ${script}`);
   }
 }
+const exactM4Scripts = {
+  "m4:typecheck":
+    "tsc --project containers/profile-control/tsconfig.json --noEmit",
+  "m4:static": "node containers/profile-control/scripts/verify-static.mjs",
+  "m4:test":
+    "vitest run --config containers/profile-control/vitest.config.ts --configLoader runner",
+  "m4:verify": "npm run m4:typecheck && npm run m4:static && npm run m4:test",
+  "m4:doctor":
+    "tsc --project containers/profile-control/tsconfig.build.json && node containers/profile-control/dist/orchestrator-entry.js doctor",
+  "m4:build":
+    "tsc --project containers/profile-control/tsconfig.build.json && node containers/profile-control/dist/orchestrator-entry.js build",
+  "m4:run:controls":
+    "tsc --project containers/profile-control/tsconfig.build.json && node containers/profile-control/dist/orchestrator-entry.js run-controls",
+  "m4:verify:evidence":
+    "tsc --project containers/profile-control/tsconfig.build.json && node containers/profile-control/dist/orchestrator-entry.js verify",
+};
+for (const [name, command] of Object.entries(exactM4Scripts)) {
+  if (rootPackage.scripts?.[name] !== command) {
+    fail(`activation ordinary script ${name}`);
+  }
+}
+if (JSON.stringify(rootPackage.scripts).includes(activationBasename)) {
+  fail("activation root-script reachability");
+}
+const workspaces = (
+  await readdir(path.join(repositoryRoot, "packages"), {
+    withFileTypes: true,
+  })
+).filter((entry) => entry.isDirectory());
+for (const workspace of workspaces) {
+  const workspacePackage = await readFile(
+    path.join(repositoryRoot, "packages", workspace.name, "package.json"),
+    "utf8",
+  );
+  if (workspacePackage.includes(activationBasename)) {
+    fail(`activation workspace reachability ${workspace.name}`);
+  }
+}
+for (const [sourceName, source] of sourceEntries) {
+  if (
+    sourceName !== `${activationBasename}.ts` &&
+    sourceName !== `${activationExecutorBasename}.ts` &&
+    source.includes(activationBasename)
+  ) {
+    fail(`activation source inbound reference ${sourceName}`);
+  }
+}
+for (const compiledName of exactCompiledInventory) {
+  if (
+    compiledName.startsWith(`${activationBasename}.`) ||
+    compiledName.startsWith(`${activationExecutorBasename}.`)
+  ) {
+    continue;
+  }
+  const compiledSource = await readFile(
+    path.join(controlRoot, "dist", compiledName),
+    "utf8",
+  );
+  if (compiledSource.includes(activationBasename)) {
+    fail(`activation compiled inbound reference ${compiledName}`);
+  }
+}
+for (const ordinaryPath of [
+  "src/index.ts",
+  "src/orchestrator.ts",
+  "src/orchestrator-entry.ts",
+  "src/offline-build-recovery-entry.ts",
+  "dist/index.js",
+  "dist/index.d.ts",
+  "dist/orchestrator.js",
+  "dist/orchestrator-entry.js",
+]) {
+  const ordinarySource = await readFile(
+    path.join(controlRoot, ordinaryPath),
+    "utf8",
+  );
+  if (
+    ordinarySource.includes(activationBasename) ||
+    ordinarySource.includes("runFixedProductionControls") ||
+    ordinarySource.includes("control-host-backend")
+  ) {
+    fail(`activation ordinary-entry reachability ${ordinaryPath}`);
+  }
+}
 if (
   !rootTsconfig.include?.includes("containers/profile-control/src/**/*.ts") ||
   !rootTsconfig.include?.includes("containers/profile-control/test/**/*.ts") ||
@@ -427,12 +1371,16 @@ const offlineBuildRecoveryHostBackend =
 const controlHostBackend = sources["control-host-backend.ts"] ?? "";
 const profileInput = sources["profile-input.ts"] ?? "";
 const runControls = sources["run-controls.ts"] ?? "";
+const filesystemIdentity = sources["filesystem-identity.ts"] ?? "";
+const activationExecutor = sources[`${activationExecutorBasename}.ts`] ?? "";
+const typesSource = sources["types.ts"] ?? "";
 for (const [sourceName, source] of sourceEntries) {
   if (
     sourceName !== "doctor-host-backend.ts" &&
     sourceName !== "offline-build-host-backend.ts" &&
     sourceName !== "offline-build-recovery-host-backend.ts" &&
     sourceName !== "control-host-backend.ts" &&
+    sourceName !== `${activationExecutorBasename}.ts` &&
     source.includes('from "node:child_process"')
   ) {
     fail(`unexpected host child-process source ${sourceName}`);
@@ -447,6 +1395,8 @@ for (const required of [
   "createFixedProductionControlDefinition",
   "createFixedControlHostBackend",
   "executeFixedExistingImageProfilePair",
+  '"profile-control-fixture-root"',
+  'path.join(controlRoot, "fixture")',
 ]) {
   if (!runControls.includes(required) && !profileInput.includes(required)) {
     fail(`run-controls binding marker ${required}`);
@@ -479,21 +1429,35 @@ for (const required of [
   'stdio: ["ignore", "pipe", "pipe"]',
   'child.kill("SIGKILL")',
   "this.activeChildren.size !== 0",
-  "constants.O_NOFOLLOW",
+  "captureFileIdentity",
+  "FilesystemIdentityLease",
   "serializeCanonicalControlManifest",
   '"cp"',
   '"/result/control-evidence.json"',
   '"/result/result-marker.txt"',
   '"/scratch/scratch-marker.txt"',
-  'flag: "wx"',
   '"control-evidence.json"',
   '"host-inspection.json"',
   '"completion.json"',
   '"comparison.json"',
+  "validateSourceBoundary",
+  "sourceIdentity.validateStable",
+  "sourceParent.validateStable",
+  "this.runAncestorLease.validate()",
+  "this.m4RootChildren",
+  "transferChildrenBefore",
+  "manifestIdentityStable: true",
+  "closeObserved",
 ]) {
   if (!controlHostBackend.includes(required)) {
     fail(`control host backend marker ${required}`);
   }
+}
+if (
+  controlHostBackend.split("await validateSourceBoundary();").length - 1 !==
+  2
+) {
+  fail("control host backend immediate copy boundary count");
 }
 for (const forbidden of [
   "process.env",
@@ -554,8 +1518,14 @@ for (const required of [
 ]) {
   if (!doctor.includes(required)) fail(`doctor marker ${required}`);
 }
-for (const forbidden of ['"pull"', '"build"', '"create"', '"run"', '"start"']) {
+for (const forbidden of ['"pull"', '"build"', '"create"', '"start"']) {
   if (doctor.includes(forbidden)) fail(`doctor forbidden verb ${forbidden}`);
+}
+if (
+  doctor.match(/"run"/gu)?.length !== 1 ||
+  !doctor.includes('["run", "cleanup"]')
+) {
+  fail("doctor authority-only run method");
 }
 for (const required of [
   "FIXED_RUNTIME_VERSION_FORMAT",
@@ -642,9 +1612,10 @@ for (const required of [
   "byteLength: 74",
   '"docker-config/buildx/refs/default/default/tdjwufr4i7552r09bibchdkva"',
   "byteLength: 281",
-  "entry.nlink !== 1",
   "captureExactRetainedState",
   "validateCapturedRetainedState",
+  "FilesystemIdentityLease",
+  'content: "metadata-only"',
   "productionFactoryConsumed",
   "consumeOfflineBuildRecoveryInspectAttempt",
   "assertFixedOfflineBuildRecoveryCommand(command)",
@@ -657,6 +1628,11 @@ for (const required of [
   "createOfflineBuildProcessState",
   "observeOfflineBuildProcessFailure",
   "observeOfflineBuildProcessOutput",
+  "private unknownSettlement = false",
+  "private terminalLeaseSettlement: Promise<void> | null = null",
+  "this.unknownSettlement = true",
+  "await this.retainedState.lease.validate()",
+  "await this.retainedState.lease.close()",
 ]) {
   if (!offlineBuildRecoveryHostBackend.includes(required)) {
     fail(`offline build recovery host backend marker ${required}`);
@@ -718,13 +1694,18 @@ for (const required of [
   'stdio: ["ignore", "pipe", "pipe"]',
   'child.kill("SIGKILL")',
   "this.activeChildren.size !== 0",
-  "constants.O_NOFOLLOW",
-  "entry.nlink !== 1",
-  'flag: "wx"',
+  "captureFileIdentity",
+  "FilesystemIdentityLease",
+  "RUNTIME_CONFIGURATION_CLEANUP_ORDER",
+  "validateConfigurationCheckpoint",
+  'content: "metadata-only"',
+  "createExclusiveFileIdentity",
+  '"profile-control-fixture-root"',
+  'path.join(controlRoot, "fixture")',
   "DOCKER_CONFIG_JSON",
-  "verifyAcceptedStagingFiles(snapshot, repositoryFiles)",
+  "verifyAcceptedStagingFiles(snapshot, repositoryFiles.files)",
   "assertFixedImageBuildPlan",
-  "createExclusiveDirectory(m4Root, input.layout.runId)",
+  "requireAbsent(input.layout.runRoot)",
   "createOfflineBuildProcessState",
   "observeOfflineBuildProcessFailure",
   "observeOfflineBuildProcessOutput",
@@ -733,12 +1714,103 @@ for (const required of [
     fail(`offline build host backend marker ${required}`);
   }
 }
+if (offlineBuildHostBackend.includes("writeFile")) {
+  fail("offline build host backend path-write marker");
+}
+for (const required of [
+  "lstat(target, { bigint: true })",
+  "handle.stat({ bigint: true })",
+  "stat.uid",
+  "stat.gid",
+  "stat.mtimeNs",
+  "stat.ctimeNs",
+  "constants.O_NOFOLLOW",
+  "constants.O_DIRECTORY",
+  "constants.O_EXCL",
+  "identity.nlink !== 1n",
+  "identity.mode & MODE_MASK",
+  "FilesystemIdentityLease",
+  "refreshDirectoryCheckpoint",
+  "syncDirectoryCheckpoint",
+  "adoptCreatedFile",
+  "assertCreatingDescriptorContinuityForTest",
+  "assertFilesystemCapabilitiesForTest",
+  "transitionDirectoryMode",
+  "unlinkExpected",
+  "removeExpectedDirectory",
+  'content === "metadata-only"',
+  "!this.readPermitted",
+]) {
+  if (!filesystemIdentity.includes(required)) {
+    fail(`filesystem identity marker ${required}`);
+  }
+}
+const exclusiveFileStart = filesystemIdentity.indexOf(
+  "export async function createExclusiveFileIdentity",
+);
+const exclusiveFileEnd = filesystemIdentity.indexOf(
+  "export class FilesystemIdentityLease",
+  exclusiveFileStart,
+);
+const exclusiveFileSource = filesystemIdentity.slice(
+  exclusiveFileStart,
+  exclusiveFileEnd,
+);
+for (const required of [
+  "constants.O_CREAT",
+  "constants.O_EXCL",
+  "constants.O_NOFOLLOW",
+  "await handle.writeFile(input.bytes)",
+  "await handle.sync()",
+  "HeldFilesystemObject.adoptCreatedFile",
+  "input.parent.syncDirectoryCheckpoint",
+]) {
+  if (!exclusiveFileSource.includes(required)) {
+    fail(`exclusive file descriptor marker ${required}`);
+  }
+}
+for (const forbidden of [
+  "const held = await captureFileIdentity",
+  "const parentHandle = await open",
+]) {
+  if (exclusiveFileSource.includes(forbidden)) {
+    fail(`exclusive file reopen marker ${forbidden}`);
+  }
+}
+for (const forbidden of [
+  "manifestIdentityBefore",
+  "manifestIdentityAfter",
+  "manifestTypeBefore",
+  "manifestTypeAfter",
+  "manifestSymlinkBefore",
+  "manifestSymlinkAfter",
+  "m4-file-",
+]) {
+  if (
+    execution.includes(forbidden) ||
+    controlHostBackend.includes(forbidden) ||
+    typesSource.includes(forbidden)
+  ) {
+    fail(`retired public identity marker ${forbidden}`);
+  }
+}
+for (const required of [
+  '"manifestBefore"',
+  '"manifestAfter"',
+  '"manifestIdentityStable"',
+  '"controlEvidence"',
+  '"resultFiles"',
+  '"scratchFiles"',
+]) {
+  if (!execution.includes(required))
+    fail(`transfer projection marker ${required}`);
+}
 for (const required of [
   '"output-limit"',
   '"process-error"',
   '"timeout"',
-  "state.firstFailure ?? failure",
-  "state.firstFailure ??",
+  "snapshot.firstFailure ?? failure",
+  "snapshot.firstFailure ??",
   "stdoutBytes + stderrBytes > outputLimitBytes",
   "Math.min(current + added, limit + 1)",
 ]) {
@@ -778,7 +1850,7 @@ for (const [sourceName, source, requiredMarkers] of [
       "acceptedBytes",
       "inventoryDigest",
       "verifyAcceptedStagingFiles",
-      "SharedArrayBuffer",
+      "snapshotBytes",
     ],
   ],
   [
@@ -787,7 +1859,7 @@ for (const [sourceName, source, requiredMarkers] of [
     [
       "serializeCanonicalControlManifest",
       "serializeCanonicalControlEvidence",
-      "SharedArrayBuffer",
+      "snapshotBytes",
     ],
   ],
   [
@@ -822,13 +1894,13 @@ for (const [sourceName, source, requiredMarkers] of [
       "stageBuildContext",
       "readBuildContext",
       "copyAcceptedStagingFiles",
-      "input.acceptedSnapshot.baseEnvironmentKeys",
+      "fixedInput.acceptedSnapshot.baseEnvironmentKeys",
       "validatePreBuildRuntimeVersion",
       "RUNTIME_VERSION_KEYS",
       "FIXED_DOCKER_CLI_VERSION",
       "FIXED_DOCKER_SERVER_VERSION",
       "canonicalEncoder.encode",
-      "result.payload.byteLength !== result.stdoutBytes",
+      "bytes.byteLength !== result.stdoutBytes",
       'failStep("COMMAND_TIMEOUT")',
       'failStep("OUTPUT_LIMIT")',
       'failStep("IMMUTABLE_INPUT_CHANGED")',
@@ -836,7 +1908,7 @@ for (const [sourceName, source, requiredMarkers] of [
       "executeFixedExistingImageProfilePair",
       "validateExistingImageExecutionPlan",
       "recordProfileResult",
-      "await input.backend.cleanup()",
+      "await fixedInput.backend.cleanup()",
     ],
   ],
 ]) {
@@ -948,7 +2020,94 @@ if (
 ) {
   fail("approved documentation/prompt boundary");
 }
+const [activationImplementationPrompt, activationImplementationReviewPrompt] =
+  await Promise.all([
+    readFile(
+      path.join(
+        repositoryRoot,
+        "prompts/m4-distinct-activation-object-implementation.md",
+      ),
+      "utf8",
+    ),
+    readFile(
+      path.join(
+        repositoryRoot,
+        "prompts/reviews/m4-distinct-activation-object-implementation-review.md",
+      ),
+      "utf8",
+    ),
+  ]);
+for (const [label, prompt] of [
+  ["implementation", activationImplementationPrompt],
+  ["review", activationImplementationReviewPrompt],
+]) {
+  if (!prompt.includes("# Goal") || !prompt.includes("# Completion report")) {
+    fail(`activation ${label} prompt boundary`);
+  }
+}
+
+const [
+  executorImplementationPrompt,
+  executorImplementationReviewPrompt,
+  executorImplementationRemediationPrompt,
+  executorImplementationRemediationReviewPrompt,
+] = await Promise.all([
+  readFile(
+    path.join(
+      repositoryRoot,
+      "prompts/m4-distinct-activation-object-execution-gate-implementation.md",
+    ),
+    "utf8",
+  ),
+  readFile(
+    path.join(
+      repositoryRoot,
+      "prompts/reviews/m4-distinct-activation-object-execution-gate-implementation-review.md",
+    ),
+    "utf8",
+  ),
+  readFile(
+    path.join(
+      repositoryRoot,
+      "prompts/m4-distinct-activation-object-execution-gate-implementation-remediation.md",
+    ),
+    "utf8",
+  ),
+  readFile(
+    path.join(
+      repositoryRoot,
+      "prompts/reviews/m4-distinct-activation-object-execution-gate-implementation-remediation-review.md",
+    ),
+    "utf8",
+  ),
+]);
+for (const [label, prompt] of [
+  ["executor implementation", executorImplementationPrompt],
+  ["executor review", executorImplementationReviewPrompt],
+  [
+    "executor implementation remediation",
+    executorImplementationRemediationPrompt,
+  ],
+  [
+    "executor implementation remediation review",
+    executorImplementationRemediationReviewPrompt,
+  ],
+]) {
+  if (!prompt.includes("# Goal") || !prompt.includes("# Completion report")) {
+    fail(`activation ${label} prompt boundary`);
+  }
+}
+if (
+  rootPackage.scripts?.["m4:execute:frozen-research"] !==
+    "node containers/profile-control/dist/frozen-research-profile-control-executor.js" ||
+  !permissiveReadme.includes("m4-profile-control-p-20260720-02") ||
+  !constrainedReadme.includes("m4-profile-control-c-20260720-02") ||
+  permissiveReadme.includes("m4-profile-control-p-20260720-01") ||
+  constrainedReadme.includes("m4-profile-control-c-20260720-01")
+) {
+  fail("activation executor package and handoff boundary");
+}
 
 process.stdout.write(
-  "M4 static contract verified (no Docker execution; no runtime enforcement claim)\n",
+  "M4 static contract verified; activation wrapper constructed but not invoked (no activation execution; no Docker execution; no runtime enforcement claim)\n",
 );

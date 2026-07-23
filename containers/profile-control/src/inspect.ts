@@ -16,10 +16,13 @@ import {
   fixedContainerArguments,
 } from "./docker-plan.js";
 import { failProfile } from "./errors.js";
+import { validateBaseEnvironmentKeys } from "./image-input.js";
 import {
   assertBoolean,
   assertExactKeys,
   assertPositiveInteger,
+  assertRunId,
+  assertSha256,
   assertString,
   readPlainArray,
   readPlainRecord,
@@ -29,6 +32,10 @@ import type {
   ExecutionProfile,
   HostInspection,
 } from "./types.js";
+import {
+  validateControlManifest,
+  validateExecutionProfile,
+} from "./validation.js";
 
 const INSPECT_KEYS = Object.freeze([
   "image",
@@ -70,6 +77,31 @@ const INSPECT_KEYS = Object.freeze([
 ]);
 
 const MOUNT_KEYS = Object.freeze(["Type", "Source", "Destination", "RW"]);
+const HOST_INSPECTION_RESULT_KEYS = Object.freeze([
+  "schemaVersion",
+  "runId",
+  "controlId",
+  "profileId",
+  "containerImageDigest",
+  "commandId",
+  "user",
+  "readOnlyRoot",
+  "networkMode",
+  "privileged",
+  "capAdd",
+  "capDrop",
+  "securityOptions",
+  "mountIds",
+  "scratchAccess",
+  "environmentKeys",
+  "devices",
+  "deviceRequests",
+  "groupAdd",
+  "runtime",
+  "usernsMode",
+  "pidMode",
+  "resourceLimits",
+]);
 
 function exactEmptyRecord(input: unknown): void {
   const value = readPlainRecord(input, "INVALID_HOST_INSPECTION");
@@ -128,6 +160,143 @@ function validateEnvironment(
     : Object.freeze([]);
 }
 
+export function validateHostInspection(input: unknown): HostInspection {
+  const value = readPlainRecord(input, "INVALID_HOST_INSPECTION");
+  assertExactKeys(
+    value,
+    HOST_INSPECTION_RESULT_KEYS,
+    "INVALID_HOST_INSPECTION",
+  );
+  assertString(
+    value.schemaVersion,
+    HOST_INSPECTION_SCHEMA_VERSION,
+    "INVALID_HOST_INSPECTION",
+  );
+  const runId = assertRunId(value.runId, "INVALID_HOST_INSPECTION");
+  const profileId = assertString(
+    value.profileId,
+    ["permissive", "constrained"],
+    "INVALID_HOST_INSPECTION",
+  ) as ExecutionProfile["profileId"];
+  assertString(
+    value.controlId,
+    CONTROL_IDS[profileId],
+    "INVALID_HOST_INSPECTION",
+  );
+  const containerImageDigest = assertSha256(
+    value.containerImageDigest,
+    "INVALID_HOST_INSPECTION",
+  );
+  assertString(
+    value.commandId,
+    profileId === "permissive"
+      ? "permissive-node"
+      : "constrained-node-permission-model",
+    "INVALID_HOST_INSPECTION",
+  );
+  assertString(value.user, FIXED_CONTAINER_USER, "INVALID_HOST_INSPECTION");
+  if (
+    assertBoolean(value.readOnlyRoot, "INVALID_HOST_INSPECTION") !== true ||
+    assertBoolean(value.privileged, "INVALID_HOST_INSPECTION") !== false
+  ) {
+    failProfile("INVALID_HOST_INSPECTION");
+  }
+  assertString(value.networkMode, "none", "INVALID_HOST_INSPECTION");
+  exactArray(value.capAdd, []);
+  exactArray(value.capDrop, ["ALL"]);
+  exactArray(value.securityOptions, ["no-new-privileges"]);
+  exactArray(value.mountIds, ["input", "result", "scratch"]);
+  assertString(
+    value.scratchAccess,
+    profileId === "permissive" ? "writable" : "read-only",
+    "INVALID_HOST_INSPECTION",
+  );
+  exactArray(
+    value.environmentKeys,
+    profileId === "permissive" ? [FIXED_ENVIRONMENT_KEY] : [],
+  );
+  exactArray(value.devices, []);
+  exactArray(value.deviceRequests, []);
+  exactArray(value.groupAdd, []);
+  assertString(
+    value.runtime,
+    FIXED_CONTAINER_RUNTIME,
+    "INVALID_HOST_INSPECTION",
+  );
+  assertString(value.usernsMode, "private", "INVALID_HOST_INSPECTION");
+  assertString(value.pidMode, "private", "INVALID_HOST_INSPECTION");
+  const resourceLimits = readPlainRecord(
+    value.resourceLimits,
+    "INVALID_HOST_INSPECTION",
+  );
+  assertExactKeys(
+    resourceLimits,
+    ["memoryBytes", "nanoCpus", "pids"],
+    "INVALID_HOST_INSPECTION",
+  );
+  const memoryBytes = assertPositiveInteger(
+    resourceLimits.memoryBytes,
+    LIMITS.memoryBytes,
+    "INVALID_HOST_INSPECTION",
+  );
+  const nanoCpus = assertPositiveInteger(
+    resourceLimits.nanoCpus,
+    LIMITS.nanoCpus,
+    "INVALID_HOST_INSPECTION",
+  );
+  const pids = assertPositiveInteger(
+    resourceLimits.pids,
+    LIMITS.pids,
+    "INVALID_HOST_INSPECTION",
+  );
+  if (
+    memoryBytes !== LIMITS.memoryBytes ||
+    nanoCpus !== LIMITS.nanoCpus ||
+    pids !== LIMITS.pids
+  ) {
+    failProfile("INVALID_HOST_INSPECTION");
+  }
+  return Object.freeze({
+    schemaVersion: HOST_INSPECTION_SCHEMA_VERSION,
+    runId,
+    controlId: CONTROL_IDS[profileId],
+    profileId,
+    containerImageDigest,
+    commandId:
+      profileId === "permissive"
+        ? "permissive-node"
+        : "constrained-node-permission-model",
+    user: FIXED_CONTAINER_USER,
+    readOnlyRoot: true,
+    networkMode: "none",
+    privileged: false,
+    capAdd: Object.freeze([]) as readonly [],
+    capDrop: Object.freeze(["ALL"]) as readonly ["ALL"],
+    securityOptions: Object.freeze(["no-new-privileges"]) as readonly [
+      "no-new-privileges",
+    ],
+    mountIds: Object.freeze(["input", "result", "scratch"]) as readonly [
+      "input",
+      "result",
+      "scratch",
+    ],
+    scratchAccess: profileId === "permissive" ? "writable" : "read-only",
+    environmentKeys:
+      profileId === "permissive"
+        ? (Object.freeze([FIXED_ENVIRONMENT_KEY]) as readonly [
+            typeof FIXED_ENVIRONMENT_KEY,
+          ])
+        : (Object.freeze([]) as readonly []),
+    devices: Object.freeze([]) as readonly [],
+    deviceRequests: Object.freeze([]) as readonly [],
+    groupAdd: Object.freeze([]) as readonly [],
+    runtime: FIXED_CONTAINER_RUNTIME,
+    usernsMode: "private",
+    pidMode: "private",
+    resourceLimits: Object.freeze({ memoryBytes, nanoCpus, pids }),
+  });
+}
+
 export function validateDockerInspectProjection(input: {
   readonly rawProjection: unknown;
   readonly profile: ExecutionProfile;
@@ -139,15 +308,54 @@ export function validateDockerInspectProjection(input: {
   }>;
   readonly baseEnvironmentKeys: readonly string[];
 }): HostInspection {
-  const value = readPlainRecord(input.rawProjection, "INVALID_HOST_INSPECTION");
+  const wrapper = readPlainRecord(input, "INVALID_HOST_INSPECTION");
+  assertExactKeys(
+    wrapper,
+    [
+      "rawProjection",
+      "profile",
+      "manifest",
+      "expectedMountSources",
+      "baseEnvironmentKeys",
+    ],
+    "INVALID_HOST_INSPECTION",
+  );
+  const profile = validateExecutionProfile(wrapper.profile);
+  const manifest = validateControlManifest(wrapper.manifest);
+  const expectedMountSources = readPlainRecord(
+    wrapper.expectedMountSources,
+    "INVALID_HOST_INSPECTION",
+  );
+  assertExactKeys(
+    expectedMountSources,
+    ["input", "result", "scratch"],
+    "INVALID_HOST_INSPECTION",
+  );
+  if (
+    typeof expectedMountSources.input !== "string" ||
+    typeof expectedMountSources.result !== "string" ||
+    typeof expectedMountSources.scratch !== "string"
+  ) {
+    failProfile("INVALID_HOST_INSPECTION");
+  }
+  const inputMountSource = expectedMountSources.input;
+  const resultMountSource = expectedMountSources.result;
+  const scratchMountSource = expectedMountSources.scratch;
+  const baseEnvironmentKeys = validateBaseEnvironmentKeys(
+    wrapper.baseEnvironmentKeys,
+  );
+  const value = readPlainRecord(
+    wrapper.rawProjection,
+    "INVALID_HOST_INSPECTION",
+  );
   assertExactKeys(value, INSPECT_KEYS, "INVALID_HOST_INSPECTION");
   assertString(
     value.image,
-    input.profile.containerImageDigest,
+    profile.containerImageDigest,
     "INVALID_HOST_INSPECTION",
   );
   assertString(value.path, FIXED_NODE_EXECUTABLE, "INVALID_HOST_INSPECTION");
-  exactArray(value.args, fixedContainerArguments(input.profile.profileId));
+  exactArray(value.args, fixedContainerArguments(profile.profileId));
   assertString(value.user, FIXED_CONTAINER_USER, "INVALID_HOST_INSPECTION");
   assertString(value.workingDir, "/opt/m4-control", "INVALID_HOST_INSPECTION");
   if (!assertBoolean(value.readOnlyRoot, "INVALID_HOST_INSPECTION")) {
@@ -195,19 +403,19 @@ export function validateDockerInspectProjection(input: {
   const mounts = readPlainArray(value.mounts, "INVALID_HOST_INSPECTION");
   const expectedMounts = [
     {
-      source: input.expectedMountSources.input,
+      source: inputMountSource,
       destination: FIXED_INPUT_DESTINATION,
       writable: false,
     },
     {
-      source: input.expectedMountSources.result,
+      source: resultMountSource,
       destination: FIXED_RESULT_DESTINATION,
       writable: true,
     },
     {
-      source: input.expectedMountSources.scratch,
+      source: scratchMountSource,
       destination: FIXED_SCRATCH_DESTINATION,
-      writable: input.profile.profileId === "permissive",
+      writable: profile.profileId === "permissive",
     },
   ];
   if (mounts.length !== expectedMounts.length) {
@@ -233,30 +441,27 @@ export function validateDockerInspectProjection(input: {
   });
   const environmentKeys = validateEnvironment(
     value.env,
-    input.baseEnvironmentKeys,
-    input.profile,
+    baseEnvironmentKeys,
+    profile,
   );
   if (
-    input.profile.profileId !== input.manifest.profileId ||
-    input.profile.containerImageDigest !==
-      input.manifest.containerImageDigest ||
-    !fixedContainerArguments(input.profile.profileId).includes(
+    profile.profileId !== manifest.profileId ||
+    profile.containerImageDigest !== manifest.containerImageDigest ||
+    !fixedContainerArguments(profile.profileId).includes(
       FIXED_CONTROL_SCRIPT,
     ) ||
-    !fixedContainerArguments(input.profile.profileId).includes(
-      FIXED_MANIFEST_PATH,
-    )
+    !fixedContainerArguments(profile.profileId).includes(FIXED_MANIFEST_PATH)
   ) {
     failProfile("PROFILE_MANIFEST_MISMATCH");
   }
   return Object.freeze({
     schemaVersion: HOST_INSPECTION_SCHEMA_VERSION,
-    runId: input.manifest.runId,
-    controlId: CONTROL_IDS[input.profile.profileId],
-    profileId: input.profile.profileId,
-    containerImageDigest: input.profile.containerImageDigest,
+    runId: manifest.runId,
+    controlId: CONTROL_IDS[profile.profileId],
+    profileId: profile.profileId,
+    containerImageDigest: profile.containerImageDigest,
     commandId:
-      input.profile.profileId === "permissive"
+      profile.profileId === "permissive"
         ? "permissive-node"
         : "constrained-node-permission-model",
     user: FIXED_CONTAINER_USER,
@@ -274,7 +479,7 @@ export function validateDockerInspectProjection(input: {
       "scratch",
     ],
     scratchAccess:
-      input.profile.profileId === "permissive" ? "writable" : "read-only",
+      profile.profileId === "permissive" ? "writable" : "read-only",
     environmentKeys,
     devices: Object.freeze([]) as readonly [],
     deviceRequests: Object.freeze([]) as readonly [],

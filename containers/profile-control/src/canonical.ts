@@ -1,20 +1,19 @@
-import { types } from "node:util";
-
 import { LIMITS } from "./constants.js";
 import { failProfile } from "./errors.js";
 import { validateControlEvidence } from "./evidence.js";
+import { snapshotBytes } from "./safe-data.js";
 import type { ControlEvidence } from "./types.js";
 import { validateControlManifest } from "./validation.js";
 import type { ControlManifest } from "./types.js";
 
 function decodeCanonicalBytes(input: unknown): string {
-  if (!types.isUint8Array(input) || input.buffer instanceof SharedArrayBuffer) {
-    return failProfile("NONCANONICAL_EVIDENCE");
-  }
-  const bytes = Uint8Array.from(input);
-  if (bytes.byteLength === 0 || bytes.byteLength > LIMITS.evidenceBytes) {
-    return failProfile("EVIDENCE_SIZE_LIMIT");
-  }
+  const bytes = snapshotBytes(input, {
+    code: "NONCANONICAL_EVIDENCE",
+    maximum: LIMITS.evidenceBytes,
+    allowEmpty: false,
+    emptyCode: "EVIDENCE_SIZE_LIMIT",
+    limitCode: "EVIDENCE_SIZE_LIMIT",
+  });
   try {
     const text = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
     if (!text.endsWith("\n") || text.slice(0, -1).includes("\n")) {

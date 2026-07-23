@@ -1,13 +1,14 @@
 import { createHash } from "node:crypto";
-import { types } from "node:util";
 
 import { FIXED_STAGING_FILES } from "./constants.js";
 import { failProfile } from "./errors.js";
 import { validateApprovedImageInput } from "./image-input.js";
 import {
   assertExactKeys,
+  copyBytes,
   readPlainArray,
   readPlainRecord,
+  snapshotBytes,
 } from "./safe-data.js";
 import type {
   AcceptedImageStagingSnapshot,
@@ -49,15 +50,11 @@ function inventoryDigest(
 }
 
 function immutableBytes(input: unknown): Uint8Array {
-  if (
-    !types.isUint8Array(input) ||
-    input.buffer instanceof SharedArrayBuffer ||
-    input.byteLength === 0 ||
-    input.byteLength > MAX_STAGING_FILE_BYTES
-  ) {
-    return failProfile("INVALID_STAGING_INPUT");
-  }
-  return Uint8Array.from(input);
+  return snapshotBytes(input, {
+    code: "INVALID_STAGING_INPUT",
+    maximum: MAX_STAGING_FILE_BYTES,
+    allowEmpty: false,
+  });
 }
 
 export function prepareStagingInput(input: unknown): PreparedStagingInput {
@@ -100,14 +97,15 @@ export function crossValidateApprovedStaging(
   imageInput: ApprovedImageInput,
   prepared: PreparedStagingInput,
 ): void {
+  const canonicalImageInput = validateApprovedImageInput(imageInput);
   if (
     preparedBytes.get(prepared) === undefined ||
-    prepared.stagingDigest !== imageInput.stagingDigest ||
+    prepared.stagingDigest !== canonicalImageInput.stagingDigest ||
     prepared.files.length !== FIXED_STAGING_FILES.length ||
     prepared.files.some(
       (entry, index) =>
         entry.logicalPath !== FIXED_STAGING_FILES[index] ||
-        imageInput.stagingFiles[index] !== FIXED_STAGING_FILES[index],
+        canonicalImageInput.stagingFiles[index] !== FIXED_STAGING_FILES[index],
     )
   ) {
     failProfile("INVALID_STAGING_INPUT");
@@ -122,17 +120,24 @@ export function copyPreparedStagingFile(
   if (bytes === undefined) {
     return failProfile("INVALID_STAGING_INPUT");
   }
-  return Uint8Array.from(bytes);
+  return copyBytes(bytes);
 }
 
 export function createAcceptedImageStagingSnapshot(input: {
   readonly imageInput: ApprovedImageInput;
   readonly preparedStaging: PreparedStagingInput;
 }): AcceptedImageStagingSnapshot {
-  const imageInput = validateApprovedImageInput(input.imageInput);
-  crossValidateApprovedStaging(imageInput, input.preparedStaging);
+  const wrapper = readPlainRecord(input, "INVALID_STAGING_INPUT");
+  assertExactKeys(
+    wrapper,
+    ["imageInput", "preparedStaging"],
+    "INVALID_STAGING_INPUT",
+  );
+  const imageInput = validateApprovedImageInput(wrapper.imageInput);
+  const preparedStaging = wrapper.preparedStaging as PreparedStagingInput;
+  crossValidateApprovedStaging(imageInput, preparedStaging);
   const bytesByPath = new Map<StagingFilePath, Uint8Array>();
-  const stagingInventory = input.preparedStaging.files.map((entry, index) => {
+  const stagingInventory = preparedStaging.files.map((entry, index) => {
     const logicalPath = FIXED_STAGING_FILES[index];
     if (
       logicalPath === undefined ||
@@ -143,7 +148,7 @@ export function createAcceptedImageStagingSnapshot(input: {
     ) {
       return failProfile("INVALID_STAGING_INPUT");
     }
-    const bytes = copyPreparedStagingFile(input.preparedStaging, logicalPath);
+    const bytes = copyPreparedStagingFile(preparedStaging, logicalPath);
     if (
       bytes.byteLength !== entry.byteLength ||
       digest(bytes) !== entry.sha256
@@ -160,7 +165,7 @@ export function createAcceptedImageStagingSnapshot(input: {
     nodeVersion: imageInput.nodeVersion,
     baseEnvironmentKeys: Object.freeze([...imageInput.baseEnvironmentKeys]),
     stagingInventory: Object.freeze(stagingInventory),
-    stagingDigest: input.preparedStaging.stagingDigest,
+    stagingDigest: preparedStaging.stagingDigest,
   }) as unknown as AcceptedImageStagingSnapshot;
   acceptedBytes.set(snapshot, bytesByPath);
   return snapshot;
@@ -186,7 +191,7 @@ export function copyAcceptedStagingFiles(
     FIXED_STAGING_FILES.map((logicalPath) => {
       const bytes = bytesByPath.get(logicalPath);
       if (bytes === undefined) return failProfile("INVALID_STAGING_INPUT");
-      return Object.freeze({ logicalPath, bytes: Uint8Array.from(bytes) });
+      return Object.freeze({ logicalPath, bytes: copyBytes(bytes) });
     }),
   );
 }

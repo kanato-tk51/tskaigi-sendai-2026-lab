@@ -84,6 +84,7 @@
     "m4:build": "tsc --project containers/profile-control/tsconfig.build.json && node containers/profile-control/dist/orchestrator-entry.js build",
     "m4:recovery:offline-build": "tsc --project containers/profile-control/tsconfig.build.json && node containers/profile-control/dist/offline-build-recovery-entry.js",
     "m4:run:controls": "tsc --project containers/profile-control/tsconfig.build.json && node containers/profile-control/dist/orchestrator-entry.js run-controls",
+    "m4:execute:frozen-research": "node containers/profile-control/dist/frozen-research-profile-control-executor.js",
     "m4:verify:evidence": "tsc --project containers/profile-control/tsconfig.build.json && node containers/profile-control/dist/orchestrator-entry.js verify",
     "m0:doctor": "node experiments/npm12-install/scripts/m0.mjs doctor",
     "m0:build": "node experiments/npm12-install/scripts/m0.mjs build",

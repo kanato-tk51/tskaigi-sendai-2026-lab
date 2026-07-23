@@ -1,17 +1,5 @@
 import { spawn, type ChildProcessByStdio } from "node:child_process";
-import { createHash } from "node:crypto";
-import { constants } from "node:fs";
-import {
-  chmod,
-  lstat,
-  mkdir,
-  open,
-  readdir,
-  realpath,
-  rmdir,
-  unlink,
-  writeFile,
-} from "node:fs/promises";
+import { mkdir, readdir, realpath } from "node:fs/promises";
 import path from "node:path";
 import type { Readable } from "node:stream";
 import { fileURLToPath } from "node:url";
@@ -34,6 +22,17 @@ import {
 } from "./docker-plan.js";
 import type { FixedExistingImageExecutionBackend } from "./execution.js";
 import {
+  captureDirectoryIdentity,
+  captureFileIdentity,
+  createExclusiveDirectoryIdentity,
+  createExclusiveFileIdentity,
+  FilesystemIdentityLease,
+  type FileIdentityExpectations,
+  type HeldFilesystemObject,
+  type PrivateOwner,
+  requireAbsent,
+} from "./filesystem-identity.js";
+import {
   createOfflineBuildProcessState,
   observeOfflineBuildProcessFailure,
   observeOfflineBuildProcessOutput,
@@ -41,6 +40,7 @@ import {
 import { assertAcceptedImageStagingSnapshot } from "./staging.js";
 import type {
   AcceptedImageStagingSnapshot,
+  ControlTransferProjection,
   ProfileControlPair,
   ProfileId,
 } from "./types.js";
@@ -54,24 +54,24 @@ const CLOSE_GRACE_MS = 250;
 const encoder = new TextEncoder();
 const fatalDecoder = new TextDecoder("utf-8", { fatal: true });
 
-interface PathIdentity {
-  readonly device: number;
-  readonly inode: number;
-}
-
 interface ProfileOwnedState {
   readonly layout: FixedRuntimeLayout;
   readonly plan: ProfileDockerPlan;
-  readonly runIdentity: PathIdentity;
-  readonly inputIdentity: PathIdentity;
-  readonly hostIdentity: PathIdentity;
-  readonly resultIdentity: PathIdentity;
-  readonly scratchIdentity: PathIdentity;
-  readonly dockerConfigIdentity: PathIdentity;
+  readonly runIdentity: HeldFilesystemObject;
+  readonly inputIdentity: HeldFilesystemObject;
+  readonly hostIdentity: HeldFilesystemObject;
+  readonly resultIdentity: HeldFilesystemObject;
+  readonly scratchIdentity: HeldFilesystemObject;
+  readonly dockerConfigIdentity: HeldFilesystemObject;
   readonly transferRoot: string;
-  readonly transferIdentity: PathIdentity;
-  readonly configIdentity: PathIdentity;
-  readonly manifestIdentity: PathIdentity;
+  readonly transferIdentity: HeldFilesystemObject;
+  readonly configIdentity: HeldFilesystemObject;
+  readonly manifestIdentity: HeldFilesystemObject;
+  containerOwner: PrivateOwner | null;
+  readonly containerFiles: HeldFilesystemObject[];
+  readonly transferFiles: HeldFilesystemObject[];
+  readonly hostFiles: HeldFilesystemObject[];
+  transferRemoved: boolean;
   phase:
     | "ready"
     | "created"
@@ -82,110 +82,6 @@ interface ProfileOwnedState {
     | "removed";
 }
 
-function errnoCode(error: unknown): string | null {
-  if (typeof error !== "object" || error === null || !("code" in error)) {
-    return null;
-  }
-  return typeof error.code === "string" ? error.code : null;
-}
-
-function sameIdentity(
-  expected: PathIdentity,
-  actual: Readonly<{ dev: number; ino: number }>,
-): boolean {
-  return expected.device === actual.dev && expected.inode === actual.ino;
-}
-
-async function requireAbsent(target: string): Promise<void> {
-  try {
-    await lstat(target);
-  } catch (error) {
-    if (errnoCode(error) === "ENOENT") return;
-    throw error;
-  }
-  throw new Error("M4_CONTROL_PATH");
-}
-
-async function directoryIdentity(
-  target: string,
-  expected?: PathIdentity,
-  expectedMode: number = 0o700,
-): Promise<PathIdentity> {
-  const entry = await lstat(target);
-  if (
-    !entry.isDirectory() ||
-    entry.isSymbolicLink() ||
-    (entry.mode & 0o7777) !== expectedMode ||
-    (expected !== undefined && !sameIdentity(expected, entry)) ||
-    (await realpath(target)) !== target
-  ) {
-    throw new Error("M4_CONTROL_PATH");
-  }
-  return Object.freeze({ device: entry.dev, inode: entry.ino });
-}
-
-async function repositoryDirectory(target: string): Promise<void> {
-  const entry = await lstat(target);
-  if (
-    !entry.isDirectory() ||
-    entry.isSymbolicLink() ||
-    (await realpath(target)) !== target
-  ) {
-    throw new Error("M4_CONTROL_PATH");
-  }
-}
-
-async function regularFileIdentity(
-  target: string,
-  expected?: PathIdentity,
-  expectedMode: number = 0o600,
-): Promise<PathIdentity> {
-  const entry = await lstat(target);
-  if (
-    !entry.isFile() ||
-    entry.isSymbolicLink() ||
-    entry.nlink !== 1 ||
-    (entry.mode & 0o7777) !== expectedMode ||
-    (expected !== undefined && !sameIdentity(expected, entry))
-  ) {
-    throw new Error("M4_CONTROL_PATH");
-  }
-  return Object.freeze({ device: entry.dev, inode: entry.ino });
-}
-
-async function readIdentityFile(
-  target: string,
-  identity: PathIdentity,
-  maximumBytes: number,
-): Promise<Uint8Array> {
-  const handle = await open(target, constants.O_RDONLY | constants.O_NOFOLLOW);
-  try {
-    const before = await handle.stat();
-    if (
-      !before.isFile() ||
-      before.nlink !== 1 ||
-      before.size <= 0 ||
-      before.size > maximumBytes ||
-      !sameIdentity(identity, before)
-    ) {
-      throw new Error("M4_CONTROL_FILE");
-    }
-    const bytes = Uint8Array.from(await handle.readFile());
-    const after = await handle.stat();
-    if (
-      bytes.byteLength !== before.size ||
-      after.size !== before.size ||
-      after.nlink !== 1 ||
-      !sameIdentity(identity, after)
-    ) {
-      throw new Error("M4_CONTROL_FILE");
-    }
-    return bytes;
-  } finally {
-    await handle.close();
-  }
-}
-
 function equalBytes(left: Uint8Array, right: Uint8Array): boolean {
   return (
     left.byteLength === right.byteLength &&
@@ -193,35 +89,29 @@ function equalBytes(left: Uint8Array, right: Uint8Array): boolean {
   );
 }
 
-function exactNames(
-  actual: readonly string[],
-  expected: readonly string[],
-): void {
-  const left = [...actual].sort();
-  const right = [...expected].sort();
-  if (
-    left.length !== right.length ||
-    left.some((entry, index) => entry !== right[index])
-  ) {
-    throw new Error("M4_CONTROL_INVENTORY");
-  }
+function directoryExpectations(
+  mode: number | "captured",
+  owner: PrivateOwner,
+  children: readonly string[],
+) {
+  return Object.freeze({ mode, owner, children: Object.freeze([...children]) });
 }
 
-async function createExclusiveDirectory(
-  target: string,
-  mode: number = 0o700,
-): Promise<PathIdentity> {
-  await requireAbsent(target);
-  await mkdir(target, { mode });
-  await chmod(target, mode);
-  return await directoryIdentity(target, undefined, mode);
-}
-
-function fileIdentityId(identity: PathIdentity): string {
-  return `m4-file-${createHash("sha256")
-    .update(`${identity.device}:${identity.inode}`, "utf8")
-    .digest("hex")
-    .slice(0, 32)}`;
+function readableFileExpectations(input: {
+  readonly mode: number;
+  readonly owner: PrivateOwner;
+  readonly maximumBytes: number;
+  readonly expectedBytes?: Uint8Array;
+}): FileIdentityExpectations {
+  const base = {
+    mode: input.mode,
+    owner: input.owner,
+    maximumBytes: input.maximumBytes,
+    content: "read" as const,
+  };
+  return input.expectedBytes === undefined
+    ? Object.freeze(base)
+    : Object.freeze({ ...base, expectedBytes: input.expectedBytes });
 }
 
 function canonicalJsonBytes(input: unknown): Uint8Array {
@@ -260,6 +150,11 @@ class FixedControlHostBackend implements FixedExistingImageExecutionBackend {
   constructor(
     private readonly repositoryRoot: string,
     private readonly states: Readonly<Record<ProfileId, ProfileOwnedState>>,
+    private readonly immutableInputLease: FilesystemIdentityLease | null,
+    private readonly runAncestorLease: FilesystemIdentityLease,
+    private readonly m4RootIdentity: HeldFilesystemObject,
+    private readonly m4RootChildren: readonly string[],
+    private readonly relaxSharedTestAncestor: boolean,
   ) {}
 
   async run(
@@ -275,6 +170,8 @@ class FixedControlHostBackend implements FixedExistingImageExecutionBackend {
     ) {
       throw new Error("M4_CONTROL_COMMAND");
     }
+    await this.immutableInputLease?.validate();
+    await this.runAncestorLease.validate();
     const separator = stepId.indexOf(":");
     const profileId = stepId.slice(0, separator) as ProfileId;
     const operation = stepId.slice(separator + 1);
@@ -318,6 +215,7 @@ class FixedControlHostBackend implements FixedExistingImageExecutionBackend {
       exitCode: number | null;
       timedOut: boolean;
       outputLimitExceeded: boolean;
+      closeObserved: boolean;
       stdoutBytes: number;
       stderrBytes: number;
       payload: unknown;
@@ -333,8 +231,15 @@ class FixedControlHostBackend implements FixedExistingImageExecutionBackend {
       if (operation === "remove") this.advanceProfile(profileId);
       throw error;
     }
+    if (result.closeObserved) {
+      await this.immutableInputLease?.validate();
+      await this.validateConfig(state);
+    }
     const successful =
-      result.exitCode === 0 && !result.timedOut && !result.outputLimitExceeded;
+      result.closeObserved &&
+      result.exitCode === 0 &&
+      !result.timedOut &&
+      !result.outputLimitExceeded;
     if (operation === "remove") {
       state.phase = "removed";
       this.advanceProfile(profileId);
@@ -358,16 +263,30 @@ class FixedControlHostBackend implements FixedExistingImageExecutionBackend {
   }
 
   private async validateConfig(state: ProfileOwnedState): Promise<void> {
-    await directoryIdentity(state.layout.runRoot, state.runIdentity);
-    await directoryIdentity(
-      state.layout.dockerConfigRoot,
-      state.dockerConfigIdentity,
+    await state.runIdentity.validateStable(
+      directoryExpectations(0o700, state.runIdentity.owner(), [
+        "container-result",
+        "docker-config",
+        "host",
+        "input",
+        "scratch",
+        ...(state.transferRemoved ? [] : ["transfer"]),
+      ]),
     );
-    const configPath = path.join(state.layout.dockerConfigRoot, "config.json");
-    await regularFileIdentity(configPath, state.configIdentity);
+    await state.dockerConfigIdentity.validateStable(
+      directoryExpectations(0o700, state.runIdentity.owner(), ["config.json"]),
+    );
+    await state.configIdentity.validateStable(
+      readableFileExpectations({
+        mode: 0o600,
+        owner: state.runIdentity.owner(),
+        maximumBytes: 13,
+        expectedBytes: encoder.encode(DOCKER_CONFIG_JSON),
+      }),
+    );
     if (
       !equalBytes(
-        await readIdentityFile(configPath, state.configIdentity, 64),
+        await state.configIdentity.readBytes(13),
         encoder.encode(DOCKER_CONFIG_JSON),
       )
     ) {
@@ -384,6 +303,7 @@ class FixedControlHostBackend implements FixedExistingImageExecutionBackend {
       exitCode: number | null;
       timedOut: boolean;
       outputLimitExceeded: boolean;
+      closeObserved: boolean;
       stdoutBytes: number;
       stderrBytes: number;
       payload: unknown;
@@ -443,6 +363,7 @@ class FixedControlHostBackend implements FixedExistingImageExecutionBackend {
           exitCode: processState.firstFailure === null ? exitCode : null,
           timedOut: processState.firstFailure === "timeout",
           outputLimitExceeded: processState.firstFailure === "output-limit",
+          closeObserved,
           stdoutBytes: processState.stdoutBytes,
           stderrBytes: processState.stderrBytes,
           payload,
@@ -494,7 +415,7 @@ class FixedControlHostBackend implements FixedExistingImageExecutionBackend {
     });
   }
 
-  async transfer(profileId: ProfileId): Promise<unknown> {
+  async transfer(profileId: ProfileId): Promise<ControlTransferProjection> {
     const state = this.states[profileId];
     if (
       this.closed ||
@@ -503,47 +424,90 @@ class FixedControlHostBackend implements FixedExistingImageExecutionBackend {
     ) {
       throw new Error("M4_CONTROL_TRANSFER");
     }
-    await directoryIdentity(state.layout.inputRoot, state.inputIdentity, 0o555);
-    await directoryIdentity(
-      state.layout.resultRoot,
-      state.resultIdentity,
-      0o733,
+    const runOwner = state.runIdentity.owner();
+    await state.inputIdentity.validateStable(
+      directoryExpectations(0o555, runOwner, ["control-manifest.json"]),
     );
-    await directoryIdentity(
-      state.layout.scratchRoot,
-      state.scratchIdentity,
-      0o733,
+    await state.resultIdentity.refreshDirectoryCheckpoint(
+      directoryExpectations(0o733, runOwner, [
+        "control-evidence.json",
+        "result-marker.txt",
+      ]),
     );
-    await directoryIdentity(state.transferRoot, state.transferIdentity);
+    await state.scratchIdentity.refreshDirectoryCheckpoint(
+      directoryExpectations(
+        0o733,
+        runOwner,
+        profileId === "permissive" ? ["scratch-marker.txt"] : [],
+      ),
+    );
+    await state.transferIdentity.validateStable(
+      directoryExpectations(0o700, runOwner, []),
+    );
     await this.validateConfig(state);
-    exactNames(await readdir(state.layout.inputRoot), [
-      "control-manifest.json",
-    ]);
-    exactNames(await readdir(state.layout.resultRoot), [
-      "control-evidence.json",
-      "result-marker.txt",
-    ]);
-    exactNames(
-      await readdir(state.layout.scratchRoot),
-      profileId === "permissive" ? ["scratch-marker.txt"] : [],
+    await state.manifestIdentity.validateStable(
+      readableFileExpectations({
+        mode: 0o444,
+        owner: runOwner,
+        maximumBytes: LIMITS.evidenceBytes,
+      }),
     );
-    const manifestPath = path.join(
-      state.layout.inputRoot,
-      "control-manifest.json",
-    );
-    await regularFileIdentity(manifestPath, state.manifestIdentity, 0o444);
-    const manifestBefore = await readIdentityFile(
-      manifestPath,
-      state.manifestIdentity,
+    const manifestBefore = await state.manifestIdentity.readBytes(
       LIMITS.evidenceBytes,
     );
     const evidencePath = path.join(
       state.layout.resultRoot,
       "control-evidence.json",
     );
-    await regularFileIdentity(evidencePath);
     const markerPath = path.join(state.layout.resultRoot, "result-marker.txt");
-    await regularFileIdentity(markerPath);
+    const evidenceSource = await captureFileIdentity(
+      `${profileId}:container-control-evidence`,
+      evidencePath,
+      {
+        mode: 0o600,
+        maximumBytes: LIMITS.evidenceBytes,
+        content: "read",
+      },
+    );
+    state.containerOwner = evidenceSource.owner();
+    state.containerFiles.push(evidenceSource);
+    const containerOwner = state.containerOwner;
+    const resultMarkerBytes = encoder.encode("m4-result-channel-v1\n");
+    const markerSource = await captureFileIdentity(
+      `${profileId}:container-result-marker`,
+      markerPath,
+      readableFileExpectations({
+        mode: 0o600,
+        owner: containerOwner,
+        maximumBytes: resultMarkerBytes.byteLength,
+        expectedBytes: resultMarkerBytes,
+      }),
+    );
+    if (evidenceSource.sameObjectAs(markerSource)) {
+      throw new Error("M4_CONTROL_TRANSFER");
+    }
+    state.containerFiles.push(markerSource);
+    let scratchSource: HeldFilesystemObject | null = null;
+    if (profileId === "permissive") {
+      const scratchBytes = encoder.encode("m4-fixed-marker-v1\n");
+      scratchSource = await captureFileIdentity(
+        `${profileId}:container-scratch-marker`,
+        path.join(state.layout.scratchRoot, "scratch-marker.txt"),
+        readableFileExpectations({
+          mode: 0o600,
+          owner: containerOwner,
+          maximumBytes: scratchBytes.byteLength,
+          expectedBytes: scratchBytes,
+        }),
+      );
+      state.containerFiles.push(scratchSource);
+      if (
+        evidenceSource.sameObjectAs(scratchSource) ||
+        markerSource.sameObjectAs(scratchSource)
+      ) {
+        throw new Error("M4_CONTROL_TRANSFER");
+      }
+    }
     const transferEvidencePath = path.join(
       state.transferRoot,
       "control-evidence.json",
@@ -552,90 +516,145 @@ class FixedControlHostBackend implements FixedExistingImageExecutionBackend {
       state.transferRoot,
       "result-marker.txt",
     );
-    await this.copyFixedContainerFile(
+    const controlEvidence = await evidenceSource.readBytes(
+      LIMITS.evidenceBytes,
+    );
+    const evidenceCopy = await this.copyFixedContainerFile(
       state,
       "/result/control-evidence.json",
       transferEvidencePath,
+      evidenceSource,
+      state.resultIdentity,
+      ["control-evidence.json", "result-marker.txt"],
+      containerOwner,
+      controlEvidence,
+      [],
     );
-    await this.copyFixedContainerFile(
-      state,
-      "/result/result-marker.txt",
-      transferMarkerPath,
-    );
-    const evidenceIdentity = await regularFileIdentity(transferEvidencePath);
-    const controlEvidence = await readIdentityFile(
-      transferEvidencePath,
-      evidenceIdentity,
-      LIMITS.evidenceBytes,
-    );
-    const markerIdentity = await regularFileIdentity(transferMarkerPath);
     if (
-      !equalBytes(
-        await readIdentityFile(transferMarkerPath, markerIdentity, 64),
-        encoder.encode("m4-result-channel-v1\n"),
-      )
+      evidenceCopy.sameObjectAs(evidenceSource) ||
+      evidenceCopy.sameObjectAs(markerSource)
     ) {
       throw new Error("M4_CONTROL_TRANSFER");
     }
+    const markerCopy = await this.copyFixedContainerFile(
+      state,
+      "/result/result-marker.txt",
+      transferMarkerPath,
+      markerSource,
+      state.resultIdentity,
+      ["control-evidence.json", "result-marker.txt"],
+      containerOwner,
+      resultMarkerBytes,
+      ["control-evidence.json"],
+    );
+    if (
+      markerCopy.sameObjectAs(markerSource) ||
+      markerCopy.sameObjectAs(evidenceSource) ||
+      markerCopy.sameObjectAs(evidenceCopy)
+    ) {
+      throw new Error("M4_CONTROL_TRANSFER");
+    }
+    let scratchCopy: HeldFilesystemObject | null = null;
     if (profileId === "permissive") {
-      const scratchPath = path.join(
-        state.layout.scratchRoot,
-        "scratch-marker.txt",
-      );
-      await regularFileIdentity(scratchPath);
       const transferScratchPath = path.join(
         state.transferRoot,
         "scratch-marker.txt",
       );
-      await this.copyFixedContainerFile(
+      const scratchBytes = encoder.encode("m4-fixed-marker-v1\n");
+      scratchCopy = await this.copyFixedContainerFile(
         state,
         "/scratch/scratch-marker.txt",
         transferScratchPath,
+        scratchSource!,
+        state.scratchIdentity,
+        ["scratch-marker.txt"],
+        containerOwner,
+        scratchBytes,
+        ["control-evidence.json", "result-marker.txt"],
       );
-      const scratchIdentity = await regularFileIdentity(transferScratchPath);
       if (
-        !equalBytes(
-          await readIdentityFile(transferScratchPath, scratchIdentity, 64),
-          encoder.encode("m4-fixed-marker-v1\n"),
-        )
+        scratchSource === null ||
+        scratchCopy.sameObjectAs(scratchSource) ||
+        scratchCopy.sameObjectAs(evidenceSource) ||
+        scratchCopy.sameObjectAs(markerSource) ||
+        scratchCopy.sameObjectAs(evidenceCopy) ||
+        scratchCopy.sameObjectAs(markerCopy)
       ) {
         throw new Error("M4_CONTROL_TRANSFER");
       }
     }
-    await regularFileIdentity(manifestPath, state.manifestIdentity, 0o444);
-    const manifestAfter = await readIdentityFile(
-      manifestPath,
-      state.manifestIdentity,
+    await this.immutableInputLease?.validate();
+    for (const file of state.containerFiles) {
+      const expectedBytes = await file.readBytes(LIMITS.evidenceBytes);
+      await file.validateStable(
+        readableFileExpectations({
+          mode: 0o600,
+          owner: containerOwner,
+          maximumBytes: LIMITS.evidenceBytes,
+          expectedBytes,
+        }),
+      );
+    }
+    await state.manifestIdentity.validateStable(
+      readableFileExpectations({
+        mode: 0o444,
+        owner: runOwner,
+        maximumBytes: LIMITS.evidenceBytes,
+      }),
+    );
+    const manifestAfter = await state.manifestIdentity.readBytes(
       LIMITS.evidenceBytes,
     );
-    state.phase = "transferred";
-    for (const fileName of [
-      "control-evidence.json",
-      "result-marker.txt",
-      ...(profileId === "permissive" ? ["scratch-marker.txt"] : []),
-    ]) {
-      await unlink(path.join(state.transferRoot, fileName));
+    for (const [copy, expectedBytes, remaining] of [
+      [
+        scratchCopy,
+        encoder.encode("m4-fixed-marker-v1\n"),
+        ["control-evidence.json", "result-marker.txt"],
+      ],
+      [markerCopy, resultMarkerBytes, ["control-evidence.json"]],
+      [evidenceCopy, controlEvidence, []],
+    ] as const) {
+      if (copy === null) continue;
+      await copy.unlinkExpected(
+        readableFileExpectations({
+          mode: 0o600,
+          owner: runOwner,
+          maximumBytes: expectedBytes.byteLength,
+          expectedBytes,
+        }),
+      );
+      await state.transferIdentity.refreshDirectoryCheckpoint(
+        directoryExpectations(0o700, runOwner, remaining),
+      );
     }
-    exactNames(await readdir(state.transferRoot), []);
-    await rmdir(state.transferRoot);
-    const identity = fileIdentityId(state.manifestIdentity);
+    await state.transferIdentity.removeExpectedDirectory(
+      directoryExpectations(0o700, runOwner, []),
+    );
+    state.transferRemoved = true;
+    await state.runIdentity.refreshDirectoryCheckpoint(
+      directoryExpectations(0o700, runOwner, [
+        "container-result",
+        "docker-config",
+        "host",
+        "input",
+        "scratch",
+      ]),
+    );
+    state.phase = "transferred";
+    const scratchFiles: ControlTransferProjection["scratchFiles"] =
+      profileId === "permissive"
+        ? Object.freeze(["scratch-marker.txt"] as const)
+        : Object.freeze([] as const);
     return Object.freeze({
       manifestBefore,
       manifestAfter,
-      manifestIdentityBefore: identity,
-      manifestIdentityAfter: identity,
-      manifestTypeBefore: "regular-file",
-      manifestTypeAfter: "regular-file",
-      manifestSymlinkBefore: false,
-      manifestSymlinkAfter: false,
+      manifestIdentityStable: true,
       controlEvidence,
       resultFiles: Object.freeze([
         "control-evidence.json",
         "result-marker.txt",
-      ]),
-      scratchFiles: Object.freeze(
-        profileId === "permissive" ? ["scratch-marker.txt"] : [],
-      ),
+      ] as const),
+      scratchFiles,
     });
   }
 
@@ -643,7 +662,83 @@ class FixedControlHostBackend implements FixedExistingImageExecutionBackend {
     state: ProfileOwnedState,
     source: string,
     destination: string,
-  ): Promise<void> {
+    sourceIdentity: HeldFilesystemObject,
+    sourceParent: HeldFilesystemObject,
+    sourceParentChildren: readonly string[],
+    containerOwner: PrivateOwner,
+    expectedBytes: Uint8Array,
+    transferChildrenBefore: readonly string[],
+  ): Promise<HeldFilesystemObject> {
+    const sourceBaseName = path.posix.basename(source);
+    const expectedSourceParent = source.startsWith("/result/")
+      ? state.layout.resultRoot
+      : source.startsWith("/scratch/")
+        ? state.layout.scratchRoot
+        : null;
+    if (
+      expectedSourceParent === null ||
+      sourceIdentity.absolutePath !==
+        path.join(expectedSourceParent, sourceBaseName) ||
+      sourceParent.absolutePath !== expectedSourceParent ||
+      path.dirname(destination) !== state.transferRoot ||
+      path.basename(destination) !== sourceBaseName
+    ) {
+      throw new Error("M4_CONTROL_TRANSFER");
+    }
+    const validateSourceBoundary = async (): Promise<void> => {
+      const runOwner = state.runIdentity.owner();
+      await this.immutableInputLease?.validate();
+      await this.runAncestorLease.validate();
+      if (!this.relaxSharedTestAncestor) {
+        await this.m4RootIdentity.validateStable(
+          directoryExpectations(
+            "captured",
+            this.m4RootIdentity.owner(),
+            this.m4RootChildren,
+          ),
+        );
+      }
+      await state.runIdentity.validateStable(
+        directoryExpectations(0o700, runOwner, [
+          "container-result",
+          "docker-config",
+          "host",
+          "input",
+          "scratch",
+          "transfer",
+        ]),
+      );
+      await state.inputIdentity.validateStable(
+        directoryExpectations(0o555, runOwner, ["control-manifest.json"]),
+      );
+      await state.manifestIdentity.validateStable(
+        readableFileExpectations({
+          mode: 0o444,
+          owner: runOwner,
+          maximumBytes: LIMITS.evidenceBytes,
+        }),
+      );
+      await this.validateConfig(state);
+      await sourceParent.validateStable(
+        directoryExpectations(0o733, runOwner, sourceParentChildren),
+      );
+      await sourceIdentity.validateStable(
+        readableFileExpectations({
+          mode: 0o600,
+          owner: containerOwner,
+          maximumBytes: expectedBytes.byteLength,
+          expectedBytes,
+        }),
+      );
+    };
+    await validateSourceBoundary();
+    await state.transferIdentity.validateStable(
+      directoryExpectations(
+        0o700,
+        state.runIdentity.owner(),
+        transferChildrenBefore,
+      ),
+    );
     await requireAbsent(destination);
     const command: DockerCommand = Object.freeze({
       executable: FIXED_DOCKER_EXECUTABLE,
@@ -661,14 +756,60 @@ class FixedControlHostBackend implements FixedExistingImageExecutionBackend {
       timeoutMs: LIMITS.controlTimeoutMs,
       outputBytes: LIMITS.outputBytes,
     });
-    if (
-      result.exitCode !== 0 ||
-      result.timedOut ||
-      result.outputLimitExceeded ||
-      result.stdoutBytes !== 0
-    ) {
+    if (!result.closeObserved) {
       throw new Error("M4_CONTROL_TRANSFER");
     }
+    await validateSourceBoundary();
+    const successful =
+      result.exitCode === 0 &&
+      !result.timedOut &&
+      !result.outputLimitExceeded &&
+      result.stdoutBytes === 0;
+    const destinationExpectations = readableFileExpectations({
+      mode: 0o600,
+      owner: state.runIdentity.owner(),
+      maximumBytes: expectedBytes.byteLength,
+      expectedBytes,
+    });
+    if (!successful) {
+      try {
+        await requireAbsent(destination);
+        await state.transferIdentity.validateStable(
+          directoryExpectations(
+            0o700,
+            state.runIdentity.owner(),
+            transferChildrenBefore,
+          ),
+        );
+      } catch {
+        const retainedDestination = await captureFileIdentity(
+          `failed-official-tool-transfer:${path.basename(destination)}`,
+          destination,
+          destinationExpectations,
+        );
+        state.transferFiles.push(retainedDestination);
+        await state.transferIdentity.refreshDirectoryCheckpoint(
+          directoryExpectations(0o700, state.runIdentity.owner(), [
+            ...transferChildrenBefore,
+            path.basename(destination),
+          ]),
+        );
+      }
+      throw new Error("M4_CONTROL_TRANSFER");
+    }
+    const transferred = await captureFileIdentity(
+      `official-tool-transfer:${path.basename(destination)}`,
+      destination,
+      destinationExpectations,
+    );
+    state.transferFiles.push(transferred);
+    await state.transferIdentity.refreshDirectoryCheckpoint(
+      directoryExpectations(0o700, state.runIdentity.owner(), [
+        ...transferChildrenBefore,
+        path.basename(destination),
+      ]),
+    );
+    return transferred;
   }
 
   async recordProfileResult(
@@ -687,19 +828,30 @@ class FixedControlHostBackend implements FixedExistingImageExecutionBackend {
     ) {
       throw new Error("M4_CONTROL_RECORD");
     }
-    await directoryIdentity(state.layout.hostRoot, state.hostIdentity);
-    exactNames(await readdir(state.layout.hostRoot), []);
+    const runOwner = state.runIdentity.owner();
+    await state.hostIdentity.validateStable(
+      directoryExpectations(0o700, runOwner, []),
+    );
+    const createdNames: string[] = [];
     for (const [fileName, value] of [
       ["host-inspection.json", result.inspection],
       ["completion.json", result.completion],
       ["comparison.json", result.comparison],
     ] as const) {
-      await writeFile(
-        path.join(state.layout.hostRoot, fileName),
-        canonicalJsonBytes(value),
-        { flag: "wx", mode: 0o600 },
-      );
-      await regularFileIdentity(path.join(state.layout.hostRoot, fileName));
+      createdNames.push(fileName);
+      const bytes = canonicalJsonBytes(value);
+      if (bytes.byteLength > LIMITS.evidenceBytes) {
+        throw new Error("M4_CONTROL_RECORD");
+      }
+      const record = await createExclusiveFileIdentity({
+        logicalRole: `${profileId}:host-record:${fileName}`,
+        parent: state.hostIdentity,
+        name: fileName,
+        mode: 0o600,
+        bytes,
+        expectedParentChildren: createdNames,
+      });
+      state.hostFiles.push(record);
     }
   }
 
@@ -709,29 +861,123 @@ class FixedControlHostBackend implements FixedExistingImageExecutionBackend {
     if (this.activeChildren.size !== 0) {
       throw new Error("M4_CONTROL_PROCESS_STATE");
     }
+    try {
+      await this.cleanupOwnedState();
+    } catch (error) {
+      await this.closeWithoutMutation();
+      throw error;
+    }
+  }
+
+  private async cleanupOwnedState(): Promise<void> {
     for (const profileId of ["permissive", "constrained"] as const) {
       const state = this.states[profileId];
-      await directoryIdentity(
-        state.layout.dockerConfigRoot,
-        state.dockerConfigIdentity,
-      );
-      const configPath = path.join(
-        state.layout.dockerConfigRoot,
-        "config.json",
-      );
-      await regularFileIdentity(configPath, state.configIdentity);
-      await unlink(configPath);
-      exactNames(await readdir(state.layout.dockerConfigRoot), []);
-      await rmdir(state.layout.dockerConfigRoot);
-      try {
-        await directoryIdentity(state.transferRoot, state.transferIdentity);
-      } catch (error) {
-        if (errnoCode(error) === "ENOENT") continue;
-        throw error;
+      const runOwner = state.runIdentity.owner();
+      for (const file of [...state.containerFiles, ...state.hostFiles]) {
+        const bytes = await file.readBytes(LIMITS.evidenceBytes);
+        await file.validateStable(
+          readableFileExpectations({
+            mode: 0o600,
+            owner:
+              state.containerFiles.includes(file) && state.containerOwner
+                ? state.containerOwner
+                : runOwner,
+            maximumBytes: LIMITS.evidenceBytes,
+            expectedBytes: bytes,
+          }),
+        );
       }
-      exactNames(await readdir(state.transferRoot), []);
-      await rmdir(state.transferRoot);
+      await state.manifestIdentity.validateStable(
+        readableFileExpectations({
+          mode: 0o444,
+          owner: runOwner,
+          maximumBytes: LIMITS.evidenceBytes,
+        }),
+      );
+      await state.configIdentity.unlinkExpected(
+        readableFileExpectations({
+          mode: 0o600,
+          owner: runOwner,
+          maximumBytes: 13,
+          expectedBytes: encoder.encode(DOCKER_CONFIG_JSON),
+        }),
+      );
+      await state.dockerConfigIdentity.refreshDirectoryCheckpoint(
+        directoryExpectations(0o700, runOwner, []),
+      );
+      await state.dockerConfigIdentity.removeExpectedDirectory(
+        directoryExpectations(0o700, runOwner, []),
+      );
+      if (!state.transferRemoved) {
+        await state.transferIdentity.removeExpectedDirectory(
+          directoryExpectations(0o700, runOwner, []),
+        );
+        state.transferRemoved = true;
+      }
+      await state.runIdentity.refreshDirectoryCheckpoint(
+        directoryExpectations(0o700, runOwner, [
+          "container-result",
+          "host",
+          "input",
+          "scratch",
+        ]),
+      );
+      for (const file of [
+        ...state.hostFiles,
+        ...state.containerFiles,
+        state.manifestIdentity,
+      ]) {
+        await file.close();
+      }
+      for (const directory of [
+        state.inputIdentity,
+        state.hostIdentity,
+        state.resultIdentity,
+        state.scratchIdentity,
+        state.runIdentity,
+      ]) {
+        await directory.close();
+      }
     }
+    if (!this.relaxSharedTestAncestor) {
+      await this.m4RootIdentity.validateStable({
+        mode: "captured",
+        owner: this.m4RootIdentity.owner(),
+        children: Object.freeze(
+          await readdir(this.m4RootIdentity.absolutePath),
+        ),
+      });
+    }
+    await this.m4RootIdentity.close();
+    await this.runAncestorLease.close();
+    await this.immutableInputLease?.close();
+  }
+
+  private async closeWithoutMutation(): Promise<void> {
+    const objects = new Set<HeldFilesystemObject>([this.m4RootIdentity]);
+    for (const state of Object.values(this.states)) {
+      for (const object of [
+        ...state.hostFiles,
+        ...state.transferFiles,
+        ...state.containerFiles,
+        state.manifestIdentity,
+        state.configIdentity,
+        state.transferIdentity,
+        state.dockerConfigIdentity,
+        state.scratchIdentity,
+        state.resultIdentity,
+        state.hostIdentity,
+        state.inputIdentity,
+        state.runIdentity,
+      ]) {
+        objects.add(object);
+      }
+    }
+    for (const object of [...objects].reverse()) {
+      await object.close().catch(() => undefined);
+    }
+    await this.runAncestorLease.close().catch(() => undefined);
+    await this.immutableInputLease?.close().catch(() => undefined);
   }
 }
 
@@ -739,45 +985,93 @@ async function initializeProfileState(input: {
   readonly layout: FixedRuntimeLayout;
   readonly plan: ProfileDockerPlan;
   readonly manifestBytes: Uint8Array;
+  readonly m4RootIdentity: HeldFilesystemObject;
+  readonly m4RootChildren: readonly string[];
+  readonly relaxSharedTestAncestor: boolean;
 }): Promise<ProfileOwnedState> {
-  const runIdentity = await createExclusiveDirectory(input.layout.runRoot);
-  const inputIdentity = await createExclusiveDirectory(input.layout.inputRoot);
-  const hostIdentity = await createExclusiveDirectory(input.layout.hostRoot);
-  const resultIdentity = await createExclusiveDirectory(
-    input.layout.resultRoot,
+  let runIdentity: HeldFilesystemObject;
+  if (input.relaxSharedTestAncestor) {
+    await requireAbsent(input.layout.runRoot);
+    await mkdir(input.layout.runRoot, { mode: 0o700 });
+    runIdentity = await captureDirectoryIdentity(
+      `${input.layout.profileId}:run-root`,
+      input.layout.runRoot,
+      { mode: 0o700, children: [] },
+    );
+  } else {
+    runIdentity = await createExclusiveDirectoryIdentity({
+      logicalRole: `${input.layout.profileId}:run-root`,
+      parent: input.m4RootIdentity,
+      name: input.layout.runId,
+      mode: 0o700,
+      expectedParentChildren: input.m4RootChildren,
+    });
+  }
+  const runChildren: string[] = [];
+  const createRunDirectory = async (
+    logicalRole: string,
+    name: string,
+    mode: number,
+  ) => {
+    runChildren.push(name);
+    return await createExclusiveDirectoryIdentity({
+      logicalRole,
+      parent: runIdentity,
+      name,
+      mode,
+      expectedParentChildren: runChildren,
+    });
+  };
+  const inputIdentity = await createRunDirectory(
+    `${input.layout.profileId}:input-root`,
+    "input",
+    0o700,
+  );
+  const hostIdentity = await createRunDirectory(
+    `${input.layout.profileId}:host-root`,
+    "host",
+    0o700,
+  );
+  const resultIdentity = await createRunDirectory(
+    `${input.layout.profileId}:container-result-root`,
+    "container-result",
     0o733,
   );
-  const scratchIdentity = await createExclusiveDirectory(
-    input.layout.scratchRoot,
+  const scratchIdentity = await createRunDirectory(
+    `${input.layout.profileId}:scratch-root`,
+    "scratch",
     0o733,
   );
-  const dockerConfigIdentity = await createExclusiveDirectory(
-    input.layout.dockerConfigRoot,
+  const dockerConfigIdentity = await createRunDirectory(
+    `${input.layout.profileId}:docker-config-root`,
+    "docker-config",
+    0o700,
   );
   const transferRoot = path.join(input.layout.runRoot, "transfer");
-  const transferIdentity = await createExclusiveDirectory(transferRoot);
-  const manifestPath = path.join(
-    input.layout.inputRoot,
-    "control-manifest.json",
+  const transferIdentity = await createRunDirectory(
+    `${input.layout.profileId}:transfer-root`,
+    "transfer",
+    0o700,
   );
-  await writeFile(manifestPath, input.manifestBytes, {
-    flag: "wx",
+  const manifestIdentity = await createExclusiveFileIdentity({
+    logicalRole: `${input.layout.profileId}:control-manifest`,
+    parent: inputIdentity,
+    name: "control-manifest.json",
     mode: 0o444,
+    bytes: input.manifestBytes,
+    expectedParentChildren: ["control-manifest.json"],
   });
-  const manifestIdentity = await regularFileIdentity(
-    manifestPath,
-    undefined,
-    0o444,
-  );
-  await chmod(input.layout.inputRoot, 0o555);
-  await directoryIdentity(input.layout.inputRoot, inputIdentity, 0o555);
-  const configPath = path.join(input.layout.dockerConfigRoot, "config.json");
-  await writeFile(configPath, DOCKER_CONFIG_JSON, {
-    encoding: "utf8",
-    flag: "wx",
+  await inputIdentity.transitionDirectoryMode(0o700, 0o555, [
+    "control-manifest.json",
+  ]);
+  const configIdentity = await createExclusiveFileIdentity({
+    logicalRole: `${input.layout.profileId}:docker-config-json`,
+    parent: dockerConfigIdentity,
+    name: "config.json",
     mode: 0o600,
+    bytes: encoder.encode(DOCKER_CONFIG_JSON),
+    expectedParentChildren: ["config.json"],
   });
-  const configIdentity = await regularFileIdentity(configPath);
   return {
     layout: input.layout,
     plan: input.plan,
@@ -791,6 +1085,11 @@ async function initializeProfileState(input: {
     transferIdentity,
     configIdentity,
     manifestIdentity,
+    containerOwner: null,
+    containerFiles: [],
+    transferFiles: [],
+    hostFiles: [],
+    transferRemoved: false,
     phase: "ready",
   };
 }
@@ -801,6 +1100,7 @@ interface ControlHostBackendInput {
   readonly plans: ProfilePairDockerPlans;
   readonly permissiveLayout: FixedRuntimeLayout;
   readonly constrainedLayout: FixedRuntimeLayout;
+  readonly immutableInputLease?: FilesystemIdentityLease;
 }
 
 async function createControlHostBackend(
@@ -833,6 +1133,7 @@ async function createControlHostBackend(
     input.constrainedLayout.runId === pair.constrained.manifest.runId;
   if (
     (production ? !productionBinding : !testBinding) ||
+    (production && input.immutableInputLease === undefined) ||
     input.permissiveLayout.repositoryRoot !== repositoryRoot ||
     input.constrainedLayout.repositoryRoot !== repositoryRoot ||
     input.plans.permissive.containerName !==
@@ -845,24 +1146,84 @@ async function createControlHostBackend(
   const resultsRoot = path.join(repositoryRoot, "results");
   const runsRoot = path.join(resultsRoot, "runs");
   const m4Root = path.join(runsRoot, "m4-profile-controls");
-  await repositoryDirectory(resultsRoot);
-  await repositoryDirectory(runsRoot);
-  await repositoryDirectory(m4Root);
-  await requireAbsent(input.permissiveLayout.runRoot);
-  await requireAbsent(input.constrainedLayout.runRoot);
+  const resultsExpectation = Object.freeze({
+    mode: "captured" as const,
+    children: Object.freeze(await readdir(resultsRoot)),
+  });
+  const resultsIdentity = await captureDirectoryIdentity(
+    "results-root",
+    resultsRoot,
+    resultsExpectation,
+  );
+  const runsExpectation = Object.freeze({
+    mode: "captured" as const,
+    children: Object.freeze(await readdir(runsRoot)),
+  });
+  const runsIdentity = await captureDirectoryIdentity(
+    "runs-root",
+    runsRoot,
+    runsExpectation,
+  );
+  const initialM4Children = Object.freeze(await readdir(m4Root));
+  let m4RootIdentity: HeldFilesystemObject;
+  try {
+    m4RootIdentity = await captureDirectoryIdentity("m4-run-root", m4Root, {
+      mode: "captured",
+      children: initialM4Children,
+    });
+  } catch {
+    await runsIdentity.close().catch(() => undefined);
+    await resultsIdentity.close().catch(() => undefined);
+    await input.immutableInputLease?.close().catch(() => undefined);
+    throw new Error("M4_CONTROL_PATH");
+  }
+  const runAncestorLease = new FilesystemIdentityLease([
+    { object: resultsIdentity, expectations: resultsExpectation },
+    { object: runsIdentity, expectations: runsExpectation },
+  ]);
+  await input.immutableInputLease?.validate();
+  await runAncestorLease.validate();
+  try {
+    await requireAbsent(input.permissiveLayout.runRoot);
+    await requireAbsent(input.constrainedLayout.runRoot);
+  } catch {
+    await m4RootIdentity.close().catch(() => undefined);
+    await runAncestorLease.close().catch(() => undefined);
+    await input.immutableInputLease?.close().catch(() => undefined);
+    throw new Error("M4_CONTROL_PATH");
+  }
+  const permissiveM4Children = Object.freeze([
+    ...initialM4Children,
+    input.permissiveLayout.runId,
+  ]);
   const permissive = await initializeProfileState({
     layout: input.permissiveLayout,
     plan: input.plans.permissive,
     manifestBytes: serializeCanonicalControlManifest(pair.permissive.manifest),
+    m4RootIdentity,
+    m4RootChildren: permissiveM4Children,
+    relaxSharedTestAncestor: !production,
   });
+  const constrainedM4Children = Object.freeze([
+    ...permissiveM4Children,
+    input.constrainedLayout.runId,
+  ]);
   const constrained = await initializeProfileState({
     layout: input.constrainedLayout,
     plan: input.plans.constrained,
     manifestBytes: serializeCanonicalControlManifest(pair.constrained.manifest),
+    m4RootIdentity,
+    m4RootChildren: constrainedM4Children,
+    relaxSharedTestAncestor: !production,
   });
   return new FixedControlHostBackend(
     repositoryRoot,
     Object.freeze({ permissive, constrained }),
+    input.immutableInputLease ?? null,
+    runAncestorLease,
+    m4RootIdentity,
+    constrainedM4Children,
+    !production,
   );
 }
 

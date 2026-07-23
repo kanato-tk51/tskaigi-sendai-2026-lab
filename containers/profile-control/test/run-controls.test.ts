@@ -18,6 +18,27 @@ import { createFixedProductionControlDefinition } from "../src/run-controls.js";
 const repositoryRoot = fileURLToPath(new URL("../../../", import.meta.url));
 
 describe("fixed existing-image production control binding", () => {
+  it("retains the nested fixture ancestor in both production source loaders", async () => {
+    const runControlsSource = await readFile(
+      path.join(
+        repositoryRoot,
+        "containers/profile-control/src/run-controls.ts",
+      ),
+      "utf8",
+    );
+    const offlineBuildSource = await readFile(
+      path.join(
+        repositoryRoot,
+        "containers/profile-control/src/offline-build-host-backend.ts",
+      ),
+      "utf8",
+    );
+    for (const source of [runControlsSource, offlineBuildSource]) {
+      expect(source).toContain('"profile-control-fixture-root"');
+      expect(source).toContain('path.join(controlRoot, "fixture")');
+    }
+  });
+
   it.each(["permissive", "constrained"] as const)(
     "accepts only the canonical %s profile bytes",
     async (profileId) => {
@@ -79,5 +100,6 @@ describe("fixed existing-image production control binding", () => {
     expect(argumentsText).not.toContain('"build"');
     expect(argumentsText).not.toContain("stage-build-context");
     expect(argumentsText).not.toContain("inspect-image");
+    await definition.immutableInputLease?.close();
   });
 });

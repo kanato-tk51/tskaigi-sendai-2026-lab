@@ -444,14 +444,18 @@ export function crossValidateProfileManifest(
   profile: ExecutionProfile,
   manifest: ControlManifest,
 ): void {
+  const canonicalProfile = validateExecutionProfile(profile);
+  const canonicalManifest = validateControlManifest(manifest);
   if (
-    profile.profileId !== manifest.profileId ||
-    profile.profileRevision !== manifest.profileRevision ||
-    profile.containerInputId !== manifest.containerInputId ||
-    profile.containerImageDigest !== manifest.containerImageDigest ||
-    profile.nodeVersion !== manifest.nodeVersion ||
-    (profile.limits !== manifest.limits &&
-      LIMIT_KEYS.some((key) => profile.limits[key] !== manifest.limits[key]))
+    canonicalProfile.profileId !== canonicalManifest.profileId ||
+    canonicalProfile.profileRevision !== canonicalManifest.profileRevision ||
+    canonicalProfile.containerInputId !== canonicalManifest.containerInputId ||
+    canonicalProfile.containerImageDigest !==
+      canonicalManifest.containerImageDigest ||
+    canonicalProfile.nodeVersion !== canonicalManifest.nodeVersion ||
+    LIMIT_KEYS.some(
+      (key) => canonicalProfile.limits[key] !== canonicalManifest.limits[key],
+    )
   ) {
     failProfile("PROFILE_MANIFEST_MISMATCH");
   }

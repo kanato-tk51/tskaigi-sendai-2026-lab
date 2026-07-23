@@ -10,7 +10,12 @@ import {
   PROFILE_SCHEMA_VERSION,
 } from "./constants.js";
 import { failProfile } from "./errors.js";
-import { assertRunId, assertSha256 } from "./safe-data.js";
+import {
+  assertExactKeys,
+  assertRunId,
+  assertSha256,
+  readPlainRecord,
+} from "./safe-data.js";
 import { assertAcceptedImageStagingSnapshot } from "./staging.js";
 import type {
   AcceptedImageStagingSnapshot,
@@ -23,6 +28,7 @@ import type {
   ProfileId,
   ResourceLimits,
 } from "./types.js";
+import { validateExecutionProfile } from "./validation.js";
 
 const acceptedPairSnapshots = new WeakMap<
   ProfileControlPair,
@@ -186,6 +192,9 @@ const CONSTRAINED_EXPECTED: readonly ExpectedControlOutcome[] = Object.freeze([
 export function expectedControls(
   profileId: ProfileId,
 ): readonly ExpectedControlOutcome[] {
+  if (profileId !== "permissive" && profileId !== "constrained") {
+    failProfile("INVALID_PROFILE");
+  }
   return profileId === "permissive"
     ? PERMISSIVE_EXPECTED
     : CONSTRAINED_EXPECTED;
@@ -220,18 +229,20 @@ export function createControlManifest(
   profile: ExecutionProfile,
   runId: string,
 ): ControlManifest {
+  const canonicalProfile = validateExecutionProfile(profile);
+  const canonicalRunId = assertRunId(runId, "INVALID_CONTROL_MANIFEST");
   return Object.freeze({
     schemaVersion: CONTROL_MANIFEST_SCHEMA_VERSION,
-    runId,
-    controlId: CONTROL_IDS[profile.profileId],
-    profileId: profile.profileId,
-    profileRevision: profile.profileRevision,
-    containerInputId: profile.containerInputId,
-    containerImageDigest: profile.containerImageDigest,
-    nodeVersion: profile.nodeVersion,
-    controlOrder: CONTROL_ORDER,
-    expected: expectedControls(profile.profileId),
-    limits: profile.limits,
+    runId: canonicalRunId,
+    controlId: CONTROL_IDS[canonicalProfile.profileId],
+    profileId: canonicalProfile.profileId,
+    profileRevision: canonicalProfile.profileRevision,
+    containerInputId: canonicalProfile.containerInputId,
+    containerImageDigest: canonicalProfile.containerImageDigest,
+    nodeVersion: canonicalProfile.nodeVersion,
+    controlOrder: Object.freeze([...CONTROL_ORDER]),
+    expected: expectedControls(canonicalProfile.profileId),
+    limits: canonicalProfile.limits,
   });
 }
 
@@ -241,19 +252,30 @@ export function createProfileControlPair(input: {
   readonly permissiveRunId: string;
   readonly constrainedRunId: string;
 }): ProfileControlPair {
+  const wrapper = readPlainRecord(input, "INVALID_PROFILE_PAIR");
+  assertExactKeys(
+    wrapper,
+    [
+      "acceptedSnapshot",
+      "containerImageDigest",
+      "permissiveRunId",
+      "constrainedRunId",
+    ],
+    "INVALID_PROFILE_PAIR",
+  );
   const acceptedSnapshot = assertAcceptedImageStagingSnapshot(
-    input.acceptedSnapshot,
+    wrapper.acceptedSnapshot as AcceptedImageStagingSnapshot,
   );
   const containerImageDigest = assertSha256(
-    input.containerImageDigest,
+    wrapper.containerImageDigest,
     "INVALID_PROFILE_PAIR",
   );
   const permissiveRunId = assertRunId(
-    input.permissiveRunId,
+    wrapper.permissiveRunId,
     "INVALID_PROFILE_PAIR",
   );
   const constrainedRunId = assertRunId(
-    input.constrainedRunId,
+    wrapper.constrainedRunId,
     "INVALID_PROFILE_PAIR",
   );
   if (permissiveRunId === constrainedRunId) {

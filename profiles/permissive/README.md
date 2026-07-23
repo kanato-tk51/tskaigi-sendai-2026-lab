@@ -5,6 +5,6 @@
 `profile.json` は、one-time recovery trailで記録されたbuilt-image digest
 `sha256:20ba341937bfaee4fe8d1adc722aed4c7dc96d055371bf7b48ba3cd12e15e3dd`
 へcanonical bytesでbindしたB-18 remediation candidateである。Fixed permissive run IDは
-`m4-profile-control-p-20260720-01`。このversioned inputとexisting-image executor/
+`m4-profile-control-p-20260720-02`。このversioned inputとexisting-image executor/
 production control backendはDocker非実行のstatic/unit candidateであり、fresh independent
-re-review前のtemporary activation、`run:controls`、runtime enforcement、Observedを承認しない。
+implementation/gate review前のactivation command、runtime enforcement、Observedを承認しない。

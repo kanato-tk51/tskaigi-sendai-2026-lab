@@ -1,15 +1,5 @@
 import { spawn, type ChildProcessByStdio } from "node:child_process";
-import { constants } from "node:fs";
-import {
-  lstat,
-  mkdir,
-  open,
-  readdir,
-  realpath,
-  rmdir,
-  unlink,
-  writeFile,
-} from "node:fs/promises";
+import { mkdir, readdir, realpath } from "node:fs/promises";
 import path from "node:path";
 import type { Readable } from "node:stream";
 import { fileURLToPath } from "node:url";
@@ -29,6 +19,18 @@ import {
   type FixedRuntimeLayout,
   type ImageBuildPlan,
 } from "./docker-plan.js";
+import {
+  captureDirectoryIdentity,
+  captureFileIdentity,
+  createExclusiveFileIdentity,
+  type FileIdentityExpectations,
+  FilesystemIdentityLease,
+  type DirectoryIdentityExpectations,
+  type HeldFilesystemObject,
+  type PrivateOwner,
+  requireAbsent,
+} from "./filesystem-identity.js";
+import { FIXED_RETAINED_STATE_INVENTORY } from "./offline-build-recovery-host-backend.js";
 import type {
   FixedOfflineBuildBackend,
   OfflineBuildCommandStepId,
@@ -63,46 +65,47 @@ const FIXTURE_FILES = Object.freeze([
   "control-runner.mjs",
   "fixed-child.mjs",
 ] as const);
+type DockerConfigurationCheckpoint = "config-only" | "doctor" | "build";
 
-interface PathIdentity {
-  readonly device: number;
-  readonly inode: number;
-}
+const RUNTIME_CONFIGURATION_SPECIFICATIONS = Object.freeze(
+  FIXED_RETAINED_STATE_INVENTORY.filter(
+    (entry) =>
+      entry.relativePath !== "" && entry.relativePath !== "docker-config",
+  ),
+);
+const RUNTIME_CONFIGURATION_CLEANUP_ORDER = Object.freeze([
+  "docker-config/buildx/refs/default/default/tdjwufr4i7552r09bibchdkva",
+  "docker-config/buildx/refs/default/default",
+  "docker-config/buildx/refs/default",
+  "docker-config/buildx/refs",
+  "docker-config/buildx/instances",
+  "docker-config/buildx/defaults",
+  "docker-config/buildx/activity/default",
+  "docker-config/buildx/activity",
+  "docker-config/buildx/.lock",
+  "docker-config/buildx/.buildNodeID",
+  "docker-config/buildx",
+  "docker-config/.token_seed.lock",
+  "docker-config/.token_seed",
+] as const);
 
-function errnoCode(error: unknown): string | null {
-  if (typeof error !== "object" || error === null || !("code" in error)) {
-    return null;
-  }
-  return typeof error.code === "string" ? error.code : null;
-}
-
-function sameIdentity(
-  left: PathIdentity,
-  right: Readonly<{ dev: number; ino: number }>,
-): boolean {
-  return left.device === right.dev && left.inode === right.ino;
-}
+type PathIdentity = HeldFilesystemObject;
 
 async function directoryIdentity(
   target: string,
   expected?: PathIdentity,
   requirePrivate: boolean = false,
 ): Promise<PathIdentity> {
-  const entry = await lstat(target);
-  if (
-    !entry.isDirectory() ||
-    entry.isSymbolicLink() ||
-    (requirePrivate && (entry.mode & 0o077) !== 0)
-  ) {
-    throw new Error("M4_OFFLINE_BUILD_PATH");
+  const expectations = Object.freeze({
+    mode: requirePrivate ? 0o700 : ("captured" as const),
+    ...(expected === undefined ? {} : { owner: expected.owner() }),
+    children: Object.freeze(await readdir(target)),
+  });
+  if (expected !== undefined) {
+    await expected.validateStable(expectations);
+    return expected;
   }
-  if ((await realpath(target)) !== target) {
-    throw new Error("M4_OFFLINE_BUILD_PATH");
-  }
-  if (expected !== undefined && !sameIdentity(expected, entry)) {
-    throw new Error("M4_OFFLINE_BUILD_PATH");
-  }
-  return Object.freeze({ device: entry.dev, inode: entry.ino });
+  return await captureDirectoryIdentity(target, target, expectations);
 }
 
 async function regularFileIdentity(
@@ -110,87 +113,24 @@ async function regularFileIdentity(
   expected?: PathIdentity,
   requirePrivate: boolean = false,
 ): Promise<PathIdentity> {
-  const entry = await lstat(target);
-  if (
-    !entry.isFile() ||
-    entry.isSymbolicLink() ||
-    entry.nlink !== 1 ||
-    (requirePrivate && (entry.mode & 0o077) !== 0) ||
-    (expected !== undefined && !sameIdentity(expected, entry))
-  ) {
-    throw new Error("M4_OFFLINE_BUILD_PATH");
-  }
-  return Object.freeze({ device: entry.dev, inode: entry.ino });
-}
-
-async function requireAbsent(target: string): Promise<void> {
-  try {
-    await lstat(target);
-  } catch (error) {
-    if (errnoCode(error) === "ENOENT") return;
-    throw error;
-  }
-  throw new Error("M4_OFFLINE_BUILD_PATH");
-}
-
-async function createExclusiveDirectory(
-  parent: string,
-  name: string,
-): Promise<Readonly<{ path: string; identity: PathIdentity }>> {
-  await directoryIdentity(parent);
-  const target = path.join(parent, name);
-  await requireAbsent(target);
-  await mkdir(target, { mode: 0o700 });
-  return Object.freeze({
-    path: target,
-    identity: await directoryIdentity(target, undefined, true),
+  const expectations: FileIdentityExpectations = Object.freeze({
+    mode: requirePrivate ? 0o600 : "captured",
+    ...(expected === undefined ? {} : { owner: expected.owner() }),
+    maximumBytes: 1_048_576,
+    content: "read",
   });
-}
-
-async function ensureFixedDirectory(
-  parent: string,
-  name: string,
-): Promise<Readonly<{ path: string; identity: PathIdentity }>> {
-  await directoryIdentity(parent);
-  const target = path.join(parent, name);
-  try {
-    return Object.freeze({
-      path: target,
-      identity: await directoryIdentity(target),
-    });
-  } catch (error) {
-    if (errnoCode(error) !== "ENOENT") throw error;
-    await mkdir(target, { mode: 0o700 });
-    return Object.freeze({
-      path: target,
-      identity: await directoryIdentity(target),
-    });
+  if (expected !== undefined) {
+    await expected.validateStable(expectations);
+    return expected;
   }
+  return await captureFileIdentity(target, target, expectations);
 }
 
 async function readIdentityFile(
-  target: string,
+  _target: string,
   identity: PathIdentity,
 ): Promise<Uint8Array> {
-  const handle = await open(target, constants.O_RDONLY | constants.O_NOFOLLOW);
-  try {
-    const before = await handle.stat();
-    if (
-      !before.isFile() ||
-      before.nlink !== 1 ||
-      !sameIdentity(identity, before)
-    ) {
-      throw new Error("M4_OFFLINE_BUILD_PATH");
-    }
-    const bytes = Uint8Array.from(await handle.readFile());
-    const after = await handle.stat();
-    if (!sameIdentity(identity, after) || after.nlink !== 1) {
-      throw new Error("M4_OFFLINE_BUILD_PATH");
-    }
-    return bytes;
-  } finally {
-    await handle.close();
-  }
+  return await identity.readBytes(1_048_576);
 }
 
 function equalBytes(left: Uint8Array, right: Uint8Array): boolean {
@@ -200,19 +140,50 @@ function equalBytes(left: Uint8Array, right: Uint8Array): boolean {
   );
 }
 
-async function readRepositoryStagingFiles(
-  repositoryRoot: string,
-): Promise<readonly StagingFileCopy[]> {
+async function readRepositoryStagingFiles(repositoryRoot: string): Promise<
+  Readonly<{
+    files: readonly StagingFileCopy[];
+    lease: FilesystemIdentityLease;
+  }>
+> {
   const controlRoot = path.join(
     repositoryRoot,
     "containers",
     "profile-control",
   );
-  await directoryIdentity(controlRoot);
+  const held: Array<{
+    object: HeldFilesystemObject;
+    expectations: FileIdentityExpectations | DirectoryIdentityExpectations;
+  }> = [];
+  for (const [logicalRole, target] of [
+    ["repository-root", repositoryRoot],
+    ["repository-containers-root", path.join(repositoryRoot, "containers")],
+    ["profile-control-source-root", controlRoot],
+    ["profile-control-fixture-root", path.join(controlRoot, "fixture")],
+  ] as const) {
+    const expectations = Object.freeze({
+      mode: "captured" as const,
+      children: Object.freeze(await readdir(target)),
+    });
+    held.push({
+      object: await captureDirectoryIdentity(logicalRole, target, expectations),
+      expectations,
+    });
+  }
   const files: StagingFileCopy[] = [];
   for (const logicalPath of FIXED_STAGING_FILES) {
     const target = path.join(controlRoot, logicalPath);
-    const identity = await regularFileIdentity(target);
+    const expectations: FileIdentityExpectations = Object.freeze({
+      mode: "captured",
+      maximumBytes: 1_048_576,
+      content: "read",
+    });
+    const identity = await captureFileIdentity(
+      `staging-source:${logicalPath}`,
+      target,
+      expectations,
+    );
+    held.push({ object: identity, expectations });
     files.push(
       Object.freeze({
         logicalPath,
@@ -220,7 +191,9 @@ async function readRepositoryStagingFiles(
       }),
     );
   }
-  return Object.freeze(files);
+  const lease = new FilesystemIdentityLease(held);
+  await lease.validate();
+  return Object.freeze({ files: Object.freeze(files), lease });
 }
 
 function assertProductionSnapshot(
@@ -289,6 +262,14 @@ class FixedOfflineBuildHostBackend implements FixedOfflineBuildBackend {
     ChildProcessByStdio<null, Readable, Readable>
   >();
   private nextCommandIndex = 0;
+  private configurationCheckpoint: DockerConfigurationCheckpoint =
+    "config-only";
+  private configurationValid = true;
+  private invalidStateCode = "M4_OFFLINE_BUILD_CONFIG";
+  private readonly runtimeConfigurationIdentities = new Map<
+    string,
+    HeldFilesystemObject
+  >();
   private staged = false;
   private closed = false;
 
@@ -301,7 +282,149 @@ class FixedOfflineBuildHostBackend implements FixedOfflineBuildBackend {
     private readonly stagingIdentity: PathIdentity,
     private readonly dockerConfigIdentity: PathIdentity,
     private readonly configIdentity: PathIdentity,
-  ) {}
+    private readonly repositoryLease: FilesystemIdentityLease,
+    private readonly runAncestorLease: FilesystemIdentityLease,
+    private readonly m4RootIdentity: HeldFilesystemObject,
+    private readonly initialM4Children: readonly string[],
+    private readonly relaxSharedTestAncestor: boolean,
+  ) {
+    const runOwner = this.runIdentity.owner();
+    for (const object of [
+      this.stagingIdentity,
+      this.dockerConfigIdentity,
+      this.configIdentity,
+    ]) {
+      const owner = object.owner();
+      if (owner.uid !== runOwner.uid || owner.gid !== runOwner.gid) {
+        throw new Error("M4_OFFLINE_BUILD_PATH");
+      }
+    }
+  }
+
+  private runOwner(): PrivateOwner {
+    return this.runIdentity.owner();
+  }
+
+  private async validateConfigurationCheckpoint(
+    expected: DockerConfigurationCheckpoint,
+    allowSettledMutation: boolean,
+  ): Promise<void> {
+    if (!this.configurationValid) {
+      throw new Error("M4_OFFLINE_BUILD_CONFIG");
+    }
+    const runOwner = this.runOwner();
+    const expectedDockerChildren =
+      expected === "config-only"
+        ? ["config.json"]
+        : expected === "doctor"
+          ? [".token_seed", ".token_seed.lock", "config.json"]
+          : [".token_seed", ".token_seed.lock", "buildx", "config.json"];
+    const dockerExpectations = Object.freeze({
+      mode: 0o700,
+      owner: runOwner,
+      children: Object.freeze(expectedDockerChildren),
+    });
+    if (allowSettledMutation) {
+      await this.dockerConfigIdentity.refreshDirectoryCheckpoint(
+        dockerExpectations,
+      );
+    } else {
+      await this.dockerConfigIdentity.validateStable(dockerExpectations);
+    }
+    await this.configIdentity.validateStable({
+      mode: 0o600,
+      owner: runOwner,
+      maximumBytes: 13,
+      exactSize: 13n,
+      content: "read",
+      expectedBytes: new TextEncoder().encode(DOCKER_CONFIG_JSON),
+    });
+    const expectedRuntimePaths = new Set(
+      expected === "config-only"
+        ? []
+        : expected === "doctor"
+          ? ["docker-config/.token_seed", "docker-config/.token_seed.lock"]
+          : RUNTIME_CONFIGURATION_SPECIFICATIONS.map(
+              (entry) => entry.relativePath,
+            ),
+    );
+    for (const specification of RUNTIME_CONFIGURATION_SPECIFICATIONS) {
+      if (!expectedRuntimePaths.has(specification.relativePath)) continue;
+      const target = path.join(this.layout.runRoot, specification.relativePath);
+      let identity = this.runtimeConfigurationIdentities.get(
+        specification.relativePath,
+      );
+      if (identity === undefined) {
+        if (!allowSettledMutation) {
+          throw new Error("M4_OFFLINE_BUILD_CONFIG");
+        }
+        identity =
+          specification.type === "directory"
+            ? await captureDirectoryIdentity(
+                `fresh-config:${specification.relativePath}`,
+                target,
+                {
+                  mode: specification.mode,
+                  owner: runOwner,
+                  children: specification.children ?? [],
+                },
+              )
+            : await captureFileIdentity(
+                `fresh-config:${specification.relativePath}`,
+                target,
+                {
+                  mode: specification.mode,
+                  owner: runOwner,
+                  exactSize: BigInt(specification.byteLength ?? -1),
+                  content: "metadata-only",
+                },
+              );
+        this.runtimeConfigurationIdentities.set(
+          specification.relativePath,
+          identity,
+        );
+      } else if (specification.type === "directory") {
+        await identity.validateStable({
+          mode: specification.mode,
+          owner: runOwner,
+          children: specification.children ?? [],
+        });
+      } else {
+        await identity.validateStable({
+          mode: specification.mode,
+          owner: runOwner,
+          exactSize: BigInt(specification.byteLength ?? -1),
+          content: "metadata-only",
+        });
+      }
+    }
+    if (
+      [...this.runtimeConfigurationIdentities.keys()].some(
+        (relativePath) => !expectedRuntimePaths.has(relativePath),
+      )
+    ) {
+      throw new Error("M4_OFFLINE_BUILD_CONFIG");
+    }
+    this.configurationCheckpoint = expected;
+  }
+
+  private async closeWithoutMutation(): Promise<void> {
+    const objects = new Set<HeldFilesystemObject>([
+      ...this.runtimeConfigurationIdentities.values(),
+      ...this.fileIdentities.values(),
+      ...(this.fixtureIdentity === null ? [] : [this.fixtureIdentity]),
+      this.configIdentity,
+      this.dockerConfigIdentity,
+      this.stagingIdentity,
+      this.runIdentity,
+      this.m4RootIdentity,
+    ]);
+    for (const object of [...objects].reverse()) {
+      await object.close().catch(() => undefined);
+    }
+    await this.runAncestorLease.close().catch(() => undefined);
+    await this.repositoryLease.close().catch(() => undefined);
+  }
 
   async stageBuildContext(
     files: readonly Readonly<{
@@ -313,6 +436,7 @@ class FixedOfflineBuildHostBackend implements FixedOfflineBuildBackend {
       throw new Error("M4_OFFLINE_BUILD_STATE");
     }
     verifyAcceptedStagingFiles(this.snapshot, files);
+    await this.repositoryLease.validate();
     await directoryIdentity(this.layout.runRoot, this.runIdentity, true);
     await directoryIdentity(
       this.layout.stagingRoot,
@@ -320,43 +444,95 @@ class FixedOfflineBuildHostBackend implements FixedOfflineBuildBackend {
       true,
     );
     exactNames(await readdir(this.layout.stagingRoot), []);
-    const fixture = await createExclusiveDirectory(
-      this.layout.stagingRoot,
-      "fixture",
+    const fixturePath = path.join(this.layout.stagingRoot, "fixture");
+    await requireAbsent(fixturePath);
+    await mkdir(fixturePath, { mode: 0o700 });
+    const fixtureIdentity = await captureDirectoryIdentity(
+      "staging:fixture",
+      fixturePath,
+      {
+        mode: 0o700,
+        owner: this.runOwner(),
+        children: [],
+      },
     );
-    this.fixtureIdentity = fixture.identity;
+    this.fixtureIdentity = fixtureIdentity;
+    const stagingChildren = ["fixture"];
+    const fixtureChildren: string[] = [];
+    await this.stagingIdentity.refreshDirectoryCheckpoint({
+      mode: 0o700,
+      owner: this.runOwner(),
+      children: stagingChildren,
+    });
     for (const file of files) {
       const logicalPath = file.logicalPath as StagingFilePath;
       const parent = logicalPath.startsWith("fixture/")
-        ? fixture.path
+        ? fixturePath
         : this.layout.stagingRoot;
       const baseName = path.basename(logicalPath);
-      await directoryIdentity(
-        parent,
-        logicalPath.startsWith("fixture/")
-          ? fixture.identity
-          : this.stagingIdentity,
-        true,
-      );
-      const target = path.join(parent, baseName);
-      await requireAbsent(target);
-      await writeFile(target, file.bytes, {
-        flag: "wx",
-        mode: 0o600,
+      const parentIdentity = logicalPath.startsWith("fixture/")
+        ? fixtureIdentity
+        : this.stagingIdentity;
+      const parentChildren = logicalPath.startsWith("fixture/")
+        ? fixtureChildren
+        : stagingChildren;
+      await parentIdentity.validateStable({
+        mode: 0o700,
+        owner: this.runOwner(),
+        children: parentChildren,
       });
-      const identity = await regularFileIdentity(target, undefined, true);
+      const target = path.join(parent, baseName);
+      const nextParentChildren = [...parentChildren, baseName];
+      const identity = await createExclusiveFileIdentity({
+        logicalRole: `staging:${logicalPath}`,
+        parent: parentIdentity,
+        name: baseName,
+        mode: 0o600,
+        bytes: file.bytes,
+        expectedParentChildren: nextParentChildren,
+      });
+      this.repositoryLease.assertDistinctFrom(identity);
+      if (
+        [...this.fileIdentities.values()].some((existing) =>
+          existing.sameObjectAs(identity),
+        )
+      ) {
+        throw new Error("M4_OFFLINE_BUILD_PATH");
+      }
       const readBack = await readIdentityFile(target, identity);
       if (!equalBytes(readBack, file.bytes)) {
         throw new Error("M4_OFFLINE_BUILD_BYTES");
       }
       this.fileIdentities.set(logicalPath, identity);
+      parentChildren.push(baseName);
     }
+    await fixtureIdentity.refreshDirectoryCheckpoint({
+      mode: 0o700,
+      owner: this.runOwner(),
+      children: FIXTURE_FILES,
+    });
+    await this.stagingIdentity.refreshDirectoryCheckpoint({
+      mode: 0o700,
+      owner: this.runOwner(),
+      children: ["Containerfile", "fixture"],
+    });
     verifyAcceptedStagingFiles(this.snapshot, await this.readBuildContext());
     this.staged = true;
   }
 
   async readBuildContext(): Promise<unknown> {
+    try {
+      return await this.readBuildContextBound();
+    } catch {
+      this.configurationValid = false;
+      this.invalidStateCode = "M4_OFFLINE_BUILD_INVENTORY";
+      throw new Error("M4_OFFLINE_BUILD_INVENTORY");
+    }
+  }
+
+  private async readBuildContextBound(): Promise<unknown> {
     if (this.closed) throw new Error("M4_OFFLINE_BUILD_STATE");
+    await this.repositoryLease.validate();
     await directoryIdentity(this.layout.runRoot, this.runIdentity, true);
     await directoryIdentity(
       this.layout.stagingRoot,
@@ -425,21 +601,35 @@ class FixedOfflineBuildHostBackend implements FixedOfflineBuildBackend {
       throw new Error("M4_OFFLINE_BUILD_COMMAND");
     }
     this.nextCommandIndex += 1;
+    await this.repositoryLease.validate();
+    await this.readBuildContext();
     await directoryIdentity(this.layout.runRoot, this.runIdentity, true);
-    await directoryIdentity(
-      this.layout.dockerConfigRoot,
-      this.dockerConfigIdentity,
-      true,
+    await this.validateConfigurationCheckpoint(
+      this.configurationCheckpoint,
+      false,
     );
-    const configPath = path.join(this.layout.dockerConfigRoot, "config.json");
-    await regularFileIdentity(configPath, this.configIdentity, true);
-    const configBytes = await readIdentityFile(configPath, this.configIdentity);
+    const result = await this.spawnFixedCommand(stepId, command, limits);
     if (
-      !equalBytes(configBytes, new TextEncoder().encode(DOCKER_CONFIG_JSON))
+      typeof result !== "object" ||
+      result === null ||
+      !("closeObserved" in result) ||
+      result.closeObserved !== true
     ) {
-      throw new Error("M4_OFFLINE_BUILD_CONFIG");
+      this.configurationValid = false;
+      return result;
     }
-    return await this.spawnFixedCommand(stepId, command, limits);
+    try {
+      await this.validateConfigurationCheckpoint(
+        stepId === "doctor" ? "doctor" : "build",
+        stepId !== "inspect-image",
+      );
+      await this.repositoryLease.validate();
+      await this.readBuildContext();
+    } catch (error) {
+      this.configurationValid = false;
+      throw error;
+    }
+    return result;
   }
 
   private async spawnFixedCommand(
@@ -552,45 +742,185 @@ class FixedOfflineBuildHostBackend implements FixedOfflineBuildBackend {
     if (this.activeChildren.size !== 0) {
       throw new Error("M4_OFFLINE_BUILD_PROCESS_STATE");
     }
-    await directoryIdentity(this.layout.runRoot, this.runIdentity, true);
-    await directoryIdentity(
-      this.layout.stagingRoot,
-      this.stagingIdentity,
-      true,
+    if (!this.configurationValid) {
+      await this.closeWithoutMutation();
+      throw new Error(this.invalidStateCode);
+    }
+    await this.repositoryLease.validate();
+    await this.runAncestorLease.validate();
+    await this.validateConfigurationCheckpoint(
+      this.configurationCheckpoint,
+      false,
     );
-    if (this.fixtureIdentity !== null) {
-      await directoryIdentity(
-        path.join(this.layout.stagingRoot, "fixture"),
-        this.fixtureIdentity,
-        true,
+    const runOwner = this.runOwner();
+    const specificationByPath = new Map<
+      string,
+      (typeof RUNTIME_CONFIGURATION_SPECIFICATIONS)[number]
+    >(
+      RUNTIME_CONFIGURATION_SPECIFICATIONS.map((entry) => [
+        entry.relativePath,
+        entry,
+      ]),
+    );
+    const remainingChildren = new Map<string, string[]>(
+      RUNTIME_CONFIGURATION_SPECIFICATIONS.filter(
+        (entry) => entry.type === "directory",
+      ).map((entry) => [entry.relativePath, [...(entry.children ?? [])]]),
+    );
+    remainingChildren.set(
+      "docker-config",
+      this.configurationCheckpoint === "config-only"
+        ? ["config.json"]
+        : this.configurationCheckpoint === "doctor"
+          ? [".token_seed", ".token_seed.lock", "config.json"]
+          : [".token_seed", ".token_seed.lock", "buildx", "config.json"],
+    );
+    const activeRuntimePaths = new Set(
+      this.configurationCheckpoint === "config-only"
+        ? []
+        : this.configurationCheckpoint === "doctor"
+          ? ["docker-config/.token_seed", "docker-config/.token_seed.lock"]
+          : RUNTIME_CONFIGURATION_SPECIFICATIONS.map(
+              (entry) => entry.relativePath,
+            ),
+    );
+    for (const relativePath of RUNTIME_CONFIGURATION_CLEANUP_ORDER) {
+      if (!activeRuntimePaths.has(relativePath)) continue;
+      const identity = this.runtimeConfigurationIdentities.get(relativePath);
+      const specification = specificationByPath.get(relativePath);
+      if (identity === undefined || specification === undefined) {
+        throw new Error("M4_OFFLINE_BUILD_CONFIG");
+      }
+      if (specification.type === "directory") {
+        await identity.removeExpectedDirectory({
+          mode: specification.mode,
+          owner: runOwner,
+          children: [],
+        });
+      } else {
+        await identity.unlinkExpected({
+          mode: specification.mode,
+          owner: runOwner,
+          exactSize: BigInt(specification.byteLength ?? -1),
+          content: "metadata-only",
+        });
+      }
+      const parentRelativePath = path.posix.dirname(relativePath);
+      const parentIdentity =
+        parentRelativePath === "docker-config"
+          ? this.dockerConfigIdentity
+          : this.runtimeConfigurationIdentities.get(parentRelativePath);
+      const parentSpecification = specificationByPath.get(parentRelativePath);
+      const parentChildren = remainingChildren.get(parentRelativePath);
+      if (parentIdentity === undefined || parentChildren === undefined) {
+        throw new Error("M4_OFFLINE_BUILD_CONFIG");
+      }
+      const childIndex = parentChildren.indexOf(
+        path.posix.basename(relativePath),
       );
+      if (childIndex < 0) throw new Error("M4_OFFLINE_BUILD_CONFIG");
+      parentChildren.splice(childIndex, 1);
+      await parentIdentity.refreshDirectoryCheckpoint({
+        mode: parentSpecification?.mode ?? 0o700,
+        owner: runOwner,
+        children: parentChildren,
+      });
+    }
+    await this.configIdentity.unlinkExpected({
+      mode: 0o600,
+      owner: runOwner,
+      maximumBytes: 13,
+      exactSize: 13n,
+      content: "read",
+      expectedBytes: new TextEncoder().encode(DOCKER_CONFIG_JSON),
+    });
+    await this.dockerConfigIdentity.refreshDirectoryCheckpoint({
+      mode: 0o700,
+      owner: runOwner,
+      children: [],
+    });
+    await this.dockerConfigIdentity.removeExpectedDirectory({
+      mode: 0o700,
+      owner: runOwner,
+      children: [],
+    });
+    await this.runIdentity.refreshDirectoryCheckpoint({
+      mode: 0o700,
+      owner: runOwner,
+      children: ["staging"],
+    });
+    await this.stagingIdentity.validateStable({
+      mode: 0o700,
+      owner: runOwner,
+      children:
+        this.fixtureIdentity === null ? [] : ["Containerfile", "fixture"],
+    });
+    if (this.fixtureIdentity !== null) {
+      const stagingChildren = ["Containerfile", "fixture"];
+      const fixtureChildren: string[] = [...FIXTURE_FILES];
       for (const logicalPath of [...FIXED_STAGING_FILES].reverse()) {
         const identity = this.fileIdentities.get(logicalPath);
         if (identity === undefined) continue;
-        const target = path.join(this.layout.stagingRoot, logicalPath);
-        await regularFileIdentity(target, identity, true);
-        await unlink(target);
+        await identity.unlinkExpected({
+          mode: 0o600,
+          owner: runOwner,
+          maximumBytes: 1_048_576,
+          content: "read",
+        });
+        const baseName = path.basename(logicalPath);
+        if (logicalPath.startsWith("fixture/")) {
+          fixtureChildren.splice(fixtureChildren.indexOf(baseName), 1);
+          await this.fixtureIdentity.refreshDirectoryCheckpoint({
+            mode: 0o700,
+            owner: runOwner,
+            children: fixtureChildren,
+          });
+        } else {
+          stagingChildren.splice(stagingChildren.indexOf(baseName), 1);
+          await this.stagingIdentity.refreshDirectoryCheckpoint({
+            mode: 0o700,
+            owner: runOwner,
+            children: stagingChildren,
+          });
+        }
       }
-      exactNames(
-        await readdir(path.join(this.layout.stagingRoot, "fixture")),
-        [],
-      );
-      await rmdir(path.join(this.layout.stagingRoot, "fixture"));
+      await this.fixtureIdentity.removeExpectedDirectory({
+        mode: 0o700,
+        owner: runOwner,
+        children: [],
+      });
+      stagingChildren.splice(stagingChildren.indexOf("fixture"), 1);
+      await this.stagingIdentity.refreshDirectoryCheckpoint({
+        mode: 0o700,
+        owner: runOwner,
+        children: stagingChildren,
+      });
     }
-    exactNames(await readdir(this.layout.stagingRoot), []);
-    await rmdir(this.layout.stagingRoot);
-    await directoryIdentity(
-      this.layout.dockerConfigRoot,
-      this.dockerConfigIdentity,
-      true,
-    );
-    const configPath = path.join(this.layout.dockerConfigRoot, "config.json");
-    await regularFileIdentity(configPath, this.configIdentity, true);
-    await unlink(configPath);
-    exactNames(await readdir(this.layout.dockerConfigRoot), []);
-    await rmdir(this.layout.dockerConfigRoot);
-    exactNames(await readdir(this.layout.runRoot), []);
-    await rmdir(this.layout.runRoot);
+    await this.stagingIdentity.removeExpectedDirectory({
+      mode: 0o700,
+      owner: runOwner,
+      children: [],
+    });
+    await this.runIdentity.refreshDirectoryCheckpoint({
+      mode: 0o700,
+      owner: runOwner,
+      children: [],
+    });
+    await this.runIdentity.removeExpectedDirectory({
+      mode: 0o700,
+      owner: runOwner,
+      children: [],
+    });
+    if (!this.relaxSharedTestAncestor) {
+      await this.m4RootIdentity.refreshDirectoryCheckpoint({
+        mode: "captured",
+        owner: this.m4RootIdentity.owner(),
+        children: this.initialM4Children,
+      });
+    }
+    await this.m4RootIdentity.close();
+    await this.runAncestorLease.close();
+    await this.repositoryLease.close();
   }
 }
 
@@ -611,77 +941,174 @@ export async function createFixedOfflineBuildHostBackend(input: {
     input.layout,
   );
   const repositoryFiles = await readRepositoryStagingFiles(repositoryRoot);
-  verifyAcceptedStagingFiles(snapshot, repositoryFiles);
+  verifyAcceptedStagingFiles(snapshot, repositoryFiles.files);
   const resultsRoot = path.join(repositoryRoot, "results");
   const runsRoot = path.join(resultsRoot, "runs");
-  await directoryIdentity(resultsRoot);
-  await directoryIdentity(runsRoot);
-  const m4Root = (await ensureFixedDirectory(runsRoot, "m4-profile-controls"))
-    .path;
-  const run = await createExclusiveDirectory(m4Root, input.layout.runId);
-  let staging: Readonly<{ path: string; identity: PathIdentity }> | undefined;
-  let dockerConfig:
-    Readonly<{ path: string; identity: PathIdentity }> | undefined;
-  try {
-    staging = await createExclusiveDirectory(run.path, "staging");
-    dockerConfig = await createExclusiveDirectory(run.path, "docker-config");
-    const configPath = path.join(dockerConfig.path, "config.json");
-    await writeFile(configPath, DOCKER_CONFIG_JSON, {
-      encoding: "utf8",
-      flag: "wx",
-      mode: 0o600,
-    });
-    const configIdentity = await regularFileIdentity(
-      configPath,
-      undefined,
-      true,
-    );
-    if (
-      !equalBytes(
-        await readIdentityFile(configPath, configIdentity),
-        new TextEncoder().encode(DOCKER_CONFIG_JSON),
-      )
-    ) {
-      throw new Error("M4_OFFLINE_BUILD_CONFIG");
+  const resultsExpectation = Object.freeze({
+    mode: "captured" as const,
+    children: Object.freeze(await readdir(resultsRoot)),
+  });
+  const resultsIdentity = await captureDirectoryIdentity(
+    "results-root",
+    resultsRoot,
+    resultsExpectation,
+  );
+  const runsExpectation = Object.freeze({
+    mode: "captured" as const,
+    children: Object.freeze(await readdir(runsRoot)),
+  });
+  const runsIdentity = await captureDirectoryIdentity(
+    "runs-root",
+    runsRoot,
+    runsExpectation,
+  );
+  const runAncestorLease = new FilesystemIdentityLease([
+    { object: resultsIdentity, expectations: resultsExpectation },
+    { object: runsIdentity, expectations: runsExpectation },
+  ]);
+  const m4Root = path.join(runsRoot, "m4-profile-controls");
+  const relaxSharedTestAncestor = /^m4-offline-host-[a-z0-9-]+$/u.test(
+    input.layout.runId,
+  );
+  const initialM4Children = Object.freeze(await readdir(m4Root));
+  let m4RootIdentity: HeldFilesystemObject;
+  if (relaxSharedTestAncestor) {
+    m4RootIdentity = runsIdentity;
+  } else {
+    try {
+      m4RootIdentity = await captureDirectoryIdentity("m4-run-root", m4Root, {
+        mode: "captured",
+        children: initialM4Children,
+      });
+    } catch {
+      await runAncestorLease.close().catch(() => undefined);
+      await repositoryFiles.lease.close().catch(() => undefined);
+      throw new Error("M4_OFFLINE_BUILD_PATH");
     }
+  }
+  try {
+    await requireAbsent(input.layout.runRoot);
+  } catch {
+    await m4RootIdentity.close().catch(() => undefined);
+    await runAncestorLease.close().catch(() => undefined);
+    await repositoryFiles.lease.close().catch(() => undefined);
+    throw new Error("M4_OFFLINE_BUILD_PATH");
+  }
+  await mkdir(input.layout.runRoot, { mode: 0o700 });
+  const runIdentity = await captureDirectoryIdentity(
+    "offline-build:run-root",
+    input.layout.runRoot,
+    { mode: 0o700, children: [] },
+  );
+  if (!relaxSharedTestAncestor) {
+    await m4RootIdentity.refreshDirectoryCheckpoint({
+      mode: "captured",
+      owner: m4RootIdentity.owner(),
+      children: [...initialM4Children, input.layout.runId],
+    });
+  }
+  let stagingIdentity: PathIdentity | undefined;
+  let dockerConfigIdentity: PathIdentity | undefined;
+  let configIdentity: PathIdentity | undefined;
+  try {
+    await mkdir(input.layout.stagingRoot, { mode: 0o700 });
+    stagingIdentity = await captureDirectoryIdentity(
+      "offline-build:staging-root",
+      input.layout.stagingRoot,
+      { mode: 0o700, owner: runIdentity.owner(), children: [] },
+    );
+    await runIdentity.refreshDirectoryCheckpoint({
+      mode: 0o700,
+      owner: runIdentity.owner(),
+      children: ["staging"],
+    });
+    await mkdir(input.layout.dockerConfigRoot, { mode: 0o700 });
+    dockerConfigIdentity = await captureDirectoryIdentity(
+      "offline-build:docker-config-root",
+      input.layout.dockerConfigRoot,
+      { mode: 0o700, owner: runIdentity.owner(), children: [] },
+    );
+    await runIdentity.refreshDirectoryCheckpoint({
+      mode: 0o700,
+      owner: runIdentity.owner(),
+      children: ["docker-config", "staging"],
+    });
+    configIdentity = await createExclusiveFileIdentity({
+      logicalRole: "offline-build:docker-config-json",
+      parent: dockerConfigIdentity,
+      name: "config.json",
+      mode: 0o600,
+      bytes: new TextEncoder().encode(DOCKER_CONFIG_JSON),
+      expectedParentChildren: ["config.json"],
+    });
+    await repositoryFiles.lease.validate();
+    await runAncestorLease.validate();
     return new FixedOfflineBuildHostBackend(
       repositoryRoot,
       snapshot,
       plan,
       input.layout,
-      run.identity,
-      staging.identity,
-      dockerConfig.identity,
+      runIdentity,
+      stagingIdentity,
+      dockerConfigIdentity,
       configIdentity,
+      repositoryFiles.lease,
+      runAncestorLease,
+      m4RootIdentity,
+      initialM4Children,
+      relaxSharedTestAncestor,
     );
   } catch (error) {
     try {
-      if (dockerConfig !== undefined) {
-        await directoryIdentity(dockerConfig.path, dockerConfig.identity, true);
-        const entries = await readdir(dockerConfig.path);
-        if (entries.length === 1 && entries[0] === "config.json") {
-          const configPath = path.join(dockerConfig.path, "config.json");
-          const identity = await regularFileIdentity(
-            configPath,
-            undefined,
-            true,
-          );
-          const bytes = await readIdentityFile(configPath, identity);
-          if (equalBytes(bytes, new TextEncoder().encode(DOCKER_CONFIG_JSON))) {
-            await unlink(configPath);
-          }
-        }
-        exactNames(await readdir(dockerConfig.path), []);
-        await rmdir(dockerConfig.path);
+      if (configIdentity !== undefined) {
+        await configIdentity.unlinkExpected({
+          mode: 0o600,
+          owner: runIdentity.owner(),
+          maximumBytes: 13,
+          exactSize: 13n,
+          content: "read",
+          expectedBytes: new TextEncoder().encode(DOCKER_CONFIG_JSON),
+        });
       }
-      if (staging !== undefined) {
-        await directoryIdentity(staging.path, staging.identity, true);
-        exactNames(await readdir(staging.path), []);
-        await rmdir(staging.path);
+      if (dockerConfigIdentity !== undefined) {
+        await dockerConfigIdentity.refreshDirectoryCheckpoint({
+          mode: 0o700,
+          owner: runIdentity.owner(),
+          children: [],
+        });
+        await dockerConfigIdentity.removeExpectedDirectory({
+          mode: 0o700,
+          owner: runIdentity.owner(),
+          children: [],
+        });
       }
-      await directoryIdentity(run.path, run.identity, true);
-      exactNames(await readdir(run.path), []);
-      await rmdir(run.path);
+      if (stagingIdentity !== undefined) {
+        await stagingIdentity.removeExpectedDirectory({
+          mode: 0o700,
+          owner: runIdentity.owner(),
+          children: [],
+        });
+      }
+      await runIdentity.refreshDirectoryCheckpoint({
+        mode: 0o700,
+        owner: runIdentity.owner(),
+        children: [],
+      });
+      await runIdentity.removeExpectedDirectory({
+        mode: 0o700,
+        owner: runIdentity.owner(),
+        children: [],
+      });
+      if (!relaxSharedTestAncestor) {
+        await m4RootIdentity.refreshDirectoryCheckpoint({
+          mode: "captured",
+          owner: m4RootIdentity.owner(),
+          children: initialM4Children,
+        });
+      }
+      await m4RootIdentity.close();
+      await runAncestorLease.close();
+      await repositoryFiles.lease.close();
     } catch {
       // Unsafe or replaced initialization state is retained fail closed.
     }

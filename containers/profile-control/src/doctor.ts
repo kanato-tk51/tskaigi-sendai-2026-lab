@@ -1,5 +1,3 @@
-import { types } from "node:util";
-
 import {
   DOCTOR_INVENTORY_SCHEMA_VERSION,
   DOCTOR_LIMITS,
@@ -22,8 +20,10 @@ import { validateBaseEnvironmentKeys } from "./image-input.js";
 import {
   assertExactKeys,
   assertSha256,
+  captureAuthority,
   readPlainArray,
   readPlainRecord,
+  snapshotBytes,
 } from "./safe-data.js";
 
 export const DOCTOR_STEP_IDS = Object.freeze([
@@ -221,14 +221,14 @@ function nonNegativeInteger(input: unknown): number {
 }
 
 function outputBytes(input: unknown): Uint8Array {
-  if (
-    !types.isUint8Array(input) ||
-    input.buffer instanceof SharedArrayBuffer ||
-    input.byteLength > DOCTOR_LIMITS.outputBytes
-  ) {
+  try {
+    return snapshotBytes(input, {
+      code: "INVALID_DOCTOR_OUTPUT",
+      maximum: DOCTOR_LIMITS.outputBytes,
+    });
+  } catch {
     return doctorFailure("INVALID_OUTPUT");
   }
-  return Uint8Array.from(input);
 }
 
 async function runStep(
@@ -503,15 +503,31 @@ export async function executeFixedDoctor(
   let failure: DoctorFailureCode | null = null;
   let rejection: DoctorRejectionCode | null = null;
   let inventory: DoctorInventory | null = null;
+  let authority: FixedDoctorBackend;
+  try {
+    authority = captureAuthority<FixedDoctorBackend>(
+      backend,
+      ["run", "cleanup"],
+      "INVALID_DOCTOR_OUTPUT",
+    );
+  } catch {
+    return Object.freeze({
+      validity: "inconclusive",
+      primaryFailure: "INVALID_OUTPUT",
+      rejection: null,
+      completedSteps: Object.freeze([]),
+      inventory: null,
+    });
+  }
   try {
     const plan = createFixedDoctorPlan();
-    const runtimeOutput = await runStep(backend, plan.commands[0]);
+    const runtimeOutput = await runStep(authority, plan.commands[0]);
     parseRuntimeVersion(runtimeOutput);
     completedSteps.push("runtime-version");
-    const imageIdentityOutput = await runStep(backend, plan.commands[1]);
+    const imageIdentityOutput = await runStep(authority, plan.commands[1]);
     const imageIdentity = parseImageIdentity(imageIdentityOutput);
     completedSteps.push("base-image-identity");
-    const environmentOutput = await runStep(backend, plan.commands[2]);
+    const environmentOutput = await runStep(authority, plan.commands[2]);
     const baseEnvironmentKeys = parseBaseEnvironmentSnapshot(
       environmentOutput,
       imageIdentity,
@@ -537,7 +553,7 @@ export async function executeFixedDoctor(
     }
   }
   try {
-    await backend.cleanup();
+    await authority.cleanup();
   } catch {
     if (failure === null) failure = "CLEANUP_FAILURE";
   }

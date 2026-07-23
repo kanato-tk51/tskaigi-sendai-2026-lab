@@ -36,11 +36,12 @@ class FakeChildProcess extends EventEmitter {
 
 import {
   consumeOfflineBuildRecoveryInspectAttempt,
+  createDisposableOfflineBuildRecoveryHostBackendForTest,
   createDisposableRetainedStateValidatorForTest,
   FIXED_RETAINED_STATE_INVENTORY,
-  createFixedOfflineBuildRecoveryHostBackend,
 } from "../src/offline-build-recovery-host-backend.js";
 import { createFixedOfflineBuildRecoveryInput } from "../src/offline-build-recovery.js";
+import { FilesystemIdentityLease } from "../src/filesystem-identity.js";
 
 const repositoryRoot = path.resolve(
   fileURLToPath(new URL("../../../", import.meta.url)),
@@ -116,17 +117,21 @@ describe("retained offline-build state metadata validator", () => {
     );
   });
 
-  it("rejects post-validation while fixed process remains active", async () => {
-    const backend = await createFixedOfflineBuildRecoveryHostBackend();
+  it("retains the lease until an unknown-settlement child eventually closes", async () => {
+    await createExactTestTree();
+    const backend =
+      await createDisposableOfflineBuildRecoveryHostBackendForTest(testRoot);
     await backend.validateRetainedState();
     const { command } = createFixedOfflineBuildRecoveryInput({
       failedBuildResult: RECORDED_BUILD_FAILURE,
       backend,
     });
+    let child: FakeChildProcess | null = null;
+    const closeSpy = vi.spyOn(FilesystemIdentityLease.prototype, "close");
     spawnMock.mockImplementationOnce(() => {
-      const child = new FakeChildProcess();
+      child = new FakeChildProcess();
       queueMicrotask(() => {
-        child.emit(
+        child!.emit(
           "error",
           Object.assign(new Error("synthetic process failure"), {
             code: "SIMULATED",
@@ -151,6 +156,35 @@ describe("retained offline-build state metadata validator", () => {
     await expect(backend.validateRetainedState()).rejects.toThrow(
       "M4_OFFLINE_BUILD_RECOVERY_SEQUENCE",
     );
+    expect(closeSpy).not.toHaveBeenCalled();
+    child!.emit("close", null);
+    await vi.waitFor(() => expect(closeSpy).toHaveBeenCalledTimes(1));
+    closeSpy.mockRestore();
+  });
+
+  it("closes retained handles after synchronous spawn failure is consumed", async () => {
+    await createExactTestTree();
+    const backend =
+      await createDisposableOfflineBuildRecoveryHostBackendForTest(testRoot);
+    await backend.validateRetainedState();
+    const { command } = createFixedOfflineBuildRecoveryInput({
+      failedBuildResult: RECORDED_BUILD_FAILURE,
+      backend,
+    });
+    const closeSpy = vi.spyOn(FilesystemIdentityLease.prototype, "close");
+    spawnMock.mockImplementationOnce(() => {
+      throw new Error("synthetic synchronous spawn failure");
+    });
+    await expect(
+      backend.run(command, {
+        timeoutMs: LIMITS.controlTimeoutMs,
+        outputBytes: LIMITS.outputBytes,
+      }),
+    ).rejects.toThrow("synthetic synchronous spawn failure");
+    expect(closeSpy).not.toHaveBeenCalled();
+    await expect(backend.validateRetainedState()).resolves.toBeUndefined();
+    expect(closeSpy).toHaveBeenCalledTimes(1);
+    closeSpy.mockRestore();
   });
 
   it("accepts the exact disposable metadata tree without reading contents", async () => {
@@ -158,6 +192,7 @@ describe("retained offline-build state metadata validator", () => {
     const validator =
       await createDisposableRetainedStateValidatorForTest(testRoot);
     await expect(validator.validate()).resolves.toBeUndefined();
+    await validator.close();
   });
 
   it.each([

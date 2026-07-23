@@ -41,7 +41,7 @@ import {
   syntheticInspectProjection,
 } from "./helpers.js";
 
-type FailureKind = "exit" | "output" | "throw" | "timeout";
+type FailureKind = "exit" | "output" | "throw" | "timeout" | "unsettled";
 type StagingDrift = "bytes" | "extra" | "missing" | "reordered";
 
 function runtimeVersionBytes(
@@ -67,10 +67,10 @@ class FakeBackend implements FixedExecutionBackend {
     private readonly transferDrift:
       | "immutable-input"
       | "invalid-evidence"
-      | "identity"
       | "inventory"
       | "missing"
-      | "symlink"
+      | "old-keys"
+      | "stable-false"
       | null = null,
     private readonly stagingDrift: StagingDrift | null = null,
     private readonly runtimePayload: unknown = runtimeVersionBytes(),
@@ -143,6 +143,7 @@ class FakeBackend implements FixedExecutionBackend {
       exitCode: failure === "exit" ? 1 : 0,
       timedOut: failure === "timeout",
       outputLimitExceeded: failure === "output",
+      closeObserved: failure !== "unsettled",
       stdoutBytes:
         failure === "output"
           ? LIMITS.outputBytes + 1
@@ -182,19 +183,11 @@ class FakeBackend implements FixedExecutionBackend {
     ) {
       manifestAfter[0] = 0x20;
     }
-    return {
+    const transfer: Record<string, unknown> = {
       manifestBefore,
       manifestAfter,
-      manifestIdentityBefore: `m4-file-${"a".repeat(32)}`,
-      manifestIdentityAfter:
-        this.transferDrift === "identity" && profileId === "permissive"
-          ? `m4-file-${"b".repeat(32)}`
-          : `m4-file-${"a".repeat(32)}`,
-      manifestTypeBefore: "regular-file",
-      manifestTypeAfter: "regular-file",
-      manifestSymlinkBefore: false,
-      manifestSymlinkAfter:
-        this.transferDrift === "symlink" && profileId === "permissive",
+      manifestIdentityStable:
+        this.transferDrift !== "stable-false" || profileId !== "permissive",
       controlEvidence:
         this.transferDrift === "invalid-evidence" && profileId === "permissive"
           ? new Uint8Array([0xff])
@@ -205,6 +198,10 @@ class FakeBackend implements FixedExecutionBackend {
           : ["control-evidence.json", "result-marker.txt"],
       scratchFiles: profileId === "permissive" ? ["scratch-marker.txt"] : [],
     };
+    if (this.transferDrift === "old-keys" && profileId === "permissive") {
+      transfer.manifestIdentityBefore = "forbidden-public-identity";
+    }
+    return transfer;
   }
 
   async recordProfileResult(profileId: ProfileId): Promise<void> {
@@ -221,10 +218,10 @@ function fixture(input?: {
   readonly transferDrift?:
     | "immutable-input"
     | "invalid-evidence"
-    | "identity"
     | "inventory"
     | "missing"
-    | "symlink";
+    | "old-keys"
+    | "stable-false";
   readonly stagingDrift?: StagingDrift;
   readonly substituteBaseEnvironmentKeys?: boolean;
   readonly substituteBuildLayout?: boolean;
@@ -343,6 +340,46 @@ describe("bounded profile-pair execution state machine", () => {
     expect(test.backend.calls.at(-1)).toBe("cleanup-control-backend");
   });
 
+  it("rejects the removed duplicate lease field before invoking backend authority", async () => {
+    const test = fixture();
+    let traps = 0;
+    const duplicateLease = new Proxy(
+      {},
+      {
+        get() {
+          traps += 1;
+          throw new Error("duplicate lease proxy");
+        },
+        getOwnPropertyDescriptor() {
+          traps += 1;
+          throw new Error("duplicate lease proxy");
+        },
+        getPrototypeOf() {
+          traps += 1;
+          throw new Error("duplicate lease proxy");
+        },
+      },
+    );
+    const result = await executeFixedExistingImageProfilePair({
+      acceptedSnapshot: test.input.acceptedSnapshot,
+      pair: test.input.pair,
+      profilePlans: test.input.profilePlans,
+      permissiveLayout: test.input.permissiveLayout,
+      constrainedLayout: test.input.constrainedLayout,
+      backend: test.backend,
+      immutableInputLease: duplicateLease,
+    } as never);
+    expect(result).toEqual({
+      validity: "inconclusive",
+      primaryFailure: "COMMAND_FAILURE",
+      completedSteps: [],
+      permissive: null,
+      constrained: null,
+    });
+    expect(test.backend.calls).toEqual([]);
+    expect(traps).toBe(0);
+  });
+
   it("completes both runs while preserving an Expected mismatch", async () => {
     const test = fixture();
     const result = await executeFixedProfilePair(test.input);
@@ -367,6 +404,7 @@ describe("bounded profile-pair execution state machine", () => {
   it.each([
     ["timeout", "doctor", "COMMAND_TIMEOUT"],
     ["output", "permissive:start", "OUTPUT_LIMIT"],
+    ["unsettled", "permissive:start", "COMMAND_FAILURE"],
     ["cleanup", "permissive:remove", "CLEANUP_FAILURE"],
   ] as const)(
     "returns inconclusive for bounded %s failure",
@@ -375,7 +413,9 @@ describe("bounded profile-pair execution state machine", () => {
         stepId === "doctor"
           ? "timeout"
           : stepId.endsWith(":start")
-            ? "output"
+            ? _label === "unsettled"
+              ? "unsettled"
+              : "output"
             : "exit";
       const test = fixture({ failures: { [stepId]: failureKind } });
       const result = await executeFixedProfilePair(test.input);
@@ -393,8 +433,8 @@ describe("bounded profile-pair execution state machine", () => {
 
   it.each([
     ["immutable-input", "IMMUTABLE_INPUT_CHANGED"],
-    ["identity", "IMMUTABLE_INPUT_CHANGED"],
-    ["symlink", "IMMUTABLE_INPUT_CHANGED"],
+    ["stable-false", "IMMUTABLE_INPUT_CHANGED"],
+    ["old-keys", "TRANSFER_FAILURE"],
     ["inventory", "TRANSFER_FAILURE"],
     ["missing", "TRANSFER_FAILURE"],
     ["invalid-evidence", "EVIDENCE_INVALID"],

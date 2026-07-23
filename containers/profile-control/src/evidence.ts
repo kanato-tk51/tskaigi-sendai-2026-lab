@@ -6,6 +6,7 @@ import {
 } from "./constants.js";
 import { expectedControls } from "./definitions.js";
 import { failProfile } from "./errors.js";
+import { validateHostInspection } from "./inspect.js";
 import {
   assertBoolean,
   assertExactKeys,
@@ -26,6 +27,7 @@ import type {
   HostInspection,
   ProfileId,
 } from "./types.js";
+import { validateControlManifest } from "./validation.js";
 
 const EVIDENCE_KEYS = Object.freeze([
   "schemaVersion",
@@ -175,7 +177,15 @@ export function compareControlEvidence(input: {
   readonly hostInspection: HostInspection;
   readonly evidence: ControlEvidence;
 }): EvidenceComparison {
-  const { manifest, hostInspection, evidence } = input;
+  const wrapper = readPlainRecord(input, "INVALID_CONTROL_EVIDENCE");
+  assertExactKeys(
+    wrapper,
+    ["manifest", "hostInspection", "evidence"],
+    "INVALID_CONTROL_EVIDENCE",
+  );
+  const manifest = validateControlManifest(wrapper.manifest);
+  const hostInspection = validateHostInspection(wrapper.hostInspection);
+  const evidence = validateControlEvidence(wrapper.evidence);
   if (
     manifest.runId !== evidence.runId ||
     manifest.runId !== hostInspection.runId ||

@@ -1,5 +1,12 @@
 import { EventEmitter } from "node:events";
-import { chmod, mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { chmodSync, mkdirSync, renameSync } from "node:fs";
+import {
+  chmod,
+  mkdir,
+  readFile,
+  rm,
+  writeFile,
+} from "node:fs/promises";
 import path from "node:path";
 import { PassThrough } from "node:stream";
 import { fileURLToPath } from "node:url";
@@ -28,6 +35,7 @@ import {
   type DockerCommand,
 } from "../src/docker-plan.js";
 import { executeFixedExistingImageProfilePair } from "../src/execution.js";
+import { HeldFilesystemObject } from "../src/filesystem-identity.js";
 import type { ProfileControlPair, ProfileId } from "../src/types.js";
 import {
   SYNTHETIC_IMAGE_DIGEST,
@@ -41,6 +49,9 @@ const repositoryRoot = path.resolve(
 );
 const permissiveRunId = "m4-control-host-test-p-01";
 const constrainedRunId = "m4-control-host-test-c-01";
+let transferMode = 0o600;
+let containerMarkerMode = 0o600;
+let replaceCopySourceParent = false;
 
 function runRoot(runId: string): string {
   return path.join(repositoryRoot, "results/runs/m4-profile-controls", runId);
@@ -67,6 +78,9 @@ async function cleanTestRoots(): Promise<void> {
 
 beforeEach(async () => {
   spawnMock.mockReset();
+  transferMode = 0o600;
+  containerMarkerMode = 0o600;
+  replaceCopySourceParent = false;
   await cleanTestRoots();
 });
 
@@ -130,7 +144,11 @@ async function writeControlResult(
   await writeFile(
     path.join(root, "container-result/result-marker.txt"),
     "m4-result-channel-v1\n",
-    { flag: "wx", mode: 0o600 },
+    { flag: "wx", mode: containerMarkerMode },
+  );
+  await chmod(
+    path.join(root, "container-result/result-marker.txt"),
+    containerMarkerMode,
   );
   if (profileId === "permissive") {
     await writeFile(
@@ -148,6 +166,7 @@ function installSuccessfulSpawn(pair: ProfileControlPair): void {
       queueMicrotask(() => {
         void (async () => {
           const operation = args[0];
+          let sourceParentToReplaceAfterClose: string | null = null;
           if (operation === "inspect") {
             const profileId = args.at(-1)?.includes("-p-")
               ? "permissive"
@@ -201,12 +220,30 @@ function installSuccessfulSpawn(pair: ProfileControlPair): void {
                     : `container-result/${path.basename(logicalSource)}`,
                 ),
               ),
-              { flag: "wx", mode: 0o600 },
+              { flag: "wx", mode: transferMode },
             );
+            await chmod(destination, transferMode);
+            if (
+              replaceCopySourceParent &&
+              logicalSource === "/result/control-evidence.json"
+            ) {
+              sourceParentToReplaceAfterClose = path.join(
+                sourceRoot,
+                "container-result",
+              );
+            }
           }
           child.stdout.end();
           child.stderr.end();
           child.emit("close", 0);
+          if (sourceParentToReplaceAfterClose !== null) {
+            renameSync(
+              sourceParentToReplaceAfterClose,
+              `${sourceParentToReplaceAfterClose}-replaced`,
+            );
+            mkdirSync(sourceParentToReplaceAfterClose, { mode: 0o733 });
+            chmodSync(sourceParentToReplaceAfterClose, 0o733);
+          }
         })();
       });
       return child;
@@ -300,5 +337,90 @@ describe("fixed production control host backend", () => {
         path.join(test.permissiveLayout.runRoot, "input/control-manifest.json"),
       ),
     ).rejects.toMatchObject({ code: "ENOENT" });
+  });
+
+  it.each([
+    ["official transfer mode", "transfer"],
+    ["container result mode", "container"],
+  ] as const)("fails closed for %s drift", async (_label, drift) => {
+    const test = fixture();
+    if (drift === "transfer") transferMode = 0o644;
+    else containerMarkerMode = 0o644;
+    installSuccessfulSpawn(test.pair);
+    const backend = await createFixedControlHostBackendForTest({
+      acceptedSnapshot: test.acceptedSnapshot,
+      pair: test.pair,
+      plans: test.plans,
+      permissiveLayout: test.permissiveLayout,
+      constrainedLayout: test.constrainedLayout,
+    });
+    const result = await executeFixedExistingImageProfilePair({
+      acceptedSnapshot: test.acceptedSnapshot,
+      pair: test.pair,
+      profilePlans: test.plans,
+      permissiveLayout: test.permissiveLayout,
+      constrainedLayout: test.constrainedLayout,
+      backend,
+    });
+    expect(result.validity).toBe("inconclusive");
+    expect(result.primaryFailure).toBe("TRANSFER_FAILURE");
+    expect(result.permissive?.completion).toBeNull();
+  });
+
+  it("rejects source-parent replacement after a fixed copy child closes before projecting stability", async () => {
+    const test = fixture();
+    replaceCopySourceParent = true;
+    installSuccessfulSpawn(test.pair);
+    const backend = await createFixedControlHostBackendForTest({
+      acceptedSnapshot: test.acceptedSnapshot,
+      pair: test.pair,
+      plans: test.plans,
+      permissiveLayout: test.permissiveLayout,
+      constrainedLayout: test.constrainedLayout,
+    });
+    const result = await executeFixedExistingImageProfilePair({
+      acceptedSnapshot: test.acceptedSnapshot,
+      pair: test.pair,
+      profilePlans: test.plans,
+      permissiveLayout: test.permissiveLayout,
+      constrainedLayout: test.constrainedLayout,
+      backend,
+    });
+    expect(result.validity).toBe("inconclusive");
+    expect(result.primaryFailure).toBe("TRANSFER_FAILURE");
+    expect(result.permissive?.completion).toBeNull();
+  });
+
+  it("rejects divergent container ownership through the production transfer path", async () => {
+    const test = fixture();
+    installSuccessfulSpawn(test.pair);
+    const originalOwner = HeldFilesystemObject.prototype.owner;
+    const ownerSpy = vi
+      .spyOn(HeldFilesystemObject.prototype, "owner")
+      .mockImplementation(function (this: HeldFilesystemObject) {
+        const owner = originalOwner.call(this);
+        return this.logicalRole.endsWith(":container-control-evidence")
+          ? { uid: owner.uid + 1n, gid: owner.gid }
+          : owner;
+      });
+    const backend = await createFixedControlHostBackendForTest({
+      acceptedSnapshot: test.acceptedSnapshot,
+      pair: test.pair,
+      plans: test.plans,
+      permissiveLayout: test.permissiveLayout,
+      constrainedLayout: test.constrainedLayout,
+    });
+    const result = await executeFixedExistingImageProfilePair({
+      acceptedSnapshot: test.acceptedSnapshot,
+      pair: test.pair,
+      profilePlans: test.plans,
+      permissiveLayout: test.permissiveLayout,
+      constrainedLayout: test.constrainedLayout,
+      backend,
+    });
+    ownerSpy.mockRestore();
+    expect(result.validity).toBe("inconclusive");
+    expect(result.primaryFailure).toBe("TRANSFER_FAILURE");
+    expect(result.permissive?.completion).toBeNull();
   });
 });

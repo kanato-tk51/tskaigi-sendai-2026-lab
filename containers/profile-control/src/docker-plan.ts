@@ -17,7 +17,7 @@ import {
   FIXED_RUNTIME_VERSION_FORMAT,
 } from "./docker-formats.js";
 import { failProfile } from "./errors.js";
-import { assertRunId } from "./safe-data.js";
+import { assertExactKeys, assertRunId, readPlainRecord } from "./safe-data.js";
 import { assertAcceptedImageStagingSnapshot } from "./staging.js";
 import type {
   AcceptedImageStagingSnapshot,
@@ -153,6 +153,9 @@ export function createFixedRuntimeLayout(
 ): FixedRuntimeLayout {
   const runId = assertRunId(runIdInput, "INVALID_RUN_ID");
   const root = assertOwnedAbsolutePath(repositoryRoot);
+  if (profileId !== "permissive" && profileId !== "constrained") {
+    return failProfile("INVALID_DOCKER_PLAN");
+  }
   const runRoot = path.join(
     root,
     "results",
@@ -180,24 +183,29 @@ export function createImageBuildPlan(input: {
   readonly acceptedSnapshot: AcceptedImageStagingSnapshot;
   readonly layout: FixedRuntimeLayout;
 }): ImageBuildPlan {
-  const acceptedSnapshot = assertAcceptedImageStagingSnapshot(
-    input.acceptedSnapshot,
+  const wrapper = readPlainRecord(input, "INVALID_DOCKER_PLAN");
+  assertExactKeys(
+    wrapper,
+    ["acceptedSnapshot", "layout"],
+    "INVALID_DOCKER_PLAN",
   );
-  const runId = assertRunId(input.layout.runId, "INVALID_RUN_ID");
+  const acceptedSnapshot = assertAcceptedImageStagingSnapshot(
+    wrapper.acceptedSnapshot as AcceptedImageStagingSnapshot,
+  );
+  const layout = wrapper.layout as FixedRuntimeLayout;
+  if (!runtimeLayoutBrands.has(layout)) failProfile("INVALID_DOCKER_PLAN");
+  const runId = assertRunId(layout.runId, "INVALID_RUN_ID");
   if (
-    !runtimeLayoutBrands.has(input.layout) ||
-    input.layout.profileId !== "permissive" ||
-    !input.layout.runRoot.endsWith(
-      `/results/runs/m4-profile-controls/${runId}`,
-    ) ||
-    input.layout.stagingRoot !== path.join(input.layout.runRoot, "staging")
+    layout.profileId !== "permissive" ||
+    !layout.runRoot.endsWith(`/results/runs/m4-profile-controls/${runId}`) ||
+    layout.stagingRoot !== path.join(layout.runRoot, "staging")
   ) {
     failProfile("INVALID_DOCKER_PLAN");
   }
-  assertOwnedAbsolutePath(input.layout.stagingRoot);
-  assertOwnedAbsolutePath(input.layout.dockerConfigRoot);
+  assertOwnedAbsolutePath(layout.stagingRoot);
+  assertOwnedAbsolutePath(layout.dockerConfigRoot);
   const stagedImageName = `${FIXED_IMAGE_NAME}:staged-${runId}`;
-  const environment = input.layout.dockerConfigRoot;
+  const environment = layout.dockerConfigRoot;
   const plan = Object.freeze({
     doctor: dockerCommand(environment, [
       "version",
@@ -214,8 +222,8 @@ export function createImageBuildPlan(input: {
       "--tag",
       stagedImageName,
       "--file",
-      path.join(input.layout.stagingRoot, "Containerfile"),
-      input.layout.stagingRoot,
+      path.join(layout.stagingRoot, "Containerfile"),
+      layout.stagingRoot,
     ]),
     inspectImage: dockerCommand(environment, [
       "image",
@@ -227,10 +235,7 @@ export function createImageBuildPlan(input: {
     stagedImageName,
     stagingDigest: acceptedSnapshot.stagingDigest,
   });
-  imageBuildPlanBindings.set(
-    plan,
-    Object.freeze({ acceptedSnapshot, layout: input.layout }),
-  );
+  imageBuildPlanBindings.set(plan, Object.freeze({ acceptedSnapshot, layout }));
   return plan;
 }
 
@@ -249,6 +254,9 @@ function dockerCommand(
 export function fixedContainerArguments(
   profileId: ProfileId,
 ): readonly string[] {
+  if (profileId !== "permissive" && profileId !== "constrained") {
+    failProfile("INVALID_DOCKER_PLAN");
+  }
   if (profileId === "permissive") {
     return Object.freeze([FIXED_CONTROL_SCRIPT, FIXED_MANIFEST_PATH]);
   }
@@ -267,29 +275,34 @@ export function createProfileDockerPlan(input: {
   readonly layout: FixedRuntimeLayout;
   readonly disposableCanary: string;
 }): ProfileDockerPlan {
-  const profile = validateExecutionProfile(input.profile);
-  const runId = assertRunId(input.runId, "INVALID_RUN_ID");
+  const wrapper = readPlainRecord(input, "INVALID_DOCKER_PLAN");
+  assertExactKeys(
+    wrapper,
+    ["profile", "runId", "layout", "disposableCanary"],
+    "INVALID_DOCKER_PLAN",
+  );
+  const profile = validateExecutionProfile(wrapper.profile);
+  const runId = assertRunId(wrapper.runId, "INVALID_RUN_ID");
+  const layout = wrapper.layout as FixedRuntimeLayout;
   if (
-    input.layout.profileId !== profile.profileId ||
-    input.layout.inputRoot !== path.join(input.layout.runRoot, "input") ||
-    input.layout.hostRoot !== path.join(input.layout.runRoot, "host") ||
-    input.layout.resultRoot !==
-      path.join(input.layout.runRoot, "container-result") ||
-    input.layout.scratchRoot !== path.join(input.layout.runRoot, "scratch") ||
-    input.layout.dockerConfigRoot !==
-      path.join(input.layout.runRoot, "docker-config") ||
-    !input.layout.runRoot.endsWith(
-      `/results/runs/m4-profile-controls/${runId}`,
-    ) ||
-    !/^m4-canary-[a-f0-9]{32}$/u.test(input.disposableCanary)
+    !runtimeLayoutBrands.has(layout) ||
+    layout.profileId !== profile.profileId ||
+    layout.inputRoot !== path.join(layout.runRoot, "input") ||
+    layout.hostRoot !== path.join(layout.runRoot, "host") ||
+    layout.resultRoot !== path.join(layout.runRoot, "container-result") ||
+    layout.scratchRoot !== path.join(layout.runRoot, "scratch") ||
+    layout.dockerConfigRoot !== path.join(layout.runRoot, "docker-config") ||
+    !layout.runRoot.endsWith(`/results/runs/m4-profile-controls/${runId}`) ||
+    typeof wrapper.disposableCanary !== "string" ||
+    !/^m4-canary-[a-f0-9]{32}$/u.test(wrapper.disposableCanary)
   ) {
     failProfile("INVALID_DOCKER_PLAN");
   }
-  assertOwnedAbsolutePath(input.layout.inputRoot);
-  assertOwnedAbsolutePath(input.layout.hostRoot);
-  assertOwnedAbsolutePath(input.layout.resultRoot);
-  assertOwnedAbsolutePath(input.layout.scratchRoot);
-  assertOwnedAbsolutePath(input.layout.dockerConfigRoot);
+  assertOwnedAbsolutePath(layout.inputRoot);
+  assertOwnedAbsolutePath(layout.hostRoot);
+  assertOwnedAbsolutePath(layout.resultRoot);
+  assertOwnedAbsolutePath(layout.scratchRoot);
+  assertOwnedAbsolutePath(layout.dockerConfigRoot);
 
   const profileId = profile.profileId;
   const suffix = profileId === "permissive" ? "p" : "c";
@@ -329,22 +342,22 @@ export function createProfileDockerPlan(input: {
     "--pids-limit",
     String(LIMITS.pids),
     "--mount",
-    `type=bind,src=${input.layout.inputRoot},dst=${FIXED_INPUT_DESTINATION},ro`,
+    `type=bind,src=${layout.inputRoot},dst=${FIXED_INPUT_DESTINATION},ro`,
     "--mount",
-    `type=bind,src=${input.layout.resultRoot},dst=${FIXED_RESULT_DESTINATION},rw`,
+    `type=bind,src=${layout.resultRoot},dst=${FIXED_RESULT_DESTINATION},rw`,
     "--mount",
-    `type=bind,src=${input.layout.scratchRoot},dst=${FIXED_SCRATCH_DESTINATION},${profileId === "permissive" ? "rw" : "ro"}`,
+    `type=bind,src=${layout.scratchRoot},dst=${FIXED_SCRATCH_DESTINATION},${profileId === "permissive" ? "rw" : "ro"}`,
     "--entrypoint",
     FIXED_NODE_EXECUTABLE,
   ];
   if (profileId === "permissive") {
     createArguments.push(
       "--env",
-      `${FIXED_ENVIRONMENT_KEY}=${input.disposableCanary}`,
+      `${FIXED_ENVIRONMENT_KEY}=${wrapper.disposableCanary}`,
     );
   }
   createArguments.push(profile.containerImageDigest, ...nodeArguments);
-  const environment = input.layout.dockerConfigRoot;
+  const environment = layout.dockerConfigRoot;
   const plan = Object.freeze({
     profileId,
     containerName,
@@ -373,29 +386,49 @@ export function createProfilePairDockerPlans(input: {
   readonly permissiveCanary: string;
   readonly constrainedCanary: string;
 }): ProfilePairDockerPlans {
-  const acceptedSnapshot = assertAcceptedImageStagingSnapshot(
-    input.acceptedSnapshot,
+  const wrapper = readPlainRecord(input, "INVALID_PROFILE_PAIR");
+  assertExactKeys(
+    wrapper,
+    [
+      "acceptedSnapshot",
+      "pair",
+      "permissiveLayout",
+      "constrainedLayout",
+      "permissiveCanary",
+      "constrainedCanary",
+    ],
+    "INVALID_PROFILE_PAIR",
   );
-  assertAcceptedProfileControlPair(input.pair, acceptedSnapshot);
-  const pair = validateProfileControlPair(input.pair);
+  const acceptedSnapshot = assertAcceptedImageStagingSnapshot(
+    wrapper.acceptedSnapshot as AcceptedImageStagingSnapshot,
+  );
+  const pairInput = wrapper.pair as ProfileControlPair;
+  const permissiveLayout = wrapper.permissiveLayout as FixedRuntimeLayout;
+  const constrainedLayout = wrapper.constrainedLayout as FixedRuntimeLayout;
+  assertAcceptedProfileControlPair(pairInput, acceptedSnapshot);
+  const pair = validateProfileControlPair(pairInput);
+  if (
+    !runtimeLayoutBrands.has(permissiveLayout) ||
+    !runtimeLayoutBrands.has(constrainedLayout)
+  ) {
+    failProfile("INVALID_PROFILE_PAIR");
+  }
   const roots = [
-    input.permissiveLayout.runRoot,
-    input.permissiveLayout.inputRoot,
-    input.permissiveLayout.hostRoot,
-    input.permissiveLayout.resultRoot,
-    input.permissiveLayout.scratchRoot,
-    input.constrainedLayout.runRoot,
-    input.constrainedLayout.inputRoot,
-    input.constrainedLayout.hostRoot,
-    input.constrainedLayout.resultRoot,
-    input.constrainedLayout.scratchRoot,
+    permissiveLayout.runRoot,
+    permissiveLayout.inputRoot,
+    permissiveLayout.hostRoot,
+    permissiveLayout.resultRoot,
+    permissiveLayout.scratchRoot,
+    constrainedLayout.runRoot,
+    constrainedLayout.inputRoot,
+    constrainedLayout.hostRoot,
+    constrainedLayout.resultRoot,
+    constrainedLayout.scratchRoot,
   ];
   if (
-    !runtimeLayoutBrands.has(input.permissiveLayout) ||
-    !runtimeLayoutBrands.has(input.constrainedLayout) ||
     new Set(roots).size !== roots.length ||
-    input.permissiveLayout.profileId !== "permissive" ||
-    input.constrainedLayout.profileId !== "constrained"
+    permissiveLayout.profileId !== "permissive" ||
+    constrainedLayout.profileId !== "constrained"
   ) {
     failProfile("INVALID_PROFILE_PAIR");
   }
@@ -406,22 +439,22 @@ export function createProfilePairDockerPlans(input: {
     permissive: createProfileDockerPlan({
       profile: pair.permissive.profile,
       runId: pair.permissive.manifest.runId,
-      layout: input.permissiveLayout,
-      disposableCanary: input.permissiveCanary,
+      layout: permissiveLayout,
+      disposableCanary: wrapper.permissiveCanary as string,
     }),
     constrained: createProfileDockerPlan({
       profile: pair.constrained.profile,
       runId: pair.constrained.manifest.runId,
-      layout: input.constrainedLayout,
-      disposableCanary: input.constrainedCanary,
+      layout: constrainedLayout,
+      disposableCanary: wrapper.constrainedCanary as string,
     }),
   });
   profilePairPlanBindings.set(
     plans,
     Object.freeze({
       acceptedSnapshot,
-      permissiveLayout: input.permissiveLayout,
-      constrainedLayout: input.constrainedLayout,
+      permissiveLayout,
+      constrainedLayout,
     }),
   );
   return plans;

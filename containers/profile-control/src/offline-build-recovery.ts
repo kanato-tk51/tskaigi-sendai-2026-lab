@@ -1,5 +1,4 @@
 import path from "node:path";
-import { types } from "node:util";
 import { fileURLToPath } from "node:url";
 
 import {
@@ -21,8 +20,10 @@ import {
 import {
   assertExactKeys,
   assertSha256,
+  captureAuthority,
   readPlainArray,
   readPlainRecord,
+  snapshotBytes,
 } from "./safe-data.js";
 
 export const FIXED_OFFLINE_BUILD_RECOVERY_RUN_ID =
@@ -230,15 +231,15 @@ function nonNegativeInteger(input: unknown): number {
 }
 
 function immutableOutput(input: unknown): Uint8Array {
-  if (
-    !types.isUint8Array(input) ||
-    input.buffer instanceof SharedArrayBuffer ||
-    input.byteLength === 0 ||
-    input.byteLength > LIMITS.outputBytes
-  ) {
+  try {
+    return snapshotBytes(input, {
+      code: "INVALID_OFFLINE_BUILD_RECOVERY_RESULT",
+      maximum: LIMITS.outputBytes,
+      allowEmpty: false,
+    });
+  } catch {
     return failRecovery("COMMAND_FAILURE");
   }
-  return Uint8Array.from(input);
 }
 
 async function runInspectCommand(
@@ -368,18 +369,32 @@ export function createFixedOfflineBuildRecoveryInput(input: {
   readonly failedBuildResult: unknown;
   readonly backend: FixedOfflineBuildRecoveryBackend;
 }): FixedOfflineBuildRecoveryInput {
+  const wrapper = readPlainRecord(
+    input,
+    "INVALID_OFFLINE_BUILD_RECOVERY_RESULT",
+  );
+  assertExactKeys(
+    wrapper,
+    ["failedBuildResult", "backend"],
+    "INVALID_OFFLINE_BUILD_RECOVERY_RESULT",
+  );
   const failedBuildResult = validateRecordedFailedBuildResult(
-    input.failedBuildResult,
+    wrapper.failedBuildResult,
+  );
+  const backend = captureAuthority<FixedOfflineBuildRecoveryBackend>(
+    wrapper.backend,
+    ["validateRetainedState", "run"],
+    "INVALID_OFFLINE_BUILD_RECOVERY_RESULT",
   );
   const command = createFixedRecoveryCommand();
   const fixedInput = Object.freeze({
     failedBuildResult,
     command,
-    backend: input.backend,
+    backend,
   }) as unknown as FixedOfflineBuildRecoveryInput;
   fixedInputBindings.set(
     fixedInput,
-    Object.freeze({ failedBuildResult, command, backend: input.backend }),
+    Object.freeze({ failedBuildResult, command, backend }),
   );
   return fixedInput;
 }
@@ -535,15 +550,11 @@ export function serializeCanonicalOfflineBuildRecoveryResult(
 export function parseCanonicalOfflineBuildRecoveryResultBytes(
   input: unknown,
 ): OfflineBuildRecoveryResult {
-  if (
-    !types.isUint8Array(input) ||
-    input.buffer instanceof SharedArrayBuffer ||
-    input.byteLength === 0 ||
-    input.byteLength > LIMITS.evidenceBytes
-  ) {
-    return failProfile("INVALID_OFFLINE_BUILD_RECOVERY_RESULT");
-  }
-  const bytes = Uint8Array.from(input);
+  const bytes = snapshotBytes(input, {
+    code: "INVALID_OFFLINE_BUILD_RECOVERY_RESULT",
+    maximum: LIMITS.evidenceBytes,
+    allowEmpty: false,
+  });
   let text: string;
   try {
     text = fatalDecoder.decode(bytes);
