@@ -30,16 +30,16 @@ describe("P2 selected profile plan", () => {
       "codegen-observe-c",
     ]);
     expect(plans.map((plan) => plan.runId)).toEqual([
-      "p2-vite-observe-p-20260720-02",
-      "p2-vite-observe-c-20260720-02",
+      "p2-vite-observe-p-20260723-01",
+      "p2-vite-observe-c-20260723-01",
       "p2-codegen-observe-p-20260719-01",
       "p2-codegen-observe-c-20260719-01",
     ]);
     expect(
       plans.map((plan) => argumentValue(plan.create.arguments, "--name")),
     ).toEqual([
-      "tskaigi-p2-vite-observe-p-20260720-02",
-      "tskaigi-p2-vite-observe-c-20260720-02",
+      "tskaigi-p2-vite-observe-p-20260723-01",
+      "tskaigi-p2-vite-observe-c-20260723-01",
       "tskaigi-p2-codegen-observe-p",
       "tskaigi-p2-codegen-observe-c",
     ]);
@@ -84,7 +84,7 @@ describe("P2 selected profile plan", () => {
       expect(command.arguments[0]).toBe("create");
       expect(argumentValue(command.arguments, "--name")).toBe(
         plan.adapterId === "vite"
-          ? `tskaigi-p2-${plan.scenarioId}-20260720-02`
+          ? `tskaigi-p2-${plan.scenarioId}-20260723-01`
           : `tskaigi-p2-${plan.scenarioId}`,
       );
       expect(argumentValue(command.arguments, "--pull")).toBe("never");
@@ -112,6 +112,67 @@ describe("P2 selected profile plan", () => {
       expect(command.arguments.join(" ")).not.toContain("docker.sock");
       expect(command.arguments).not.toContain("--privileged");
       expect(command.arguments).not.toContain("--network=host");
+    }
+  });
+
+  it("adds one fixed Vite init option without changing either codegen create array", () => {
+    const plans = createFixedSelectedScenarioPlans();
+    for (const plan of plans.filter(({ adapterId }) => adapterId === "vite")) {
+      expect(plan.create.arguments.slice(0, 6)).toEqual([
+        "create",
+        "--init",
+        "--name",
+        `tskaigi-p2-${plan.scenarioId}-20260723-01`,
+        "--pull",
+        "never",
+      ]);
+      expect(
+        plan.create.arguments.filter((argument) => argument === "--init"),
+      ).toHaveLength(1);
+    }
+
+    for (const plan of plans.filter(
+      ({ adapterId }) => adapterId === "codegen",
+    )) {
+      expect(plan.create.arguments).toEqual([
+        "create",
+        "--name",
+        `tskaigi-p2-${plan.scenarioId}`,
+        "--pull",
+        "never",
+        "--network",
+        "none",
+        "--user",
+        "65532:65532",
+        "--read-only",
+        "--cap-drop",
+        "ALL",
+        "--security-opt",
+        "no-new-privileges",
+        "--pids-limit",
+        "64",
+        "--memory",
+        "512m",
+        "--cpus",
+        "1",
+        "--tmpfs",
+        "/tmp:rw,noexec,nosuid,nodev,size=64m,uid=65532,gid=65532,mode=0700",
+        "--mount",
+        `type=bind,src=${plan.stagingRoot},dst=/opt/p2/input,readonly`,
+        "--mount",
+        `type=bind,src=${path.join(plan.resultRoot, "result")},dst=/tmp/p2-result`,
+        "--mount",
+        `type=bind,src=${path.join(plan.resultRoot, "tool")},dst=/tmp/p2-tool`,
+        "--mount",
+        `type=bind,src=${path.join(plan.resultRoot, "direct-write")},dst=/tmp/p2-direct-write${plan.profileId === "constrained" ? ",readonly" : ""}`,
+        "--workdir",
+        "/opt/p2/input",
+        FIXED_NODE_IMAGE,
+        "/usr/local/bin/node",
+        "/opt/p2/input/presentation-runner.js",
+        plan.scenarioId,
+      ]);
+      expect(plan.create.arguments).not.toContain("--init");
     }
   });
 

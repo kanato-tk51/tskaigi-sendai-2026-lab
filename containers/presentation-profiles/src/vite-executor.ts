@@ -62,7 +62,7 @@ const VITE_VERSION = "6.4.3";
 const ROLLUP_VERSION = "4.62.2";
 const ESBUILD_VERSION = "0.25.12";
 const INSPECT_FORMAT =
-  "{{.Id}}|{{.Image}}|{{.Config.Image}}|{{.State.Status}}|{{.State.ExitCode}}";
+  "{{.Id}}|{{.Image}}|{{.Config.Image}}|{{.HostConfig.Init}}|{{.State.Status}}|{{.State.ExitCode}}";
 
 type ViteSelectedPlan = SelectedScenarioPlan & {
   readonly scenarioId: ViteScenarioId;
@@ -316,6 +316,7 @@ interface InspectResult {
   readonly containerId: string;
   readonly imageId: string;
   readonly configuredImage: string;
+  readonly initConfigured: true;
   readonly state: string;
   readonly exitCode: number;
 }
@@ -1100,9 +1101,36 @@ function isVitePlan(plan: SelectedScenarioPlan): plan is ViteSelectedPlan {
 }
 
 const FIXED_CONTAINER_NAMES = Object.freeze({
-  "vite-observe-p": "tskaigi-p2-vite-observe-p-20260720-02",
-  "vite-observe-c": "tskaigi-p2-vite-observe-c-20260720-02",
+  "vite-observe-p": "tskaigi-p2-vite-observe-p-20260723-01",
+  "vite-observe-c": "tskaigi-p2-vite-observe-c-20260723-01",
 } as const);
+
+function requireFixedViteCreateArguments(
+  arguments_: readonly string[],
+  containerName: string,
+): void {
+  const initIndices = arguments_.flatMap((argument, index) =>
+    argument === "--init" ? [index] : [],
+  );
+  if (
+    arguments_[0] !== "create" ||
+    initIndices.length !== 1 ||
+    initIndices[0] !== 1 ||
+    arguments_[2] !== "--name" ||
+    arguments_[3] !== containerName ||
+    arguments_[4] !== "--pull" ||
+    arguments_[5] !== "never"
+  ) {
+    throw new Error("P2_EXECUTOR_PLAN_INVALID");
+  }
+}
+
+export function requireFixedViteCreateArgumentsForTest(
+  arguments_: readonly string[],
+  containerName: string,
+): void {
+  requireFixedViteCreateArguments(arguments_, containerName);
+}
 
 export function createFixedViteExecutionPlans(): readonly FixedViteExecutionPlan[] {
   return Object.freeze(
@@ -1117,6 +1145,10 @@ export function createFixedViteExecutionPlans(): readonly FixedViteExecutionPlan
         ) {
           throw new Error("P2_EXECUTOR_PLAN_INVALID");
         }
+        requireFixedViteCreateArguments(
+          selected.create.arguments,
+          containerName,
+        );
         const environment = selected.create.environment;
         return Object.freeze({
           selected,
@@ -1321,12 +1353,13 @@ function parseInspect(result: FixedViteCommandResult): InspectResult {
     ? result.stdout.slice(0, -1).split("|")
     : [];
   if (
-    fields.length !== 5 ||
+    fields.length !== 6 ||
     !/^[0-9a-f]{64}$/u.test(fields[0] ?? "") ||
     !/^sha256:[0-9a-f]{64}$/u.test(fields[1] ?? "") ||
     fields[2] === undefined ||
-    fields[3] === undefined ||
-    !/^-?[0-9]+$/u.test(fields[4] ?? "")
+    fields[3] !== "true" ||
+    fields[4] === undefined ||
+    !/^-?[0-9]+$/u.test(fields[5] ?? "")
   ) {
     throw new Error("P2_EXECUTOR_INSPECT_INVALID");
   }
@@ -1334,9 +1367,16 @@ function parseInspect(result: FixedViteCommandResult): InspectResult {
     containerId: fields[0]!,
     imageId: fields[1]!,
     configuredImage: fields[2],
-    state: fields[3],
-    exitCode: Number(fields[4]),
+    initConfigured: true,
+    state: fields[4],
+    exitCode: Number(fields[5]),
   });
+}
+
+export function parseFixedViteInspectForTest(
+  result: FixedViteCommandResult,
+): Readonly<{ readonly initConfigured: true }> {
+  return parseInspect(result);
 }
 
 function requireOwnedInspect(
@@ -1348,6 +1388,7 @@ function requireOwnedInspect(
     inspect.containerId !== containerId ||
     inspect.configuredImage !== FIXED_NODE_IMAGE ||
     inspect.imageId !== FIXED_NODE_IMAGE_ID ||
+    inspect.initConfigured !== true ||
     !Number.isSafeInteger(inspect.exitCode) ||
     !plan.create.arguments.includes(FIXED_NODE_IMAGE)
   ) {

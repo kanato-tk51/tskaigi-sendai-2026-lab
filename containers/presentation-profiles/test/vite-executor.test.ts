@@ -19,8 +19,10 @@ import {
   executeFixedVitePlanSequenceWithBackendForTest,
   FIXED_VITE_EXECUTOR_LIMITS,
   FixedViteCommandError,
+  parseFixedViteInspectForTest,
   projectFixedViteExecutionPair,
   readFixedViteProgressFromRootForTest,
+  requireFixedViteCreateArgumentsForTest,
   runFixedViteDockerCommandWithProcessForTest,
   validateFixedViteProgressSnapshotForTest,
   verifyFixedViteStagingForTest,
@@ -166,14 +168,14 @@ function dockerResults(
     { exitCode: 0, stdout: `${id}\n`, stderr: "" },
     {
       exitCode: 0,
-      stdout: `${id}|${FIXED_NODE_IMAGE_ID}|${FIXED_NODE_IMAGE}|created|0\n`,
+      stdout: `${id}|${FIXED_NODE_IMAGE_ID}|${FIXED_NODE_IMAGE}|true|created|0\n`,
       stderr: "",
     },
     { exitCode: 0, stdout: `${plan.containerName}\n`, stderr: "" },
     { exitCode: 0, stdout: "0\n", stderr: "" },
     {
       exitCode: 0,
-      stdout: `${id}|${FIXED_NODE_IMAGE_ID}|${FIXED_NODE_IMAGE}|exited|0\n`,
+      stdout: `${id}|${FIXED_NODE_IMAGE_ID}|${FIXED_NODE_IMAGE}|true|exited|0\n`,
       stderr: "",
     },
     { exitCode: 0, stdout: `${plan.containerName}\n`, stderr: "" },
@@ -253,10 +255,26 @@ describe("P2 detached Vite executor", () => {
   it("binds only the fresh identities and fixed detached command graph", () => {
     const plans = createFixedViteExecutionPlans();
     expect(plans.map((plan) => plan.selected.runId)).toEqual([
-      "p2-vite-observe-p-20260720-02",
-      "p2-vite-observe-c-20260720-02",
+      "p2-vite-observe-p-20260723-01",
+      "p2-vite-observe-c-20260723-01",
     ]);
     for (const plan of plans) {
+      expect(plan.create.arguments.slice(0, 6)).toEqual([
+        "create",
+        "--init",
+        "--name",
+        plan.containerName,
+        "--pull",
+        "never",
+      ]);
+      expect(plan.inspect.arguments).toEqual([
+        "inspect",
+        "--type",
+        "container",
+        "--format",
+        "{{.Id}}|{{.Image}}|{{.Config.Image}}|{{.HostConfig.Init}}|{{.State.Status}}|{{.State.ExitCode}}",
+        plan.containerName,
+      ]);
       expect(plan.start.arguments).toEqual(["start", plan.containerName]);
       expect(plan.wait.arguments).toEqual(["wait", plan.containerName]);
       expect(plan.remove.arguments).toEqual([
@@ -267,6 +285,54 @@ describe("P2 detached Vite executor", () => {
       expect(plan.start.arguments).not.toContain("--attach");
       expect(plan.create.arguments.join(" ")).not.toContain("docker.sock");
       expect(Object.keys(plan.create.environment)).toEqual(["DOCKER_CONFIG"]);
+    }
+  });
+
+  it("rejects a missing, duplicate, or repositioned Vite init option", () => {
+    const plan = createFixedViteExecutionPlans()[0]!;
+    expect(() =>
+      requireFixedViteCreateArgumentsForTest(
+        plan.create.arguments,
+        plan.containerName,
+      ),
+    ).not.toThrow();
+
+    const missing = plan.create.arguments.filter(
+      (argument) => argument !== "--init",
+    );
+    const duplicate = [...plan.create.arguments];
+    duplicate.splice(2, 0, "--init");
+    const repositioned = [...missing];
+    repositioned.splice(4, 0, "--init");
+    for (const arguments_ of [missing, duplicate, repositioned]) {
+      expect(() =>
+        requireFixedViteCreateArgumentsForTest(arguments_, plan.containerName),
+      ).toThrow("P2_EXECUTOR_PLAN_INVALID");
+    }
+  });
+
+  it("accepts only a six-field inspect with literal true init state", () => {
+    const id = "a".repeat(64);
+    const exact = `${id}|${FIXED_NODE_IMAGE_ID}|${FIXED_NODE_IMAGE}|true|created|0\n`;
+    expect(
+      parseFixedViteInspectForTest({
+        exitCode: 0,
+        stdout: exact,
+        stderr: "",
+      }),
+    ).toEqual(expect.objectContaining({ initConfigured: true }));
+
+    for (const stdout of [
+      `${id}|${FIXED_NODE_IMAGE_ID}|${FIXED_NODE_IMAGE}|created|0\n`,
+      exact.replace("|true|", "|false|"),
+      exact.replace("|true|", "|TRUE|"),
+      exact.replace("|true|", "||"),
+      exact.replace("|created|0\n", "|created|0|extra\n"),
+      exact.replace("|true|created|", "|true|false|created|"),
+    ]) {
+      expect(() =>
+        parseFixedViteInspectForTest({ exitCode: 0, stdout, stderr: "" }),
+      ).toThrow("P2_EXECUTOR_INSPECT_INVALID");
     }
   });
 
@@ -292,16 +358,26 @@ describe("P2 detached Vite executor", () => {
         terminal: { status: "completed" },
       },
     });
-    expect(
-      validateFixedViteProgressSnapshotForTest(
-        progressLine(plan, completedRecords(), completedTerminal()).replace(
-          "20260720-02",
-          "20260720-01",
+    for (const oldGeneration of [
+      "20260719-01",
+      "20260719-02",
+      "20260719-03",
+      "20260719-11",
+      "20260720-01",
+      "20260720-02",
+    ]) {
+      expect(
+        validateFixedViteProgressSnapshotForTest(
+          progressLine(
+            plan,
+            completedRecords(),
+            completedTerminal(),
+          ).replaceAll("20260723-01", oldGeneration),
+          plan.selected,
+          0,
         ),
-        plan.selected,
-        0,
-      ),
-    ).toMatchObject({ failureCode: "P2_TRANSFER_IDENTITY_MISMATCH" });
+      ).toMatchObject({ failureCode: "P2_TRANSFER_IDENTITY_MISMATCH" });
+    }
     expect(
       validateFixedViteProgressSnapshotForTest(
         progressLine(plan, completedRecords(), completedTerminal()).replace(
@@ -683,6 +759,53 @@ describe("P2 detached Vite executor", () => {
     });
   });
 
+  it("rejects a changed final init field before evidence or receipt access", async () => {
+    const plan = createFixedViteExecutionPlans()[0]!;
+    const results = dockerResults(plan);
+    results[4] = {
+      ...results[4]!,
+      stdout: results[4]!.stdout.replace("|true|", "|false|"),
+    };
+    const commands: string[] = [];
+    const finalization: string[] = [];
+    let transferredExit: number | null | undefined;
+    const outcome =
+      await executeAndFinalizeFixedViteLifecycleWithBackendsForTest(
+        plan,
+        async (command) => {
+          commands.push(commandLabel(plan, command));
+          return results.shift()!;
+        },
+        async (exit) => {
+          transferredExit = exit;
+          commands.push(`progress:${exit}`);
+          return completedTransfer(plan);
+        },
+        finalizationBackend(plan, finalization),
+      );
+    expect(commands).toEqual([
+      "create",
+      "inspect",
+      "start",
+      "wait",
+      "inspect",
+      "remove",
+      "progress:null",
+    ]);
+    expect(transferredExit).toBeNull();
+    expect(finalization).toEqual(["attempt"]);
+    expect(outcome).toMatchObject({
+      completion: "inconclusive",
+      receipt: null,
+      evidence: "not-inspected",
+      attempt: {
+        primaryFailureStage: "final-inspect",
+        primaryFailureCode: "P2_EXECUTOR_INSPECT_INVALID",
+        inspectedContainerExitCode: null,
+      },
+    });
+  });
+
   it("suppresses every later command and attempt after unknown start settlement", async () => {
     const plan = createFixedViteExecutionPlans()[0]!;
     const results = dockerResults(plan);
@@ -779,7 +902,7 @@ describe("P2 detached Vite executor", () => {
               ? results[1]!
               : {
                   exitCode: 0,
-                  stdout: `${id}|${FIXED_NODE_IMAGE_ID}|${FIXED_NODE_IMAGE}|running|0\n`,
+                  stdout: `${id}|${FIXED_NODE_IMAGE_ID}|${FIXED_NODE_IMAGE}|true|running|0\n`,
                   stderr: "",
                 };
           }
@@ -852,7 +975,7 @@ describe("P2 detached Vite executor", () => {
     results[3] = { exitCode: 0, stdout: "70\n", stderr: "" };
     results[4] = {
       ...results[4]!,
-      stdout: `${"a".repeat(64)}|${FIXED_NODE_IMAGE_ID}|${FIXED_NODE_IMAGE}|exited|70\n`,
+      stdout: `${"a".repeat(64)}|${FIXED_NODE_IMAGE_ID}|${FIXED_NODE_IMAGE}|true|exited|70\n`,
     };
     const outcome =
       await executeAndFinalizeFixedViteLifecycleWithBackendsForTest(
@@ -883,7 +1006,7 @@ describe("P2 detached Vite executor", () => {
     results[3] = { exitCode: 0, stdout: "1\n", stderr: "" };
     results[4] = {
       ...results[4]!,
-      stdout: `${"a".repeat(64)}|${FIXED_NODE_IMAGE_ID}|${FIXED_NODE_IMAGE}|exited|1\n`,
+      stdout: `${"a".repeat(64)}|${FIXED_NODE_IMAGE_ID}|${FIXED_NODE_IMAGE}|true|exited|1\n`,
     };
     const failureRecords = [
       ...completedRecords().slice(0, 5),

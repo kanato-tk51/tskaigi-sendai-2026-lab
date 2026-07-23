@@ -21,8 +21,8 @@ describe("M2-D selected profile context", () => {
   });
 
   it.each([
-    ["vite-observe-p", "p2-vite-observe-p-20260720-02", "permissive"],
-    ["vite-observe-c", "p2-vite-observe-c-20260720-02", "constrained"],
+    ["vite-observe-p", "p2-vite-observe-p-20260723-01", "permissive"],
+    ["vite-observe-c", "p2-vite-observe-c-20260723-01", "constrained"],
   ] as const)(
     "binds exact selected tuple %s",
     (scenarioId, runId, profileId) => {
@@ -44,12 +44,12 @@ describe("M2-D selected profile context", () => {
   it.each([
     {
       variant: "api",
-      runId: "p2-vite-observe-p-20260720-02",
+      runId: "p2-vite-observe-p-20260723-01",
       requestedScenarioId: "vite-observe-p",
     },
     {
       variant: "observe",
-      runId: "p2-vite-observe-c-20260720-02",
+      runId: "p2-vite-observe-c-20260723-01",
       requestedScenarioId: "vite-observe-p",
     },
     {
@@ -94,6 +94,26 @@ describe("M2-D selected profile context", () => {
     },
     {
       variant: "observe",
+      runId: "p2-vite-observe-p-20260720-01",
+      requestedScenarioId: "vite-observe-p",
+    },
+    {
+      variant: "observe",
+      runId: "p2-vite-observe-c-20260720-01",
+      requestedScenarioId: "vite-observe-c",
+    },
+    {
+      variant: "observe",
+      runId: "p2-vite-observe-p-20260720-02",
+      requestedScenarioId: "vite-observe-p",
+    },
+    {
+      variant: "observe",
+      runId: "p2-vite-observe-c-20260720-02",
+      requestedScenarioId: "vite-observe-c",
+    },
+    {
+      variant: "observe",
       runId: "m2d-vite-00000000000000000000000000000000",
       requestedScenarioId: "unknown",
     },
@@ -113,13 +133,13 @@ describe("M2-D selected profile context", () => {
       variables.map((variable) => [variable, process.env[variable]] as const),
     );
     try {
-      process.env.PROBE_CANARY_M2D_RUN_ID = "p2-vite-observe-c-20260720-02";
+      process.env.PROBE_CANARY_M2D_RUN_ID = "p2-vite-observe-c-20260723-01";
       process.env.PROBE_CANARY_M2D_RUN_ROOT = "/tmp/p2-result";
       process.env.PROBE_CANARY_M2D_LOOPBACK_PORT = "4321";
       process.env.PROBE_CANARY_M2D_VARIANT = "observe";
       process.env.PROBE_CANARY_M2D_SCENARIO_ID = "vite-observe-c";
       expect(readCoordinatorInputs()).toEqual({
-        runId: "p2-vite-observe-c-20260720-02",
+        runId: "p2-vite-observe-c-20260723-01",
         scenarioId: "vite-observe-c",
         profileId: "constrained",
         runRoot: "/tmp/p2-result",
