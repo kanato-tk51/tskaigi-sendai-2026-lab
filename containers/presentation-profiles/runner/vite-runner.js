@@ -20,7 +20,7 @@ import { clearTimeout, setTimeout } from "node:timers";
 import { fileURLToPath, pathToFileURL, URL } from "node:url";
 
 const FIXED_NODE_VERSION = "v20.18.2";
-const FIXED_VITE_EXPECTED_REVISION = "p2-vite-expected-20260720-02";
+const FIXED_VITE_EXPECTED_REVISION = "p2-vite-expected-20260723-01";
 const FIXED_LOOPBACK_ADDRESS = "127.0.0.1";
 const FIXED_LOOPBACK_PORT = 47_832;
 const FIXED_VITE_CLI_PATH = "/opt/p2/input/node_modules/vite/bin/vite.js";
@@ -93,12 +93,12 @@ const DEFINITIONS = Object.freeze([
   Object.freeze({
     scenarioId: "vite-observe-p",
     profileId: "permissive",
-    runId: "p2-vite-observe-p-20260720-02",
+    runId: "p2-vite-observe-p-20260723-01",
   }),
   Object.freeze({
     scenarioId: "vite-observe-c",
     profileId: "constrained",
-    runId: "p2-vite-observe-c-20260720-02",
+    runId: "p2-vite-observe-c-20260723-01",
   }),
 ]);
 

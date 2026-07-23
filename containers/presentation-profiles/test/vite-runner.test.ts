@@ -134,12 +134,12 @@ describe("P2 fixed Vite runner", () => {
     expect(resolveFixedViteScenario("vite-observe-p")).toEqual({
       scenarioId: "vite-observe-p",
       profileId: "permissive",
-      runId: "p2-vite-observe-p-20260720-02",
+      runId: "p2-vite-observe-p-20260723-01",
     });
     expect(resolveFixedViteScenario("vite-observe-c")).toEqual({
       scenarioId: "vite-observe-c",
       profileId: "constrained",
-      runId: "p2-vite-observe-c-20260720-02",
+      runId: "p2-vite-observe-c-20260723-01",
     });
     expect(() => resolveFixedViteScenario("codegen-observe-p")).toThrow(
       "P2_SCENARIO_INVALID",
@@ -261,10 +261,10 @@ describe("P2 fixed Vite runner", () => {
     const snapshot = JSON.parse(raw) as Record<string, unknown>;
     expect(snapshot).toMatchObject({
       schemaVersion: "p2-vite-progress/v2",
-      expectedRevision: "p2-vite-expected-20260720-02",
+      expectedRevision: "p2-vite-expected-20260723-01",
       scenarioId: "vite-observe-p",
       profileId: "permissive",
-      runId: "p2-vite-observe-p-20260720-02",
+      runId: "p2-vite-observe-p-20260723-01",
       records: [
         { sequence: 0, stage: "runner-entered", value: "accepted" },
         { sequence: 1, stage: "inputs-prepared", value: "accepted" },
