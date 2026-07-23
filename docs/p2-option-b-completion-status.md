@@ -20,7 +20,7 @@
 |---|---|---|---|---|
 | P1 | ルートルート/ネットワーク/安全境界の転換 | 完了 | `presentation-scope.md`, `presentation-evidence-inventory.md`, `milestones.md` | P1はruntime実行候補の分類、Evidence-class、未測定・Inconclusive境界の明示を完了。 |
 | P2 | Codegen観測 (`codegen-observe-p/c`) | 完了（selected-profile Observed） | `docs/p2-selected-profile-codegen-receipts.md`, `reviews/p2-selected-profile-codegen-receipts.md` | 1-shotで同一fixture同一画像、same-imageペアを受理。 |
-| P2 | Vite観測（`vite-observe-p/c`） | 条件付き完了（不可逆Inconclusive履歴） | `docs/p2-vite-completion.md`, `docs/presentation-scope.md`, `reviews/p2-vite-diagnostic-result.md` | `20260719-01`〜`20260719-03`を全て固定。`20260719-03`は`attached-start`タイムアウト由来の境界付与で、`selected Vite Observed`不成立。既存3件は更新対象外・再試行不可。 |
+| P2 | Vite観測（`vite-observe-p/c`） | 完了（selected-profile Observed） | `docs/p2-vite-completion.md`, `docs/presentation-scope.md`, `reviews/p2-vite-init-reaper-result.md` | `20260723-01`のexact same-image pairと2件の`matches-expected` receiptをone-local-pair scopeで受容。先行5件はimmutable Inconclusive履歴として維持し、再試行不可。 |
 | P2 | Vite追加再試行（新runID） | 完了（再試行境界明示付き） | `docs/p2-vite-completion.md`, `docs/p2-selected-profile-vite-observed.md`, `milestones.md` | `P2-V08`〜`P2-V11`の再検証は完了。再試行はADR-0002/`continue-repository-work`下で新runIDのみ許可し、`run-id`切替えと`1回のみ`実行境界は既に明示済み。 |
 | P2 | Vite独立測定世代 `20260720-01` | 完了（第4のimmutable Inconclusiveとして受容） | `p2-vite-new-measurement-diagnosis.md`, `reviews/p2-vite-new-measurement-result.md` | exact commandはstanding authorizationで1回だけ実行しexit 1、retryなし。fresh result reviewはpermissive v3 attemptと`child-launched`までのvalid progress prefixを受容したが、receipt/constrained root/Observed昇格は不成立。 |
 | P2 | Vite executionにおける残留不整合 | 完了（受容） | `reviews/p2-vite-diagnostic-remediation.md`, `reviews/p2-selected-profile-vite-observed.md` | 既知制約（`inconclusive`の明示）を残したまま、再編集・再試行を停止。 |
@@ -49,7 +49,7 @@ projectionだけを4件へ更新した。selected Viteとexperiment-matrix Obser
    - `完了`が`条件付き完了`へ降格されないこと
    - `条件付き保留`の項目は、再開条件と境界が台帳に記載されていること
    を明記する。
-3. 発表資料更新時は、Viteが`selected profile Observed`ではない点（4回Inconclusive）を削除せず維持する。
+3. 発表資料更新時は、5回のimmutable Inconclusiveを削除せず維持し、fresh result review済み`20260723-01` pairのone-local-pair scope、cooperative progress、fixed-child limitation、非因果的init境界を併記する。
 4. 条件付き/保留項目は、GitHub Issueへ分解して
    個別完了条件を持たせる。
 
@@ -64,7 +64,7 @@ projectionだけを4件へ更新した。selected Viteとexperiment-matrix Obser
 - [ISSUE-39: M4: offline-build recovery trail更新と control-binding/runtime handoff](https://github.com/kanato-tk51/tskaigi-sendai-2026-lab/issues/39)（ローカル台帳上完了）
 - [ISSUE-40: M4: profile-control run:controls runtime enforcement gate を一回限定で定義](https://github.com/kanato-tk51/tskaigi-sendai-2026-lab/issues/40)（one-shot実行完了。exact pairは`inconclusive / COMMAND_FAILURE`で再実行不可）
 - [ISSUE-41: M4: profile-control 証拠境界の最終整合（Observed化条件を明記）](https://github.com/kanato-tk51/tskaigi-sendai-2026-lab/issues/41)（ローカル台帳上完了。profile-control非Observed、experiment-matrix route非昇格を固定）
-- [ISSUE-54: P2 Vite: selected-profile Observedを完成する（明示再開時のみ）](https://github.com/kanato-tk51/tskaigi-sendai-2026-lab/issues/54)（凍結。第4のimmutable Inconclusiveまで受容済み。新世代は明示再開とfresh gateが必要）
+- [ISSUE-54: P2 Vite: selected-profile Observedを完成する（明示再開時のみ）](https://github.com/kanato-tk51/tskaigi-sendai-2026-lab/issues/54)（ローカル台帳上完了。第5のimmutable Inconclusiveまで維持し、`20260723-01`のinit/reaping exact one-shot pairはfresh Docker-free result reviewでsame-image/2件の`matches-expected` receiptとしてone-local-pair scope受容済み。retryなし）
 
 ## 免責
 
@@ -73,7 +73,9 @@ projectionだけを4件へ更新した。selected Viteとexperiment-matrix Obser
   Inconclusive/non-Observedとして固定した。再実行、別run ID、retained stateの
   再検査・削除、route昇格はこの完了記録では承認しない。
 
-M4のbounded continuationはInconclusive結果と非昇格境界を受容して完了した。Presentation MVPの
-完了状態およびViteの4回Inconclusive limitationは変更していない。
+M4のbounded continuationはInconclusive結果と非昇格境界を受容して完了した。Presentation MVPと
+Issue #54のローカル完了状態を維持する。Viteの5回Inconclusive limitationは削除せず、
+`20260723-01`のexact same-image pairだけをselected-profile Observedのone-local-pair
+scopeで追加受容した。`experiment-matrix.md`は別正本のno-hand-promotion境界により変更しない。
 
 Next: none.

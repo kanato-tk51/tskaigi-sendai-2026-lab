@@ -1,7 +1,7 @@
 # TSKaigi Sendai 2026 presentation MVP
 
-Status: **complete; P4 baseline and selected Vite completion-addendum result
-reviews approved**
+Status: **complete; Issue #54 `20260723-01` selected Vite pair accepted at the
+exact one-local-pair scope**
 
 Decision date: 2026-07-18
 
@@ -28,8 +28,9 @@ projection and two `matches-expected` receipts. A
 [fresh independent Docker-free receipt review](reviews/p2-selected-profile-codegen-receipts.md)
 reproduced their canonical bytes, raw-event projections, identities, same-image
 binding, unchanged source hashes, counts, attempt outcomes, and bounded output
-inventory and accepted them as selected codegen profile Observed. The Vite pair
-and experiment-matrix Observed remain unmeasured, but the exact Vite selected
+inventory and accepted them as selected codegen profile Observed. At that
+baseline point the Vite pair and experiment-matrix Observed remained
+unmeasured, but the exact Vite selected
 context, separated runtime bindings, bounded sanitized projection, explicit
 constrained-child limitation, fixed runner, and exact staging assembly now have
 static/unit coverage. A fresh focused Docker-non-executing review accepted their
@@ -170,6 +171,37 @@ only as the fifth immutable Inconclusive attempt. The tracked talk projection
 now retains all five attempts in exactly three tables while selected Vite and
 experiment-matrix `Observed` remain unmeasured; no retry or runtime recovery is
 authorized.
+
+Issue #54's later `20260723-01` continuation has an independently approved
+Docker-free contract, one bounded implementation/staging candidate, and an
+independently approved execution gate. A fresh worker reproduced the exact
+preflight and used standing authorization for the fixed argument-free command
+once; this was not a separate human review. It exited 0 without retry and its
+bounded stdout reports a candidate same-image pair with two complete
+`matches-expected` receipts. The
+[init/reaping contract](p2-vite-init-reaper-contract.md) adds a Vite-only fixed
+Docker `--init` prerequisite and exact inspect binding without weakening child
+process-group settlement. It treats possible orphan reaping as a hypothesis,
+not as the demonstrated cause of the fifth Inconclusive attempt. Its
+[fresh review](reviews/p2-vite-init-reaper-contract.md) found no contract
+finding and approved only one bounded Docker-free implementation task. That
+task now binds only the exact new tuple, requires literal
+`HostConfig.Init=true` at created/final inspect, preserves all settlement and
+evidence gates, and rebuilds the exact 128-file Vite staging tree. The
+[fresh implementation/execution-gate review](reviews/p2-vite-init-reaper-implementation.md)
+found no finding and approved at most one later exact argument-free pair
+invocation after fresh identity/staging/two-root-absence revalidation, with no
+retry. The successful occurrence is now exhausted. Its
+[fresh Docker-free result review](reviews/p2-vite-init-reaper-result.md)
+reproduced both canonical attempts and receipts, the valid-terminal progress
+records, sanitized capability projections, same-image pair, and exact 684-byte
+stdout without rerun or repair. It accepts selected Vite as Observed only at
+this exact one-local-pair scope and updates the deterministic three-table talk
+projection while retaining the five earlier Inconclusive attempts. Configured
+init is not treated as a demonstrated cause, the constrained fixed-child
+success retains `CONSTRAINED_CHILD_REQUIRED_BY_TOOL`, and
+`experiment-matrix.md` remains unchanged under its separate no-hand-promotion
+boundary.
 
 ## Purpose
 
@@ -399,4 +431,4 @@ the capability gap and non-Observed boundary are unchanged.
 - Reproduction commands use fixed repository-owned inputs and preserve the
   safety rules above.
 
-Next: none
+Next: none.

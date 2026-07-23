@@ -23,13 +23,23 @@ describe("presentation evidence map", () => {
     );
   });
 
-  it("keeps seven claims, three talk tables, and all five Vite gaps visible", async () => {
+  it("keeps seven claims, three talk tables, the accepted Vite pair, and all five historical gaps visible", async () => {
     const rendered = renderEvidenceMap(await loadPresentationEvidence());
 
     expect(rendered.match(/^## Talk table /gm)).toHaveLength(3);
     expect(rendered.match(/^### C-0[1-7] /gm)).toHaveLength(7);
-    expect(rendered).toContain("not-inspected");
-    expect(rendered).toContain("missing");
+    expect(rendered).toContain(
+      "| Environment | success | failure (ENVIRONMENT_VARIABLE_ABSENT) | success | failure (ENVIRONMENT_VARIABLE_ABSENT) |",
+    );
+    expect(rendered).toContain(
+      "| Fixed child | success | failure (CHILD_PROCESS_FAILURE) | success | success |",
+    );
+    expect(rendered).toContain(
+      "codegen and Vite pairs are selected-profile\n**Observed**",
+    );
+    expect(rendered).toContain("CONSTRAINED_CHILD_REQUIRED_BY_TOOL");
+    expect(rendered).toContain("repository-cooperative");
+    expect(rendered).toContain("Configured init");
     expect(rendered).toContain("Inconclusive");
     expect(rendered).toContain("20260719-01");
     expect(rendered).toContain("20260719-02");

@@ -1,7 +1,7 @@
 # Presentation evidence inventory
 
-Status: **P1 inventory and independent read-only review complete; gate
-approved with no findings**.
+Status: **complete; P1 review approved and both selected-profile pairs now have
+reviewed exact one-local-pair evidence**.
 
 Inventory date: 2026-07-18
 
@@ -17,9 +17,10 @@ The inventory uses only these evidence classes:
 
 - **Observed**: a completed runtime observation at the scope claimed by its
   scenario. At P1 inventory time no selected presentation profile or artifact
-  scenario had this class. The later reviewed `codegen-observe-p/c` pair now has
-  selected-profile Observed status; M0 still contains only scenario-level
-  Observed marker counts inside an overall Inconclusive run.
+  scenario had this class. The later reviewed `codegen-observe-p/c` and
+  `vite-observe-p/c` pairs now have selected-profile Observed status at their
+  exact one-local-pair scopes; M0 still contains only scenario-level Observed
+  marker counts inside an overall Inconclusive run.
 - **Inconclusive**: a runtime command produced bounded observations but did not
   satisfy a required completion or evidence-transfer condition.
 - **local adapter evidence**: a reviewed fixed M2 runner observed a tool-specific
@@ -75,9 +76,9 @@ run-ID-bearing marker hashes are intentionally omitted.
 | Claim | Eligible existing evidence | Current state | Smallest missing runtime run and fixed scenario | Limitations that must appear next to the claim |
 |---|---|---|---|---|
 | **C-01** — dependency code runs through five routes | M0's scenario-level lifecycle marker counts plus the M2-B/C/D/E sanitized local projection above | Candidate evidence complete after the P1 review; no profile run is required for this route table | None for phase/trigger/count. P4 must generate the compact five-route table from this inventory rather than cite ignored run directories. | M0 is overall Inconclusive and marker-only. M2 facts are local adapter evidence, not matrix/profile Observed. Every count is pinned to its exact tool/fixture/options. |
-| **C-02** — trigger label is not process privilege | Reviewed route trigger metadata plus the independently accepted `codegen-observe-p/c` selected-profile Observed pair | Codegen comparison complete; Vite selected-profile observations missing | Implement and run only `vite-observe-p/c` through the same gated fixed-runner process. Preserve the complete reviewed codegen `5 / 6 / 1 / 12` projection and do not hand-promote matrix cells. | `automatic`, `configured`, and `explicit` describe causation only. Do not derive privilege from the label or from container configuration. The codegen evidence is one local pair, not a reproducibility or general-isolation claim. |
-| **C-03** — five capabilities are separate | M2 local runs separate all capabilities; the accepted codegen pair retains six ordered attempts, with file hash explicitly treated as integrity rather than a sixth capability. | Codegen bounded outcomes complete; Vite selected-profile outcomes missing | Add the Vite pair while preserving each attempt outcome/reason. Do not collapse absent, skipped, denied, timeout, or success. | No raw canary values, file contents, host paths, commands, or unsanitized errors. A failed exclusive write does not prove rollback of partial output. |
-| **C-04** — the same fixture reaches different capabilities under different policies | The accepted codegen pair is same-image and records permissive success versus constrained absence/denial/failure for the fixed attempts. | Codegen comparison complete; Vite same-image pair missing | Implement and run only the fixed Vite pair with identical fixture/image bytes, fixed command/arguments, and separate run/result IDs. | The codegen receipt does not by itself carry the staging manifest or prove no-retry history; use it with the reviewed executor/execution record. A manifest skip is not runtime denial, and profile-control diagnostic is not route evidence. |
+| **C-02** — trigger label is not process privilege | Reviewed route trigger metadata plus the independently accepted `codegen-observe-p/c` and `vite-observe-p/c` selected-profile Observed pairs | Both exact one-local-pair comparisons complete | None under the presentation scope. Keep both fixed pair identities and do not hand-promote matrix cells. | `automatic`, `configured`, and `explicit` describe causation only. Both results are one local pair, not reproducibility or general-isolation claims; configured init is not a demonstrated cause. |
+| **C-03** — five capabilities are separate | M2 local runs separate all capabilities; both accepted pairs retain six ordered attempts, with file hash explicitly treated as integrity rather than a sixth capability. | Codegen and Vite bounded outcomes complete | None under the presentation scope. Preserve every outcome/reason and the constrained Vite child limitation. | No raw canary values, file contents, host paths, commands, or unsanitized errors. A failed exclusive write does not prove rollback of partial output. |
+| **C-04** — the same fixture reaches different capabilities under different policies | Both accepted selected-profile pairs are same-image. Vite records permissive success versus constrained environment/file/direct-write/loopback failures while fixed child remains successful. | Exact codegen and Vite one-local-pair comparisons complete | None under the presentation scope. | The receipts do not alone prove repeated-run reproducibility or a general sandbox. Vite progress uses a repository-cooperative writer, and constrained child success remains `CONSTRAINED_CHILD_REQUIRED_BY_TOOL`. |
 | **C-05** — direct writes differ from official tool API changes | Reviewed ESLint fix, Vite observe/API, and codegen observe/API local adapter evidence; events, targets, materialization, and hashes remain distinct. | Candidate evidence complete after the P1 review | None under the presentation scope. P4 must project only the reviewed local facts; P2 observe runs may supplement capability outcomes but do not replace the API variants. | A direct marker is not a tool-owned artifact/source edit. API return, in-memory/bundle change, disk materialization, and ordinary tool output are not interchangeable. |
 | **C-06** — build once, verify/copy, reject one-byte tamper | The reviewed exact P3 result records build count 1, separate digest verification, verified copy/post-copy digest with zero deploy builds, and rejection before copy after exactly one changed byte. M3 hash tests remain synthetic static/unit evidence, and the M4 build remains unrelated/Inconclusive. | Exact one-local-run Observed accepted | No additional runtime run. P4 must create the tracked sanitized artifact table from the reviewed projection without citing the ignored root. | The recorded empty child environment and code path are not OS-level egress proof. Verify/copy did not install or rebuild. Report the exact one-local-run scope and all receipt limitations. |
 | **C-07** — identity/provenance is not harmlessness | The reviewed P3 receipt/result displays the required identity-not-harmlessness, unsigned-receipt, and no-OS-egress-evidence limitations. | Exact one-local-run Observed accepted with limitations | No additional runtime run. P4 must place the limitations next to C-06/C-07. | SHA-256 and an unsigned local receipt establish byte identity and recorded inputs only. They do not prove semantic harmlessness, truth against a jointly replaced artifact/receipt, or SLSA/in-toto compliance. |
@@ -221,5 +222,17 @@ Inconclusive attempt and retained the invalid eight-record progress prefix as
 diagnostic secondary state. The tracked presentation projection now lists all
 five attempts side by side; Vite capabilities remain `not-inspected` /
 `missing`, and no same-image or Observed promotion exists.
+
+The later `20260723-01` init/reaping generation completed its separately
+reviewed one-shot gate and
+[`fresh Docker-free result review`](reviews/p2-vite-init-reaper-result.md).
+That review independently reconstructed both canonical complete receipts,
+valid-terminal progress records, sanitized capability projections, the
+same-image pair, and exact 684-byte stdout. Selected Vite is accepted only at
+the exact one-local-pair scope. The tracked three-table projection now displays
+the reviewed outcomes while keeping all five earlier Inconclusive attempts
+immutable. Configured init is not treated as a demonstrated cause,
+`CONSTRAINED_CHILD_REQUIRED_BY_TOOL` remains visible, and no
+`experiment-matrix.md` cell was hand-promoted.
 
 Next: none

@@ -1,18 +1,25 @@
 # P2 Vite completion addendum
 
-Status: **the fixed `-03` one-shot pair remains the third immutable
-Inconclusive attempt, and the completed presentation baseline is unchanged.
-The independent `20260720-01` diagnosis, contract review, Docker-free
-P2-V12/P2-V13 implementation, execution-gate review, exact one-shot execution,
-and fresh Docker-free result review are complete. The new outcome is accepted
-only as the fourth immutable Inconclusive attempt. The independent
-`20260720-02` detached-transfer result review is also complete and accepts its
-outcome only as the fifth immutable Inconclusive attempt.**
+Status: **complete. The five earlier generations remain immutable
+Inconclusive attempts. The fresh Docker-free `20260723-01` result review
+accepts its two canonical `matches-expected` receipts and same-image pair as
+selected Vite Observed at the exact one-local-pair scope.**
 
-This addendum reopens only the selected Vite permissive/constrained comparison.
-The accepted codegen pair, P3 result, P4 projections, frozen M4 track, and the
-five exhausted Vite attempts remain explicit without changing selected Vite or
-experiment-matrix Observed.
+This addendum reopened only the selected Vite permissive/constrained comparison.
+The accepted codegen pair, P3 result, frozen M4 track, and five exhausted Vite
+attempts remain explicit. The deterministic P4 projection now includes the
+accepted exact Vite pair; `experiment-matrix.md` remains unchanged.
+
+The accepted generation was defined before execution in
+[`p2-vite-init-reaper-contract.md`](p2-vite-init-reaper-contract.md). It
+fixed one Vite-only Docker `--init` create flag and literal
+`HostConfig.Init=true` inspect binding while preserving the existing
+post-close-residue failure and actual process-group-absence requirements. The
+fifth result does not prove a zombie/reaping cause, and the proposal remains
+configuration intent rather than a demonstrated cause. The
+[fresh independent review](reviews/p2-vite-init-reaper-contract.md) found no
+blocking or non-blocking issue; later implementation, execution, and result
+gates were reviewed separately.
 
 ## Diagnosis
 
@@ -659,5 +666,190 @@ the constrained outcome, and a capability observation remain unestablished.
 The tracked talk projection now retains all four attempts side by side and
 keeps exactly three talk tables. No Docker command, retry, retained-state
 mutation, Expected change, Observed promotion, or matrix change was used.
+
+Next: none.
+
+## Proposed init/reaping generation: `20260723-01`
+
+Issue #54 now reserves one sixth generation in
+[`p2-vite-init-reaper-contract.md`](p2-vite-init-reaper-contract.md). The
+contract proposes exactly one Vite-only Docker `--init` create option and a
+literal `HostConfig.Init=true` field in both applicable owned-container
+inspections. It keeps the existing image, invocation, Expected event values,
+timeout/output bounds, progress graph, post-close-residue failure,
+process-group-absence proof, permissive-first pair order, same-image rule, and
+no-retry boundary unchanged.
+
+The reviewed fifth attempt establishes post-close process-group residue,
+accepted force delivery, and unresolved group/container/runner settlement. It
+does not distinguish live from unreaped process state or prove a lower-level
+cause. The proposed init behavior is therefore configuration intent only and
+cannot itself establish settlement or evidence.
+
+The exact current-task and fresh independent review prompts are
+[`prompts/p2-vite-init-reaper-contract.md`](../prompts/p2-vite-init-reaper-contract.md)
+and
+[`prompts/reviews/p2-vite-init-reaper-contract-review.md`](../prompts/reviews/p2-vite-init-reaper-contract-review.md).
+No implementation, staging, Docker action, result access, Expected/Observed
+change, or historical evidence mutation occurred.
+
+Next: perform the fresh independent Docker-free contract review under
+`../prompts/reviews/p2-vite-init-reaper-contract-review.md`; do not implement,
+stage, call Docker, or access result roots in that review.
+
+## Init/reaping contract independent review
+
+The fresh independent Docker-free review in
+[`reviews/p2-vite-init-reaper-contract.md`](reviews/p2-vite-init-reaper-contract.md)
+is `APPROVED` for one bounded implementation and focused static/unit task with
+no blocking or non-blocking finding. It independently reproduced the tracked
+five-attempt projection, fifth attempt's immutable post-close-residue boundary,
+current no-init/five-field source baseline, exact `20260723-01` separation, and
+the contract's Vite-only flag, literal-true created/final inspect binding, and
+unchanged settlement/evidence gates.
+
+The approval is configuration/static scope only. It does not establish Docker
+init support, reaping behavior, group absence, implementation correctness,
+receipt eligibility, capability outcomes, or `Observed`. No production code,
+staging, Docker action, result access, Expected/Observed value, historical
+evidence, or presentation projection changed, and standing authorization was
+not used.
+
+Next: implement the approved `20260723-01` Vite-only `--init` and six-field
+inspect binding with focused Docker-free regressions, then rebuild only the
+fixed Vite staging candidate; do not call Docker or access result roots.
+
+## Init/reaping Docker-free implementation handoff
+
+The approved `20260723-01` candidate now cross-binds the exact Expected,
+run/root, and container tuple through the plan, M2-D context, runner,
+projection, executor, and focused tests. Only selected Vite has literal
+value-free `--init` exactly once before `--name`; both codegen create arrays
+remain byte-for-byte unchanged. The exact six-field inspect projection places
+`HostConfig.Init` fourth, accepts only literal `true`, and requires the retained
+fact at both created and final owned-inspect boundaries. Missing, false,
+malformed, extra, duplicated, and changed final values fail closed before
+evidence or receipt acceptance.
+
+Focused P2 tests passed 4 files / 77 tests, focused M2-D context tests passed 1
+file / 19 tests, full P2 verification passed 9 files / 122 tests, and P2 build
+plus compiled import checks passed. M2-D typecheck/build/static passed; its
+full test phase recorded 23 fixed-version failures because the host Node
+`v22.23.1` differs from contract Node `v20.18.2`, while 9 files / 60 tests
+passed. The fixed Node contract was not changed.
+
+The approved argument-free staging replacement/rebuild produced 128 exact
+source-equal fixed-mode files with plan-order manifest `8803f5b5...`. Standing
+authorization was used only for that already reviewed fixed staging action;
+this was not a separate human review. No Docker, result-root access, Expected
+event-value change, `Observed` promotion, historical evidence mutation, or
+presentation projection change occurred.
+
+Next: perform the fresh independent Docker-free implementation/execution-gate
+review under
+`../prompts/reviews/p2-vite-init-reaper-implementation-review.md`; do not
+repair the candidate, call Docker, execute the pair, or access historical
+result roots.
+
+## Init/reaping implementation/execution-gate independent review
+
+The fresh independent Docker-free review in
+[`reviews/p2-vite-init-reaper-implementation.md`](reviews/p2-vite-init-reaper-implementation.md)
+is `APPROVED` for at most one later exact argument-free
+`npm run p2:execute:vite` pair invocation, with no blocking or non-blocking
+finding. It reproduced all ten candidate hashes, both unchanged codegen create
+arrays, the exact 128-file source-equal fixed-mode Vite staging manifest
+`8803f5b5...`, fixed tool versions, compiled import safety, and absence of only
+the two exact `20260723-01` roots.
+
+Focused P2 passed 4 files / 77 tests, focused M2-D context passed 1 file / 19
+tests, full P2 verification passed 9 files / 122 tests, and P2 build plus
+compiled imports passed. `npm run m2d:verify` passed typecheck/build/static and
+then reproduced the recorded environment limitation: host Node `v22.23.1`
+versus fixed Node `v20.18.2`, 23 `M2D_VERSION_MISMATCH` failures, 9 files / 60
+tests passed, and overall exit 1.
+
+The source and regressions preserve the exact Vite-only `--init`, six-field
+literal-true created/final inspect binding, historical-tuple rejection,
+post-close-residue known failure, unknown-settlement and transfer barriers,
+regular-evidence and receipt gates, permissive-first order, same-image rule,
+cooperative-trust limitation, and no retry. Configured init remains
+configuration intent, not settlement or capability evidence.
+
+The review did not call Docker, access any historical result root, create a
+runtime result, change Expected event values, promote `Observed`, mutate
+historical evidence, or update the three-table presentation projection.
+Standing authorization was not used in the review.
+
+Next: in a fresh worker, revalidate the approved hashes, exact staging, fixed
+argument-free script, and only the two exact new-root absences, then invoke
+`npm run p2:execute:vite` at most once under standing authorization; do not
+retry.
+
+## Init/reaping exact one-shot execution handoff
+
+A fresh worker reproduced all ten approved candidate hashes, the exact
+128-file source-equal regular non-symlink staging tree and
+`8803f5b5cec7dedb2168a03087f9e574f1d380e81602ebc2c8d722783859bd20`
+manifest, fixed Vite/Rollup/esbuild versions `6.4.3` / `4.62.2` / `0.25.12`,
+the exact argument-free package script, and absence of only the two exact new
+roots. It then used the `continue-repository-work` standing authorization for
+exactly one `npm run p2:execute:vite` invocation. This was not a separate human
+review.
+
+The command exited 0 and was not retried. Its bounded direct stdout is one
+684-byte JSON line including its trailing LF, SHA-256
+`683b78cd5f181e083657c76382eb94612ccdb989cea1bc8efe6075d9b6997aac`.
+It reports `status: completed`, `p2-vite-pair/v4`, the exact
+`p2-vite-expected-20260723-01` revision, `same-image`, the fixed image ID,
+`repository-cooperative-fixture`, and no pair issue. Both permissive and
+constrained projections report `complete`, written attempt and receipt,
+inspected evidence, `matches-expected`, and no issue.
+
+These are unreviewed candidate runtime observations, not accepted receipts,
+selected-Vite or experiment-matrix `Observed`, or a presentation projection.
+The worker did not access or classify either new result root after execution,
+inspect historical retained state, change Expected event values, or update
+tracked evidence. The occurrence is exhausted and no retry is authorized.
+
+The exact Docker-free result-review prompt is saved at
+[`prompts/reviews/p2-vite-init-reaper-result-review.md`](../prompts/reviews/p2-vite-init-reaper-result-review.md).
+It binds only the approved candidate, direct stdout identity, and two exact new
+roots.
+
+Next: perform the fresh independent Docker-free fixed-root result review under
+`../prompts/reviews/p2-vite-init-reaper-result-review.md`; do not rerun,
+repair, call Docker, or access any historical result root.
+
+## Init/reaping fixed-root result independent review
+
+The
+[`fresh Docker-free result review`](reviews/p2-vite-init-reaper-result.md)
+is `ACCEPTED` with no blocking or non-blocking finding. It reproduced all ten
+approved candidate hashes, the exact package script, 128-file source-equal
+fixed-mode staging manifest `8803f5b5...`, and both bounded mode-`0700` result
+roots without accessing any historical root.
+
+The approved pure validator, bounded evidence reader, and projectors
+reconstructed both canonical v4 attempts and receipts byte for byte. Both
+progress records are valid terminal sequences with natural exit, confirmed
+child-group absence, known runner/service settlement, unchanged source hashes,
+and sealed output. Both receipts are complete `matches-expected` projections
+on the fixed image, and the pure pair/entry reconstruction exactly matches the
+684-byte stdout handoff.
+
+Selected Vite is therefore Observed at the exact one-local-pair scope. The
+tracked three-table presentation projection now displays permissive success
+for all five capabilities and constrained failures for environment, file read,
+direct write, and loopback, while fixed child remains successful with
+`CONSTRAINED_CHILD_REQUIRED_BY_TOOL`. The source-hash success remains separate
+integrity evidence. All five earlier Inconclusive attempts remain visible and
+immutable.
+
+Configured init remains configuration intent and is not accepted as the cause
+of successful settlement or as proof that earlier residue was a zombie. The
+cooperative progress-writer, one-local-pair, no-repeated-run, and
+non-general-sandbox limitations remain. No Expected value or
+`experiment-matrix.md` Observed cell changed.
 
 Next: none.

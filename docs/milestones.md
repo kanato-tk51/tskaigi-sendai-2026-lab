@@ -351,10 +351,10 @@ Status: remediation A (C-01/C-02/H-01/M-03) complete。Remediation B (M-04/M-05/
 
 ### Closure follow-ups
 
-| ID | Status | Closure / limitation |
-|---|---|---|
-| L-05 | complete | `probe-core` static verifierをfail closedにし、Node.js builtin、`src/`内relative import、`src/`内へ解決されるTypeScript `paths`だけを許可する。External bare import、self-reference、package `imports` alias、computed loading、source root escapeを拒否する。 |
-| L-06 | complete | M0 static verifierの現在のfile/commandを実在する`experiments/npm12-install/scripts/verify-static.mjs`へ統一し、既知verification sectionのcommand pathをtestする。 |
+| ID   | Status                           | Closure / limitation                                                                                                                                                                                                                                                                                                                                        |
+| ---- | -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| L-05 | complete                         | `probe-core` static verifierをfail closedにし、Node.js builtin、`src/`内relative import、`src/`内へ解決されるTypeScript `paths`だけを許可する。External bare import、self-reference、package `imports` alias、computed loading、source root escapeを拒否する。                                                                                              |
+| L-06 | complete                         | M0 static verifierの現在のfile/commandを実在する`experiments/npm12-install/scripts/verify-static.mjs`へ統一し、既知verification sectionのcommand pathをtestする。                                                                                                                                                                                           |
 | I-04 | accepted non-blocking limitation | Exclusive create後のdirect file-write失敗ではpartial outputが残り得る。Failureをsuccess扱いせずcapability failureとして記録するが、automatic rollbackは保証しない。Disposable run directoryを前提とし、retryは新しいclean directoryを使う。詳細と将来cleanup条件は[独立レビュー記録](reviews/m1-independent-review.md#i-04-accepted-limitation)を参照する。 |
 
 M2-AはM1 boundaryの観点ではreadyだが、M0 evidence transport decision待ちである。M2-B〜M2-EはM1 boundaryの観点ではreadyである。これは各adapterが実装済みまたは各adapter固有gateを通過済みという意味ではない。
@@ -428,7 +428,7 @@ M2-AはM1 boundaryの観点ではreadyだが、M0 evidence transport decision待
 
 ## M2-A: npm lifecycle adapter
 
-Status: **implementation complete; independent review approved with non-blocking follow-ups; runtime evidence-transfer boundary blocked/Inconclusive; experiment-matrix Observed unmeasured**. The fixed source/fixture contract is documented in [M2-A npm lifecycle adapter](m2-a-npm-lifecycle-adapter.md), and the review decision is recorded in [the M2-A independent review](reviews/m2-a-npm-lifecycle-adapter.md). Host pack/install/lifecycle execution is prohibited; M0's Docker `29.6.1` tmpfs-to-`docker cp` limitation remains unresolved, so no container run is treated as success.
+Status: **adapter implementation complete and independently approved with non-blocking follow-ups; issue #43 M2A-TRR01 through M2A-TRR03 and M2A-TR01 through M2A-TR06 are closed only at the Docker-free static/unit implementation boundary; M2A-CGR01 through M2A-CGR03 and M2A-CG01 through M2A-CG06 are closed only at construction/execution-gate contract scope; runtime evidence-transfer boundary blocked/Inconclusive; experiment-matrix Observed unmeasured**. The fixed source/fixture contract is documented in [M2-A npm lifecycle adapter](m2-a-npm-lifecycle-adapter.md), the adapter implementation review decision is recorded in [the M2-A independent review](reviews/m2-a-npm-lifecycle-adapter.md), the Docker-free transfer contract/implementation handoff is documented in [the M0/M2-A evidence-transfer contract](m2-a-evidence-transfer-contract.md), the proposed next gate is documented in [the construction/execution-gate contract](m2-a-evidence-transfer-construction-execution-gate.md), the blocking contract decision is recorded in [the construction/execution-gate review](reviews/m2-a-evidence-transfer-construction-execution-gate.md), the partial remediation decision is recorded in [the construction/execution-gate remediation re-review](reviews/m2-a-evidence-transfer-construction-execution-gate-remediation.md), the closing contract decision is recorded in [the absence-checkpoint identity remediation re-review](reviews/m2-a-evidence-transfer-construction-execution-gate-absence-checkpoint-identity-remediation.md), the first transfer implementation decision is recorded in [the transfer implementation review](reviews/m2-a-evidence-transfer-implementation.md), the earlier blocking decision is recorded in [the remediation re-review](reviews/m2-a-evidence-transfer-implementation-remediation.md), the residual blocking decision is recorded in [the residual-remediation re-review](reviews/m2-a-evidence-transfer-implementation-residual-remediation.md), and the positive transfer decision is recorded in [the failure-candidate correlation remediation re-review](reviews/m2-a-evidence-transfer-implementation-failure-candidate-correlation-remediation.md). Host pack/install/lifecycle execution remains prohibited; M0's Docker `29.6.1` tmpfs-to-`docker cp` limitation is historical and the proposed named-volume copy path remains unobserved, so no fresh container run is treated as success.
 
 ### Goal
 
@@ -1606,9 +1606,634 @@ addendum and presentation MVP are complete. Next: none.
 - M4 profile-control remains optional diagnostic/appendix evidence. ADR-0001's
   control/route evidence distinction remains in force, but generic recovery is
   no longer a prerequisite for selected presentation route runs.
-- Full generic collector/provenance hardening and remediation-specific review
-  loops are deferred until a project human explicitly resumes the research
-  track.
+- The project human explicitly resumed the high-assurance research track on
+  2026-07-20. Issue #45 is closed only at its reviewed
+  Inconclusive/cooperative-host boundary. Issue #46's Docker-free
+  public-input-hardening contract is independently approved at contract scope,
+  and its bounded 19-production/21-verification-path static/unit implementation
+  now passes typecheck, static verification, and 25 files / 298 tests. The old
+  issue #45 construction remains immutable and current source is not an
+  activation candidate. The fresh independent Docker-free implementation
+  review blocked M4-PI01 on two missing exact primitive-selector guards and one
+  duplicate unused executor lease ingress. The bounded remediation now rejects
+  invalid selector values with the existing route errors, removes the lease
+  from the executor schema/snapshot while preserving backend ownership, and
+  adds focused negative plus TypeScript-AST static coverage. Docker-free
+  `npm run m4:verify` passes 25 files / 300 tests. Historical issue #45
+  construction and compiled objects remain unchanged. The fresh independent
+  Docker-free remediation re-review closes M4-PI01 with no new finding;
+  M4-PI02 through M4-PI05 remain closed and issue #46 is complete only at the
+  static/unit boundary. Issue #47's first Docker-free contract now binds only
+  the codegen `observe` adapter family, additive v3 adapter-run schemas,
+  identity-bearing Expected rows, held immutable raw input, transactional
+  clean regeneration, rejection/sanitization, evidence non-promotion, and one
+  exact later implementation allowlist. Its fresh independent Docker-free
+  review closes M3-PC01/M3-PC06 but blocks implementation on M3-PC02 through
+  M3-PC05. The bounded contract-only remediation is now complete. R1 post-
+  render and R2 precommit repeat exact byte count, EOF, and SHA-256 from every
+  originally held descriptor while checking object/path identity separately;
+  every raw/staged check and descriptor close settles under only the non-
+  evidence staging name; and final rename is the sole publication commit and
+  last fallible operation. The fresh independent Docker-free remediation
+  re-review closes M3-PC02 through M3-PC05 with no new finding and keeps
+  M3-PC01/M3-PC06 closed at contract scope. The bounded Docker-free static/unit
+  implementation is now complete under the unchanged M3-PC06 allowlist. The
+  prompt was saved first; additive v3 scenario/manifest/Expected validation,
+  deterministic derivation, and the internal held-descriptor R1/R2,
+  private-staging, close-settlement, sole-rename transaction have 19 focused
+  tests. `npm run m3:verify` passes 9 files / 52 tests, root typecheck and 108
+  files / 801 tests pass, and `git diff --check` exits 0. Aggregate root
+  `npm run check` remains non-green only on pre-existing out-of-scope M4
+  formatting/lint findings and is not claimed as passed. The fresh independent
+  Docker-free implementation review reproduces those passes but records
+  `BLOCKED`: the comparison drops the exact cross-kind 12-event order, and
+  three post-open descriptor `stat()` branches occur before handle settlement
+  registration. M3-PC02/M3-PC05 close at implementation scope; M3-PC01,
+  M3-PC03, M3-PC04, and M3-PC06 remain open only on that bounded remediation.
+  The immediate next task is to remediate those two gaps under the unchanged
+  M3-PC06 allowlist and save a fresh re-review prompt before source changes.
+  Ingestion, runtime activation, and every later backlog item remain frozen.
+  The bounded remediation prompts were saved before source changes, and the
+  remediation is now complete. The pure v3 comparison retains the exact
+  cross-kind 12-event identity order, while directory/raw/staged helpers own
+  every successful open before their first post-open checkpoint or descriptor
+  `stat()`. Focused permutation and settlement tests plus static source-order
+  checks cover both findings. `npm run m3:verify` passes 9 files / 54 tests,
+  probe-core static verification passes 19 files, and root typecheck plus 108
+  files / 803 tests pass. Aggregate root `npm run check` remains non-green only
+  on pre-existing out-of-scope M4 formatting/lint findings. The fresh
+  independent Docker-free remediation re-review closes M3-PC01 through
+  M3-PC06 at implementation scope with no new finding after reproducing the
+  exact cross-kind permutation, all three post-open settlement families, and
+  the same focused/root verification. Issue #47 is complete only at this
+  static/unit boundary. Issue #43's first Docker-free new-generation M0/M2-A
+  evidence-transfer contract is now independently reviewed and approved; its
+  independent review prompt is saved. The proposal fixes the `20260721-01`
+  identity tuple, approved-rebuild occurrence, current 31-file input digest,
+  retained named-volume and natural-exit settlement, canonical completion,
+  post-exit fixed copy, candidate-only evidence class, and one later
+  implementation allowlist. That bounded Docker-free static/unit implementation
+  is now complete. It adds the fixed manifest/non-executed Containerfile,
+  no-argument initializer/runner source, pure validators, fake-only state
+  machine, and focused/static tests without a production Docker backend or
+  execution script. `npm run m2a:transfer:verify` passes 1 file / 16 tests,
+  existing `npm run m2a:verify` passes 4 files / 5 tests, and root typecheck
+  passes. An initial root run passed 109 files / 819 tests; the final rerun
+  retained 108 files / 818 tests with one out-of-scope dirty M4
+  `M4_CONTROL_PATH` failure, while aggregate `check` stops earlier on an
+  existing M4 formatting warning. The fresh independent Docker-free
+  implementation review closes M2A-TR01/M2A-TR02 and blocks M2A-TR03 through
+  M2A-TR06 on M2A-TRI01 through M2A-TRI04: incomplete fixed host commands and
+  CLI environment, predeclared/ignored terminal descriptor settlement,
+  complete-flow timeout/signal/truncation acceptance, and incoherent or
+  unsanitized attempt acceptance. The exact bounded remediation and fresh
+  independent re-review prompts are now saved before any remediation source or
+  test change. That bounded Docker-free remediation is now complete under the
+  unchanged M2A-TR06 allowlist. The pure plan/validator contains every fixed
+  Docker lifecycle argv plus the exact three-key CLI environment, deadlines,
+  output bound, and exclusive empty mode-`0700` home/config policy. Initializer
+  and runner-owned handles close through one awaited fail-closed settlement
+  path; exact complete npm terminals require close/zero/null/no-timeout/no-
+  truncation; and fake/canonical attempt records use one closed compatible
+  issue/prerequisite chain. Focused verification passes 1 file / 22 tests,
+  existing M2-A verification passes 4 files / 5 tests, root typecheck passes,
+  and root tests pass 109 files / 825 tests. Aggregate `check` remains
+  non-green only at the reproduced pre-existing out-of-scope M4 formatting
+  warning. The fresh independent Docker-free remediation re-review closes
+  M2A-TRI03 but keeps M2A-TRI01, M2A-TRI02, and M2A-TRI04 open on three
+  residuals. The nested plan validator accepts inherited Docker environment
+  data; the completion predeclares publication-descriptor settlement and does
+  not await all rejecting parallel handle branches; and no combined candidate
+  validator cross-binds completion-listed outputs to attempt transfer states.
+  These are M2A-TRR01 through M2A-TRR03, so M2A-TR03 through M2A-TR06 remain
+  blocked. Image/context construction, execution, ingestion, activation,
+  runtime evidence, and later backlog work remain frozen.
+
+  The exact bounded Docker-free residual-remediation and fresh independent
+  re-review prompts are now saved before any residual source or test change.
+  They bind only recursive own-data plan validation, the exact
+  `prePublicationDescriptorsClosed`/all-settled ownership representation, and
+  one pure `validateCandidateTransfer()` boundary under the unchanged
+  M2A-TR06 implementation paths. No implementation, verification, runtime,
+  result, historical, Expected, or `Observed` byte changed in that prompt-only
+  task, and standing authorization was not used.
+
+  The bounded Docker-free residual remediation is now complete under that
+  exact allowlist. Recursive exact-own-data validation rejects nested
+  prototype/key/descriptor/array/value drift without getter invocation; both
+  parallel descriptor-owning runner groups use full all-settled barriers before
+  the exact `prePublicationDescriptorsClosed` value is constructed; and the
+  pure combined candidate validator cross-binds canonical completion inventory,
+  artifacts, attempt transfer states, status, and issue. Focused transfer
+  verification passes 1 file / 25 tests, existing M2-A verification passes 4
+  files / 5 tests, root typecheck passes, and root tests pass 109 files / 828
+  tests. Aggregate `check` remains non-green only at the reproduced
+  pre-existing out-of-scope M4 formatting warning. No container source was
+  imported or executed; no image, Docker, lifecycle, transfer, result access,
+  evidence promotion, external communication, or standing authorization was
+  used. M2A-TR03 through M2A-TR06 remain blocked until fresh independent review.
+
+Next: perform the fresh independent Docker-free read-only M2A-TRR01 through
+M2A-TRR03 residual-remediation re-review under
+`../prompts/reviews/m2-a-evidence-transfer-implementation-residual-remediation-review.md`;
+do not construct an image or execute transfer/runtime commands.
+
+The fresh residual-remediation re-review closes M2A-TRR01/M2A-TRR02 and
+preserves the fixed 31-file identity, tuple, runner ordering, and evidence
+boundary. M2A-TRR03 remains open: `validateCandidateTransfer()` accepts the
+sole rebuild-failure spelling even when all npm terminals are successful and
+all runner-settlement booleans are false. M2A-TR03 through M2A-TR06 remain
+blocked, and no construction/execution gate is approved.
+
+M2-A failure-candidate correlation remediation prompt update (2026-07-21):
+the exact bounded Docker-free M2A-TRR03 remediation prompt and its fresh
+independent re-review prompt are saved under `../prompts/` and
+`../prompts/reviews/` before source/test changes. They require the pure combined
+candidate boundary to correlate all truthful runner-settlement booleans,
+successful install/approval terminals and fixed approval/lock prerequisites,
+a settled integer nonzero rebuild failure, and exact valid segment plus
+conditional-marker transport. The allowlist is limited to the transfer
+library/declaration, focused test, static verifier if needed, the prompt pair,
+and minimal five status records.
+
+No implementation, verification, runtime, result, historical, Expected, or
+`Observed` byte changed in this prompt-only task. No image/context
+construction, Docker, lifecycle, transfer, result/retained-state access,
+external communication, or standing authorization was used.
+
+Next: perform the exact bounded Docker-free M2A-TRR03 failure-candidate
+correlation remediation under
+`../prompts/m2-a-evidence-transfer-implementation-failure-candidate-correlation-remediation.md`;
+do not construct an image or execute transfer/runtime commands.
+
+The bounded Docker-free M2A-TRR03 failure-candidate correlation remediation is
+now complete under the saved exact allowlist. The pure combined validator
+retains canonical attempt/completion/artifact revalidation and now correlates
+all runner-settlement booleans, exact successful install/approval prerequisites,
+a settled integer nonzero rebuild failure, and valid segment plus conditional-
+marker transport before accepting the sole `M2A_REBUILD_FAILED` candidate.
+Complete candidates and earlier M2A-TRR01/M2A-TRR02 closures are unchanged.
+
+Focused transfer verification passes 1 file / 26 tests, existing M2-A
+verification passes 4 files / 5 tests, root typecheck passes, and root tests
+pass 109 files / 829 tests. Aggregate `check` exits `1` at the pre-existing
+out-of-scope M4 formatting warning before later stages. This is Docker-free
+static/unit evidence only. No container source was imported or executed; no
+image, Docker, lifecycle, transfer, result access, evidence promotion,
+external communication, or standing authorization was used. M2A-TRR03 and
+M2A-TR03 through M2A-TR06 remain review-blocked.
+
+Next: perform the fresh independent Docker-free read-only M2A-TRR03
+failure-candidate correlation remediation re-review under
+`../prompts/reviews/m2-a-evidence-transfer-implementation-failure-candidate-correlation-remediation-review.md`;
+do not construct an image or execute transfer/runtime commands.
+
+The fresh independent Docker-free re-review closes M2A-TRR03 with no new
+finding. It reproduces the exact 31-file identity, the closed recursive-plan
+and descriptor-settlement boundaries, four positive complete/failure
+candidates, and 36 inverse settlement/npm/rebuild/segment/marker and
+correlation contradictions. `npm run m2a:transfer:verify` passes 1 file / 26
+tests, `npm run m2a:verify` passes 4 files / 5 tests, root typecheck passes, and
+root tests pass 109 files / 829 tests. Aggregate `npm run check` exits `1` at
+the pre-existing out-of-scope M4 formatting warning before later stages.
+
+M2A-TR01 through M2A-TR06 are closed only at the Docker-free static/unit
+implementation boundary. The review performed no implementation/test repair,
+image/context construction, Docker, lifecycle, transfer, result access,
+evidence promotion, external communication, or standing authorization. It
+permits at most one later Docker-free construction/execution-gate contract
+binding the complete constructed context and exact local `sha256:` image ID.
+
+Next: define that exact Docker-free issue #43 construction/execution-gate
+contract and save its fresh independent review prompt; do not construct an
+image or execute transfer/runtime commands.
+
+The exact Docker-free construction/execution-gate proposal and its fresh
+independent review prompt are now saved. M2A-CG01 through M2A-CG06 fix the
+immutable 41-row tracked baseline, separate not-yet-authorized npm `12.0.1`
+acquisition receipt, complete deterministic context manifest, later offline
+one-build exact local-image binding, phase-separated no-argument entries,
+one-shot transfer lifecycle, evidence separation, and one bounded static/unit
+implementation allowlist.
+
+This proposal task changed no implementation, package script, Containerfile,
+manifest, adapter/probe/fixture, scenario, result, Expected, or `Observed`
+byte. It did not acquire npm, construct a context or image, call Docker,
+execute lifecycle/transfer code, access issue #43 runtime/result state, or use
+standing authorization.
+
+Next: perform the fresh independent Docker-free read-only construction/
+execution-gate contract review under
+`../prompts/reviews/m2-a-evidence-transfer-construction-execution-gate-review.md`;
+do not acquire npm, construct a context or image, call Docker, or access
+runtime/result state.
+
+Fresh construction/execution-gate contract review update (2026-07-21): the
+independent Docker-free read-only review in
+[`reviews/m2-a-evidence-transfer-construction-execution-gate.md`](reviews/m2-a-evidence-transfer-construction-execution-gate.md)
+is `BLOCKED` on M2A-CGR01 through M2A-CGR03. It reproduces the exact 31-row and
+41-row aggregates, fixed tuple, Containerfile copy closure, and existing pure
+transfer plan. The actual compiler/runtime/resolver bytes and complete
+construction schema are not bound; the build argv, numeric bounds, platform/
+config projection, and image-binding schema are not exact; and no exact host
+copy/result transaction binds the relative transfer destinations while
+unknown-settlement publication is stated both as required and suppressed.
+
+M2A-CG01 through M2A-CG06 remain open. No contract repair, implementation,
+acquisition, construction, image build/inspect, Docker execution, transfer,
+result access, evidence promotion, or standing authorization was used.
+
+Next: save the exact bounded Docker-free M2A-CGR01 through M2A-CGR03 contract-
+remediation prompt and fresh independent re-review prompt; do not acquire npm,
+construct a context or image, call Docker, or access runtime/result state.
+
+M2-A construction/execution-gate contract-remediation prompt update
+(2026-07-21): the exact bounded Docker-free M2A-CGR01 through M2A-CGR03
+remediation prompt and fresh independent re-review prompt are saved before any
+contract repair. They bind the next task to one separately reviewed
+constructor-toolchain receipt and complete construction schema, exact offline
+Docker build argv/layout/bounds and canonical image-binding packet, and one
+result-root-bound write-ahead attempt checkpoint transaction with a consistent
+unknown-settlement rule.
+
+No construction/execution-gate contract, implementation, verification,
+acquisition, construction, image, Docker object, runtime/result, historical,
+Expected, or `Observed` byte changed. No external communication or standing
+authorization was used. M2A-CGR01 through M2A-CGR03 and M2A-CG01 through
+M2A-CG06 remain open pending the bounded remediation and fresh re-review.
+
+Next: perform the exact bounded Docker-free M2A-CGR01 through M2A-CGR03
+contract remediation under
+`../prompts/m2-a-evidence-transfer-construction-execution-gate-remediation.md`;
+do not acquire npm or toolchain bytes, construct a context or image, call
+Docker, or access runtime/result state.
+
+M2-A construction/execution-gate contract-remediation update (2026-07-21):
+the bounded Docker-free remediation is complete under the exact saved scope.
+M2A-CGR01 now binds a separate not-yet-authorized Node/TypeScript toolchain
+receipt, two exact private compiler processes, and the complete ordered
+construction-manifest schema. M2A-CGR02 fixes the private credential-empty
+build layout, five exact offline Docker argv arrays and bounds, complete
+inspect projections, and canonical image-binding packet. M2A-CGR03 fixes the
+result-root cwd and identity boundary plus a pessimistic write-ahead
+`attempt.json` checkpoint before every Docker child; an unknown child close
+permits no post-unknown action while preserving the already synced sanitized
+Inconclusive checkpoint.
+
+A repository-controlled in-memory audit reproduced the unchanged 31-row
+`sha256:4fcdb65f903e257fc6eb0ac3d12f028312ed5e8c14d09c9a68f4cc3b536aef04`
+and 41-row
+`sha256:fe3da65eaf3a727892599bc8c5ecc30fedded5ef0b44614c5629762539f56526`
+aggregates. Focused Prettier checking passes for the contract, prompt pair, and
+five status records; `git diff --check` exits `0`. This is contract-only
+evidence. No dependency or toolchain byte was
+acquired or read; no production constructor or compiler child, context, image,
+Docker command, runtime/result state, transfer, evidence promotion, external
+communication, or standing authorization was used. M2A-CGR01 through M2A-CGR03 and M2A-CG01
+through M2A-CG06 remain open pending fresh independent re-review.
+
+Next: perform the fresh independent Docker-free read-only M2A-CGR01 through
+M2A-CGR03 contract-remediation re-review under
+`../prompts/reviews/m2-a-evidence-transfer-construction-execution-gate-remediation-review.md`;
+do not acquire npm or toolchain bytes, construct a context or image, call
+Docker, or access runtime/result state.
+
+Fresh construction/execution-gate contract-remediation re-review update
+(2026-07-21): the independent Docker-free read-only review in
+[`reviews/m2-a-evidence-transfer-construction-execution-gate-remediation.md`](reviews/m2-a-evidence-transfer-construction-execution-gate-remediation.md)
+closes M2A-CGR01 and M2A-CGR02 at contract scope. It reproduces the exact
+31-row/41-row identities, fixed tuple, package integrities, constructor and
+construction schemas, five-command offline build plan, and canonical image-
+binding packet.
+
+M2A-CGR03 remains open on one exact checkpoint-correlation gap. The fixed plan
+has distinct volume, initializer-container, and measurement-container absence
+Docker children, but `m2a-transfer-attempt/v1` persists each prelaunch unknown
+with only `step: "absence-preflight"`; the durable bytes cannot identify which
+exact next child became settlement-unknown. M2A-CG01 through M2A-CG03 close at
+contract scope, while M2A-CG04 through M2A-CG06 remain blocked. No contract
+repair, implementation, acquisition, construction, image, Docker action,
+runtime/result access, transfer, evidence promotion, external communication,
+or standing authorization was used.
+
+Next: save the exact bounded Docker-free M2A-CGR03 absence-checkpoint identity
+remediation prompt and fresh independent re-review prompt; do not acquire npm
+or toolchain bytes, construct a context or image, call Docker, or access
+runtime/result state.
+
+M2-A absence-checkpoint identity remediation prompt update (2026-07-21): the
+exact bounded Docker-free M2A-CGR03 remediation prompt and fresh independent
+re-review prompt are saved before any contract repair. They fix the exact
+ordered `absence-volume`, `absence-initializer-container`, and
+`absence-measurement-container` identities and their one-to-one mapping to the
+unchanged three absence-inspect argv while preserving the schema, issue codes,
+write-ahead transaction, command order, first issue, and no-post-unknown rule.
+
+No construction/execution-gate contract, implementation, verification,
+acquisition, construction, image, Docker object, runtime/result, historical,
+Expected, or `Observed` byte changed. No external communication or standing
+authorization was used. M2A-CGR03 and M2A-CG04 through M2A-CG06 remain open
+pending the bounded remediation and fresh re-review.
+
+Next: perform the exact bounded Docker-free M2A-CGR03 absence-checkpoint
+identity contract remediation under
+`../prompts/m2-a-evidence-transfer-construction-execution-gate-absence-checkpoint-identity-remediation.md`;
+do not acquire npm or toolchain bytes, construct a context or image, call
+Docker, or access runtime/result state.
+
+M2-A absence-checkpoint identity contract-remediation update (2026-07-21):
+the bounded Docker-free M2A-CGR03 remediation is complete. The later production
+plan now has the exact ordered identities `absence-volume`,
+`absence-initializer-container`, and `absence-measurement-container`, each
+derived from and bound one-to-one to its unchanged absence-inspect argv. The
+existing attempt schema, two issue codes, write-ahead publication, first-issue
+rule, command order, prerequisite states, and immutable unknown checkpoint are
+preserved.
+
+M2A-CGR01/M2A-CGR02 and M2A-CG01 through M2A-CG03 remain closed at contract
+scope. M2A-CGR03 and M2A-CG04 through M2A-CG06 remain open pending fresh
+independent re-review. A repository-controlled identity inspection confirms
+the exact ordered one-to-one mapping; focused Prettier checking and
+`git diff --check` pass. No test was required or run. This was a contract-only
+change: no implementation,
+verification, acquisition, construction, image, Docker, runtime/result,
+transfer, historical, Expected, or `Observed` byte changed. No external
+communication or standing authorization was used.
+
+Next: perform the fresh independent Docker-free read-only M2A-CGR03
+absence-checkpoint identity remediation re-review under
+`../prompts/reviews/m2-a-evidence-transfer-construction-execution-gate-absence-checkpoint-identity-remediation-review.md`;
+do not acquire npm or toolchain bytes, construct a context or image, call
+Docker, or access runtime/result state.
+
+M2-A absence-checkpoint identity remediation re-review update (2026-07-21):
+the fresh independent Docker-free contract review closes M2A-CGR03 with no new
+finding and keeps M2A-CGR01/M2A-CGR02 closed. The exact fixed plan and contract
+produce three unique ordered child identities bound one-to-one to the unchanged
+volume, initializer-container, and measurement-container inspect argv. The
+review reproduced all six known-failure/unknown checkpoints and rejected the
+old generic, swapped, duplicate, missing, reordered, unknown, wrong-argv,
+wrong-code, wrong-prefix, multiple-issue, impossible later-state, and
+settlement contradictions.
+
+M2A-CG01 through M2A-CG06 are closed only at contract scope. No contract or
+implementation repair, acquisition, construction, image, Docker, runtime/
+result access, transfer, evidence promotion, external communication, or
+standing authorization was used. The next allowed boundary is prompt-first
+Docker-free static/unit implementation under the unchanged M2A-CG06 allowlist.
+
+Next: save the exact bounded Docker-free construction/execution-gate
+implementation prompt and fresh independent implementation-review prompt
+before source changes; do not acquire npm or toolchain bytes, construct a
+production context or image, call Docker, or access runtime/result state.
+
+M2-A construction/execution-gate implementation prompt update (2026-07-21):
+the exact bounded Docker-free implementation and fresh independent
+implementation-review prompt pair is saved before any source change. It keeps
+the unchanged M2A-CG06 allowlist and fixes the later static/unit requirements
+for the 31-row/41-row source identities, separate unperformed npm/toolchain
+prerequisites, deterministic compiler/context/manifest transaction, exact
+five-command offline image plan and canonical binding, child-specific
+write-ahead execution checkpoints, completion-first conditional transfer,
+fake-only inverse tests, import safety, and evidence non-promotion.
+
+This prompt-only task changed no implementation, verification, package script,
+Containerfile, manifest, container source, adapter/probe source, fixture,
+scenario, acquisition, construction, image, Docker object, runtime/result,
+historical, Expected, or `Observed` byte. No fixed ignored root, external
+communication, or standing authorization was used. M2A-CG01 through M2A-CG06
+remain closed only at contract scope and issue #43 remains the active ordered
+item at bounded Docker-free static/unit implementation scope.
+
+Next: perform the exact bounded Docker-free construction/execution-gate
+static/unit implementation under
+`../prompts/m2-a-evidence-transfer-construction-execution-gate-implementation.md`;
+do not acquire npm or toolchain bytes, construct a production context or
+image, call Docker, or access runtime/result state.
+
+M2-A construction/execution-gate static/unit implementation update
+(2026-07-21): the bounded Docker-free implementation candidate is complete.
+It adds descriptor-only source and construction identity validation, separate
+unperformed npm/toolchain prerequisite validation, deterministic construction
+and manifest planning, the exact five-command offline image plan and canonical
+image binding, and the child-specific write-ahead runtime/transfer transaction.
+Fake-only inverse coverage rejects malformed records, aggregate drift, archive
+and toolchain contradictions, manifest changes, image-plan or canonical-binding
+changes, absence-checkpoint identity errors, invalid settlement, and transfer
+before successful completion.
+
+`npm run m2a:transfer:verify` passes 1 file / 36 tests,
+`npm run m2a:verify` passes 4 files / 5 tests, `npm run typecheck` passes, and
+`npm test` passes 109 files / 839 tests. The aggregate `npm run check` stopped
+at the pre-existing out-of-scope Prettier warning in
+`containers/profile-control/test/control-host-backend.test.ts`; its later
+stages were therefore not observed. No acquisition, production construction,
+image build, Docker action, runtime/result access, transfer, evidence
+promotion, external communication, or standing authorization was used.
+M2A-CG01 through M2A-CG06 remain approved only at contract scope; this
+implementation candidate awaits fresh independent review.
+
+Next: perform the fresh independent Docker-free read-only implementation
+review under
+`../prompts/reviews/m2-a-evidence-transfer-construction-execution-gate-implementation-review.md`;
+do not acquire npm or toolchain bytes, construct a production context or image,
+call Docker, or access runtime/result state.
+
+M2-A construction/execution-gate implementation review update (2026-07-21):
+the fresh independent Docker-free review is `BLOCKED` on M2A-CGI01 through
+M2A-CGI04. The current toolchain/context validators do not prove the exact
+admitted inventory and derived context; the fake image-build transaction does
+not consume the exact observation/binding validators; the fake runtime
+transaction accepts mismatched natural-exit scalars and null copied-artifact
+validation payloads as final success; and the three entries have no fixed
+private production authority implementation behind their fail-closed gates.
+
+The review reproduced both fixed source aggregates and the controlled
+contradictions above. `npm run m2a:transfer:verify` passes 1 file / 36 tests,
+`npm run m2a:verify` passes 4 files / 5 tests, root typecheck passes, and root
+tests pass 109 files / 839 tests. Aggregate `npm run check` exits 1 at the
+pre-existing out-of-scope M4 formatting warning before later stages. No
+implementation/test repair, production entry, acquisition, construction,
+image, Docker, runtime/result, evidence promotion, external communication, or
+standing authorization was used. M2A-CG01 through M2A-CG06 remain open at
+implementation scope.
+
+Next: save the exact bounded Docker-free M2A-CGI01 through M2A-CGI04
+implementation-remediation prompt and fresh independent re-review prompt; do
+not acquire npm or toolchain bytes, execute a production entry, construct a
+context or image, call Docker, or access runtime/result state.
+
+M2-A construction/execution-gate implementation-remediation prompt update
+(2026-07-21): the exact bounded M2A-CGI01 through M2A-CGI04 Docker-free
+remediation prompt and fresh independent re-review prompt are saved before
+source/test repair. The pair retains the unchanged M2A-CG06 allowlist and
+requires the later implementation to reject self-described extra inputs,
+correlate complete image/runtime transactions through canonical validators,
+and provide fixed private production authorities without opening the current
+entry gates.
+
+No implementation, declaration, verification, acquisition, production entry,
+construction, image, Docker, runtime/result, evidence promotion, external
+communication, or standing authorization was used. M2A-CGI01 through
+M2A-CGI04 and M2A-CG01 through M2A-CG06 remain open at implementation scope.
+
+Next: perform the exact bounded Docker-free M2A-CGI01 through M2A-CGI04
+implementation remediation under
+`../prompts/m2-a-evidence-transfer-construction-execution-gate-implementation-remediation.md`;
+do not acquire npm or toolchain bytes, execute a production entry, construct a
+context or image, call Docker, or access runtime/result state.
+
+M2-A construction/execution-gate implementation-remediation update
+(2026-07-21): the bounded Docker-free candidate now addresses M2A-CGI01
+through M2A-CGI04 inside the unchanged M2A-CG06 allowlist. The exact
+toolchain-family union and twice-derived context correlation reject unbound or
+self-described inventory changes; the build transaction consumes every exact
+terminal/value and validates the same canonical image binding before settled
+publication; and the runtime transaction cross-binds wait/final exits, copied
+bytes/metadata, all canonical artifact validators, and the combined candidate
+before final publication. Distinct fixed private constructor, image-build, and
+runtime authorities now exist behind the still-closed gates and remain absent
+from declarations and package scripts.
+
+All future receipt/context/image digests remain `null`, build/runtime approvals
+remain `false`, and `evidenceReview` remains `not-performed`; current entries
+fail before authority creation or filesystem/process activity.
+`npm run m2a:transfer:verify` passes 1 file / 37 tests,
+`npm run m2a:verify` passes 4 files / 5 tests, root typecheck passes, and root
+tests pass 109 files / 840 tests. Aggregate `npm run check` exits 1 at the
+pre-existing out-of-scope formatting warning in
+`containers/profile-control/test/control-host-backend.test.ts` before its
+lint/typecheck/test stages. No production entry, acquisition, construction,
+image, Docker, lifecycle, transfer, fixed ignored-root or runtime/result
+access, evidence promotion, external communication, or standing authorization
+was used. M2A-CGI01 through M2A-CGI04 and M2A-CG01 through M2A-CG06 remain
+open pending fresh independent re-review; later issue #43 gates remain frozen.
+
+Next: perform the fresh independent Docker-free read-only M2A-CGI01 through
+M2A-CGI04 remediation re-review under
+`../prompts/reviews/m2-a-evidence-transfer-construction-execution-gate-implementation-remediation-review.md`;
+do not acquire npm or toolchain bytes, execute a production entry, construct a
+context or image, call Docker, or access runtime/result state.
+
+M2-A construction/execution-gate implementation-remediation re-review update
+(2026-07-21): the fresh independent Docker-free review closes M2A-CGI01 but is
+`BLOCKED` on residual M2A-CGI02 through M2A-CGI04. Controlled in-memory traces
+show that a known-invalid first build terminal still reaches `offline-build`,
+and forged validation/final-publication settlement tokens still return final
+success. Static authority tracing also finds the receipt-bound runtime
+inventory skipped, the first compiler terminal validated only after a later
+compiler phase, no absolute post-termination final-close bound, and no held
+result/transfer identity transaction.
+
+The exact 31-row/41-row aggregates were reproduced. Focused verification
+passes 1 file / 37 tests, existing M2-A verification passes 4 files / 5 tests,
+root typecheck passes, and root tests pass 109 files / 840 tests. Aggregate
+`check` exits 1 at the pre-existing out-of-scope M4 formatting warning. No
+source/test repair, production entry, acquisition, construction, image,
+Docker, runtime/result, evidence promotion, external communication, or
+standing authorization was used.
+
+M2A-CGI02 through M2A-CGI04 and M2A-CG01 through M2A-CG06 remain open at
+implementation scope; later issue #43 gates remain frozen.
+
+Next: save the exact bounded Docker-free M2A-CGI02 through M2A-CGI04 residual-
+remediation prompt and fresh independent re-review prompt; do not acquire npm
+or toolchain bytes, execute a production entry, construct a context or image,
+call Docker, or access runtime/result state.
+
+M2-A construction/execution-gate residual-remediation prompt update
+(2026-07-21): the exact bounded M2A-CGI02 through M2A-CGI04 Docker-free
+residual-remediation and fresh independent re-review prompts are saved before
+source/test repair. They preserve closed M2A-CGI01 and the unchanged M2A-CG06
+allowlist while binding the later repair to immediate image-row validation,
+exact runtime settlement branch shapes, complete constructor/process
+settlement, and held result/transfer identity transactions.
+
+No implementation, declaration, verification, package script, Containerfile,
+manifest, container source, adapter/probe source, fixture, scenario,
+acquisition, construction, image, Docker, runtime/result, historical,
+Expected, or `Observed` byte changed. No fixed ignored root, external
+communication, or standing authorization was used. M2A-CGI02 through
+M2A-CGI04 and M2A-CG01 through M2A-CG06 remain open at implementation scope;
+later issue #43 gates remain frozen.
+
+Next: perform the exact bounded Docker-free M2A-CGI02 through M2A-CGI04
+residual remediation under
+`../prompts/m2-a-evidence-transfer-construction-execution-gate-implementation-residual-remediation.md`;
+do not acquire npm or toolchain bytes, execute a production entry, construct a
+context or image, call Docker, or access runtime/result state.
+
+M2-A construction/execution-gate residual-remediation update (2026-07-21):
+the bounded Docker-free M2A-CGI02 through M2A-CGI04 candidate is complete
+inside the unchanged M2A-CG06 allowlist. Image-build terminals and values now
+validate row-locally before later commands, runtime validation/publication
+settlement accepts only exact `settled`/`unknown` shapes, complete fixed
+constructor/toolchain inputs are held before output, compiler and Docker
+settlement is absolutely bounded, and the runtime backend holds and checks the
+fixed result/transfer identity and inventory transaction.
+
+`npm run m2a:transfer:verify` passes 1 file / 42 tests, `npm run m2a:verify`
+passes 4 files / 5 tests, root typecheck passes, and root tests pass 109 files /
+845 tests. Aggregate `npm run check` stops at the pre-existing out-of-scope
+formatting warning in
+`containers/profile-control/test/control-host-backend.test.ts`. No production
+entry, fixed ignored-root access, acquisition, construction, image, Docker,
+lifecycle, transfer, runtime/result, evidence promotion, external
+communication, or standing authorization was used. M2A-CGI01 remains closed;
+M2A-CGI02 through M2A-CGI04 and M2A-CG01 through M2A-CG06 remain open pending
+fresh independent re-review, and later issue #43 gates remain frozen.
+
+Next: perform the fresh independent Docker-free read-only residual-remediation
+re-review under
+`../prompts/reviews/m2-a-evidence-transfer-construction-execution-gate-implementation-residual-remediation-review.md`;
+do not acquire npm or toolchain bytes, execute a production entry, construct a
+context or image, call Docker, or access runtime/result state.
+
+M2-A construction/execution-gate residual-remediation re-review update
+(2026-07-21): the fresh independent Docker-free re-review closes M2A-CGI02 and
+M2A-CGI03 while preserving closed M2A-CGI01. The controlled matrices reject
+23 known-invalid image rows, five image settlement-unknown rows, 27 malformed
+publication records, and 30 malformed validation records before later action;
+the canonical image binding and positive combined candidate still pass.
+
+M2A-CGI04 remains open. Compiler and Docker helpers do not retain first
+asynchronous error/exit cause against a later close, and runtime inventory,
+attempt publication, and copy validation use paths not correlated to the held
+result/transfer inode or exact full-mode/link identity. Only M2A-CG01 closes at
+implementation scope; M2A-CG02 through M2A-CG06 and every later issue #43 gate
+remain frozen.
+
+Focused verification passes 1 file / 42 tests, existing M2-A verification
+passes 4 files / 5 tests, root typecheck passes, and root tests pass 109 files /
+845 tests. Aggregate `check` stops at the pre-existing out-of-scope formatting
+warning. No repair, production entry, fixed ignored-root access, acquisition,
+construction, image, Docker, lifecycle, transfer, runtime/result, evidence
+promotion, external communication, or standing authorization was used.
+
+Next: save the exact bounded Docker-free M2A-CGI04 private-authority residual-
+remediation prompt and fresh independent re-review prompt; do not acquire npm
+or toolchain bytes, execute a production entry, construct a context or image,
+call Docker, or access runtime/result state.
+
+M2-A construction/execution-gate M2A-CGI04 private-authority residual-
+remediation prompt update (2026-07-21): the exact bounded Docker-free
+implementation prompt and fresh independent re-review prompt are saved before
+source/test repair. They preserve closed M2A-CGI01 through M2A-CGI03 and
+implementation-scope M2A-CG01 while binding only first-cause compiler/Docker
+settlement and held-directory/path transaction correlation inside a strict
+subset of the unchanged M2A-CG06 allowlist.
+
+No implementation, declaration, verification, production entry, acquisition,
+construction, image, Docker, runtime/result, historical evidence, Expected, or
+`Observed` byte changed. No fixed ignored root, external communication, or
+standing authorization was used. M2A-CGI04 and M2A-CG02 through M2A-CG06
+remain open at implementation scope; later issue #43 gates remain frozen.
+
+Next: perform the exact bounded Docker-free M2A-CGI04 private-authority
+residual remediation under
+`../prompts/m2-a-evidence-transfer-construction-execution-gate-implementation-private-authority-residual-remediation.md`;
+do not acquire npm or toolchain bytes, execute a production entry, construct a
+context or image, call Docker, or access runtime/result state.
 
 ### P0 — Scope and workflow pivot
 
@@ -2488,5 +3113,993 @@ state and cannot establish child settlement, authorize evidence access, create
 a receipt, manufacture the constrained outcome, or promote a capability cell.
 The tracked talk projection retains all four attempts in exactly three tables;
 selected Vite and experiment-matrix Observed remain unmeasured.
+
+Next: none.
+
+M2-A construction/execution-gate M2A-CGI04 private-authority residual-
+remediation update (2026-07-21): the bounded Docker-free candidate now shares
+one first-cause/first-exit compiler/Docker state machine and correlates every
+runtime inventory/publication/copy/marker transition to held BigInt identity,
+exact full mode, owner, link count, and stable child identities. Separately
+branded fake-only traces cover process and held-directory contradictions
+without production authority.
+
+Focused transfer verification passes 1 file / 46 tests, existing M2-A
+verification passes 4 files / 5 tests, root typecheck passes, and root tests
+pass 109 files / 849 tests. Focused formatting and `git diff --check` pass;
+aggregate `check` stops at the pre-existing out-of-scope M4 formatting warning.
+No production entry, fixed root, acquisition, compiler, construction, image,
+Docker, lifecycle, transfer, runtime/result, evidence promotion, external
+communication, or standing authorization was used.
+
+M2A-CGI01 through M2A-CGI03 and M2A-CG01 remain closed. M2A-CGI04 and M2A-CG02
+through M2A-CG06 remain open pending the saved fresh independent Docker-free
+re-review; every later issue #43 gate remains frozen.
+
+Next: perform the fresh independent Docker-free read-only M2A-CGI04 private-
+authority residual-remediation re-review under
+`../prompts/reviews/m2-a-evidence-transfer-construction-execution-gate-implementation-private-authority-residual-remediation-review.md`;
+do not acquire npm or toolchain bytes, execute a production entry, construct a
+context or image, call Docker, or access runtime/result state.
+
+M2-A M2A-CGI04 private-authority residual-remediation re-review update
+(2026-07-21): first-cause compiler/Docker settlement and the original held-
+parent/path replacement contradiction close at Docker-free static/unit scope.
+The review remains `BLOCKED` on one smaller operation-specific identity gap:
+the production transition adopts the complete post-operation child map without
+comparing unchanged child identities, and the fake trace cannot express that
+sibling replacement.
+
+Focused transfer verification passes 1 file / 46 tests, existing M2-A
+verification passes 4 files / 5 tests, and root typecheck passes. Root tests
+observed one out-of-scope M4 failure after 108 files / 848 tests passed;
+aggregate `check` stops at the out-of-scope M4 formatting warning. No source or
+test repair, production entry, fixed root, acquisition, compiler, construction,
+image, Docker, lifecycle, transfer, runtime/result access, evidence promotion,
+external communication, or standing authorization was used.
+
+M2A-CGI01 through M2A-CGI03 and M2A-CG01 remain closed. M2A-CG02/M2A-CG03
+close at Docker-free static/unit implementation scope. M2A-CGI04 and M2A-CG04
+through M2A-CG06 remain open; every later issue #43 gate remains frozen.
+
+Next: save the exact bounded Docker-free M2A-CGI04 unchanged-child-identity
+residual-remediation prompt and fresh independent re-review prompt; do not
+repair source or tests in that prompt-only task.
+
+### M2-A M2A-CGI04 unchanged-child-identity prompt handoff
+
+The exact bounded Docker-free M2A-CGI04 unchanged-child-identity residual-
+remediation prompt and fresh independent re-review prompt are now saved before
+any source or test repair. The pair preserves M2A-CGI01 through M2A-CGI03 and
+M2A-CG01 through M2A-CG03, and limits the later repair to full unchanged-child
+identity preservation, fixed operation-specific add/rename/copy/nested-marker
+deltas, hardlink-alias rejection, and matching fake-only behavioral traces
+inside a strict four-path subset of the unchanged M2A-CG06 allowlist.
+
+This prompt-only task changed no implementation, declaration, verification,
+package script, lockfile, Containerfile, manifest, container source, adapter/
+probe source, fixture, scenario, acquisition, construction, image, Docker
+object, runtime/result, historical, Expected, or `Observed` byte. It did not
+access a fixed ignored root, use external communication, or use standing
+authorization. M2A-CGI04 and M2A-CG04 through M2A-CG06 remain open pending the
+bounded remediation and fresh re-review; M2A-CG02/M2A-CG03 retain Docker-free
+static/unit closure.
+
+Next: perform the exact bounded Docker-free M2A-CGI04 unchanged-child-identity
+residual remediation under
+`../prompts/m2-a-evidence-transfer-construction-execution-gate-implementation-unchanged-child-identity-residual-remediation.md`;
+do not repair any path outside its exact allowlist or perform acquisition,
+construction, Docker, transfer, or runtime/result work.
+
+### M2-A M2A-CGI04 unchanged-child-identity residual-remediation handoff
+
+The bounded Docker-free candidate now validates every lexical directory entry
+against one full child-identity record before any transition is accepted. The
+same decision boundary is used by production and the separately branded fake
+trace, and binds type, full mode, effective owner/group, link count, and BigInt
+device, inode, size, and mtime while rejecting disconnected, reordered,
+sparse, accessor, inherited, special, and cross-name alias data.
+
+Six fixed operation kinds cover only `attempt.next` creation, exact-identity
+rename/replacement into `attempt.json`, the fixed completion and segment copy
+destinations, `probe-output/` creation, and the nested fixed marker. Every
+unchanged sibling must remain fully identical. The nested marker transaction
+validates both marker-parent addition and the transfer parent's inode-stable
+`probe-output` size/mtime update before committing either held baseline.
+Unknown nested-copy settlement marks both affected parents uncertain.
+
+Focused transfer verification passes 1 file / 48 tests, existing M2-A
+verification passes 4 files / 5 tests, root typecheck passes, and root tests
+pass 109 files / 851 tests. Focused formatting and `git diff --check` pass.
+The aggregate `npm run check` exits 1 at the pre-existing out-of-scope
+formatting warning in
+`containers/profile-control/test/control-host-backend.test.ts` before lint,
+typecheck, or test stages. These observations remain Docker-free static/unit
+and cooperative-host evidence only.
+
+No production entry, fixed ignored-root access, acquisition, production
+construction, image, Docker, lifecycle, transfer, runtime/result access,
+evidence promotion, external communication, or standing authorization was
+used. M2A-CGI01 through M2A-CGI03 and M2A-CG01 through M2A-CG03 remain closed
+at their recorded scopes. M2A-CGI04 and M2A-CG04 through M2A-CG06 remain open
+pending the saved fresh independent re-review; every later issue #43 gate
+remains frozen.
+
+Next: perform the fresh independent Docker-free read-only M2A-CGI04 unchanged-
+child-identity residual-remediation re-review under
+`../prompts/reviews/m2-a-evidence-transfer-construction-execution-gate-implementation-unchanged-child-identity-residual-remediation-review.md`;
+do not acquire npm or toolchain bytes, execute a production entry, construct a
+context or image, call Docker, or access runtime/result state.
+
+### M2-A M2A-CGI04 unchanged-child-identity residual-remediation re-review
+
+The fresh independent Docker-free re-review closes M2A-CGI04 and M2A-CG04
+through M2A-CG06 at the static/unit cooperative-host implementation boundary.
+M2A-CGI01 through M2A-CGI03 and M2A-CG01 through M2A-CG03 remain closed at
+their recorded scopes. The shared child-identity decision accepted every exact
+fixed operation and rejected unchanged-sibling drift, malformed maps, aliases,
+wrong rename/replacement, nested object substitution, and later-baseline
+contradictions before adoption.
+
+Focused transfer verification passes 1 file / 48 tests, existing M2-A
+verification passes 4 files / 5 tests, root typecheck passes, and root tests
+pass 109 files / 851 tests. Aggregate `check` still stops at the pre-existing
+out-of-scope M4 formatting warning. No implementation repair, acquisition,
+production construction, image build, Docker/runtime, transfer, result access,
+external communication, standing authorization, or evidence promotion
+occurred.
+
+Next: save the exact Docker-free issue #43 npm-acquisition/constructor-
+toolchain input-boundary contract and fresh independent review prompt; do not
+acquire or inspect those future bytes or perform construction, Docker,
+transfer, or runtime/result work.
+
+### M2-A dependency-input boundary contract handoff
+
+The Docker-free M2A-IB01 through M2A-IB06 proposal now fixes the future
+credential-empty npm metadata/archive request pair, atomic acquisition receipt,
+offline exact Node/runtime/TypeScript package capture, canonical toolchain
+inventory receipt, one-shot failure/evidence separation, and only a later
+static/unit implementation allowlist. The fresh independent read-only review
+prompt is saved at
+`../prompts/reviews/m2-a-evidence-transfer-dependency-input-boundary-review.md`.
+
+No future npm or toolchain byte, digest, integrity, runtime closure, package
+inventory, receipt, or reviewed binding was accessed or claimed. No ignored
+input/construction/result root, host runtime byte, external communication,
+producer, Docker, transfer, runtime/result state, standing authorization, or
+evidence promotion was used. M2A-IB01 through M2A-IB06 remain open pending
+fresh contract review.
+
+Next: perform the fresh independent Docker-free read-only dependency-input
+boundary contract review under
+`../prompts/reviews/m2-a-evidence-transfer-dependency-input-boundary-review.md`;
+do not acquire or inspect npm/toolchain bytes, use external communication,
+execute either producer, construct a context or image, call Docker, or access
+runtime/result state.
+
+### M2-A dependency-input boundary contract review
+
+The fresh independent Docker-free review is `BLOCKED` in
+[`reviews/m2-a-evidence-transfer-dependency-input-boundary.md`](reviews/m2-a-evidence-transfer-dependency-input-boundary.md).
+M2A-IB01/M2A-IB02 close at contract scope after reproduction of the fixed
+credential-empty two-request npm boundary and atomic archive/receipt
+transaction. M2A-IB03 through M2A-IB06 remain open on M2A-IBR01 through
+M2A-IBR03:
+
+- package source and final toolchain tree completeness lack exact held-
+  directory identities and a second traversal;
+- a source-validation failure before toolchain-root creation leaves no durable
+  one-shot occurrence; and
+- the existing construction consumer accepts wrong inventory modes and a
+  zero-length package row, while the proposed implementation allowlist cannot
+  repair that boundary.
+
+The review reproduced the exact 31-row and 41-row aggregates and current pure
+receipt schemas. It did not access a fixed ignored root, future input bytes,
+host runtime/package bytes, credentials, environment, network, producer,
+construction, Docker/runtime, transfer, result state, or evidence. No standing
+authorization was used.
+
+Next: save the exact bounded Docker-free M2A-IBR01 through M2A-IBR03 contract-
+remediation prompt and fresh independent re-review prompt; do not acquire or
+inspect npm/toolchain bytes, execute either producer, construct a context or
+image, call Docker, or access runtime/result state.
+
+### M2-A dependency-input contract-remediation prompt handoff
+
+The exact bounded Docker-free M2A-IBR01 through M2A-IBR03 contract-remediation
+prompt and fresh independent re-review prompt are saved before any contract
+repair. The pair preserves M2A-IB01/M2A-IB02 and limits the next task to exact
+held-directory/second-traversal source and destination completeness, one
+durable pre-source toolchain occurrence, and actual-constructor enforcement of
+the selected runtime/package mode and package-size rules through exactly two
+newly allowlisted consumer paths.
+
+No implementation, declaration, test, static verifier, package script,
+lockfile, manifest, Containerfile/container, adapter/probe/package, fixture,
+scenario, input, construction, image, Docker, lifecycle, transfer, runtime/
+result, evidence, Expected, or `Observed` byte changed. No fixed ignored root,
+future input, host runtime/package byte, external communication, or standing
+authorization was used. M2A-IB03 through M2A-IB06 remain open pending the
+bounded remediation and fresh re-review.
+
+Next: perform the exact bounded Docker-free M2A-IBR01 through M2A-IBR03
+contract remediation under
+`../prompts/m2-a-evidence-transfer-dependency-input-boundary-remediation.md`;
+do not acquire or inspect npm/toolchain bytes, execute either producer,
+construct a context or image, call Docker, or access runtime/result state.
+
+### M2-A dependency-input contract remediation
+
+The bounded Docker-free M2A-IBR01 through M2A-IBR03 contract remediation is
+complete. It fixes a private held-directory graph and same-authority second
+source traversal, a complete held-destination traversal before receipt bytes,
+one separate durable pre-source toolchain checkpoint, and only the two construction
+consumer paths needed for the selected mode/size relations. M2A-IB01/M2A-IB02
+remain closed; M2A-IB03 through M2A-IB06 remain open pending fresh independent
+re-review.
+
+No implementation, producer, fixed-root/future-input access, host runtime/
+package read, external communication, construction, image, Docker, transfer,
+runtime/result, evidence, Expected, or `Observed` change occurred. Standing
+authorization was not used.
+
+Next: perform the fresh independent Docker-free read-only M2A-IBR01 through
+M2A-IBR03 contract-remediation re-review under
+`../prompts/reviews/m2-a-evidence-transfer-dependency-input-boundary-remediation-review.md`;
+do not acquire or inspect npm/toolchain bytes, execute either producer,
+construct a context or image, call Docker, or access runtime/result state.
+
+### M2-A dependency-input contract-remediation re-review
+
+The fresh independent Docker-free re-review is `BLOCKED` in
+[`reviews/m2-a-evidence-transfer-dependency-input-boundary-remediation.md`](reviews/m2-a-evidence-transfer-dependency-input-boundary-remediation.md).
+M2A-IBR01 and M2A-IBR03 close at contract scope: the held-authority source/
+destination completeness transactions and exact two-path actual-consumer
+allowlist now satisfy those findings.
+
+M2A-IBR02 remains open only on an unknown attempt-root creation that leaves no
+root. The contract calls that branch generation-consuming, but a fresh
+invocation can establish both fixed roots absent and cannot observe the prior
+uncertainty. M2A-IB01/M2A-IB02 remain closed; M2A-IB03 through M2A-IB06 remain
+open, and no producer implementation or execution is approved.
+
+The review reproduced 31/41 rows and both aggregates, all three package
+tuples, the receipt schemas, the current consumer's three selected negative
+acceptances, and the unknown-create fresh-invocation contradiction. It did not
+access a fixed ignored root, future input, host runtime/package bytes,
+credentials, environment, network, producer, construction, Docker/runtime,
+transfer, result state, or evidence. No standing authorization was used.
+
+Next: save the exact bounded Docker-free M2A-IBR02 unknown-attempt-root-
+creation durability remediation prompt and fresh independent re-review prompt;
+do not repair the contract in that prompt-only task or access input,
+construction, Docker, transfer, or runtime/result state.
+
+### M2-A M2A-IBR02 unknown-attempt-root-creation durability prompt handoff
+
+The exact bounded Docker-free residual M2A-IBR02 contract-remediation prompt
+and fresh independent re-review prompt are saved before contract repair. They
+bind the later task to one synchronous exclusive attempt-root `mkdirSync`
+commit boundary with no returned unknown-create outcome. A root absent before
+commit represents no started occurrence; a root present at or after commit is
+the durable non-evidence occurrence and blocks a fresh invocation without
+inspection.
+
+No contract repair was performed, and no implementation, declaration, test,
+static verifier, producer, fixed input, host runtime/package, external
+communication, construction, image, Docker, transfer, runtime/result,
+evidence, Expected, or `Observed` byte changed. Standing authorization was not
+used. M2A-IBR01/M2A-IBR03 remain closed; M2A-IBR02 and M2A-IB03 through
+M2A-IB06 remain open pending the bounded remediation and fresh re-review.
+
+Next: perform the exact bounded Docker-free residual M2A-IBR02 contract
+remediation under
+`../prompts/m2-a-evidence-transfer-dependency-input-boundary-unknown-attempt-root-creation-durability-remediation.md`;
+do not acquire or inspect npm/toolchain bytes, execute either producer,
+construct a context or image, call Docker, or access runtime/result state.
+
+### M2-A M2A-IBR02 durability contract remediation
+
+The bounded Docker-free dependency-input contract now replaces the root-absent
+unknown-create-consumed branch with exactly one synchronous, non-recursive,
+exclusive mode-`0700` `mkdirSync` commit for the fixed attempt root. The
+primitive returns no unknown outcome. A known no-create error or before-commit
+process loss starts no occurrence, while root presence at or after atomic
+commit durably consumes the generation and blocks every fresh invocation
+without inspection.
+
+The existing post-commit checkpoint transaction, M2A-IB01/M2A-IB02, and closed
+M2A-IBR01/M2A-IBR03 remain unchanged. No implementation, producer, input, host
+runtime/package, external communication, construction, image, Docker,
+transfer, runtime/result, evidence, Expected, or `Observed` byte was accessed
+or changed. Standing authorization was not used. M2A-IBR02 and M2A-IB03
+through M2A-IB06 remain open pending fresh independent re-review.
+
+Next: perform the fresh independent Docker-free read-only residual M2A-IBR02
+contract-remediation re-review under
+`../prompts/reviews/m2-a-evidence-transfer-dependency-input-boundary-unknown-attempt-root-creation-durability-remediation-review.md`;
+do not repair the contract, acquire or inspect npm/toolchain bytes, execute
+either producer, construct a context or image, call Docker, or access
+runtime/result state.
+
+### M2-A M2A-IBR02 durability contract-remediation re-review
+
+The fresh independent Docker-free review in
+[`reviews/m2-a-evidence-transfer-dependency-input-boundary-unknown-attempt-root-creation-durability-remediation.md`](reviews/m2-a-evidence-transfer-dependency-input-boundary-unknown-attempt-root-creation-durability-remediation.md)
+closes M2A-IBR02 with no blocking or non-blocking finding. The exact
+synchronous exclusive attempt-root commit has no returned unknown-create
+outcome, distinguishes absent never-started states from present durable
+occurrences, and keeps every post-commit failure generation-consuming before
+source reads.
+
+M2A-IB01 through M2A-IB06 and M2A-IBR01 through M2A-IBR03 are now closed at
+contract scope. No implementation byte changed. No producer, input, external
+communication, construction, image, Docker, transfer, runtime/result,
+evidence, Expected, or `Observed` boundary was accessed or changed. Standing
+authorization was not used. At most one later Docker-free static/unit
+dependency-input implementation may proceed after its exact prompt pair is
+saved.
+
+Next: save the exact bounded Docker-free dependency-input implementation prompt
+and fresh independent review prompt under the existing M2A-IB06 allowlist; do
+not change implementation or access input, external communication,
+construction, Docker, transfer, or runtime/result state in that prompt-only
+task.
+
+### M2-A dependency-input implementation prompt handoff
+
+The exact bounded Docker-free dependency-input implementation prompt and fresh
+independent implementation-review prompt are saved before source changes. The
+later task is limited to the existing M2A-IB06 allowlist and the fixed
+credential-empty npm request/publication plan, durable toolchain-attempt
+commit, held source/copy completeness transactions, canonical receipts and
+checkpoint, actual constructor-consumer mode/size validation, fake-only
+inverse matrix, and evidence non-promotion.
+
+No implementation, declaration, test, verifier, producer, fixed input, host
+runtime/package, external communication, construction, image, Docker,
+transfer, runtime/result, evidence, Expected, or `Observed` byte changed or
+was accessed. Standing authorization was not used. M2A-IB01 through M2A-IB06
+remain closed only at contract scope, and every later issue stays frozen.
+
+Next: perform the exact bounded Docker-free dependency-input static/unit
+implementation under
+`../prompts/m2-a-evidence-transfer-dependency-input-boundary-implementation.md`;
+do not execute either producer or access input, external communication,
+construction, Docker, transfer, or runtime/result state.
+
+### M2-A dependency-input static/unit implementation handoff
+
+The bounded Docker-free M2A-IB01 through M2A-IB06 implementation is complete
+under the unchanged allowlist. It adds the two fixed import-safe producer
+entries, strict support/declaration boundary, separately branded fake
+backends, canonical receipt/checkpoint and graph validators, held-authority
+production transitions, exact one-shot attempt model, and the actual
+constructor-consumer mode/size correction. Producer execution and input access
+remain unapproved.
+
+Focused transfer verification passes 1 file / 56 tests, existing M2-A
+verification passes 4 files / 5 tests, and root typecheck passes. Aggregate
+root tests ran 109 files / 859 tests with 40 out-of-scope failures. Aggregate
+`check` stops at eight pre-existing formatting warnings before lint,
+typecheck, or tests.
+
+No producer entry, fixed input, external communication, construction, image,
+Docker, transfer, runtime/result, evidence promotion, `Observed`, or standing
+authorization was used.
+
+Next: perform the fresh independent Docker-free read-only dependency-input
+implementation review under
+`../prompts/reviews/m2-a-evidence-transfer-dependency-input-boundary-implementation-review.md`;
+do not repair implementation or execute either producer in that review.
+
+### M2-A dependency-input implementation review decision
+
+The fresh independent Docker-free review records `BLOCKED` on M2A-IBI01 and
+M2A-IBI02. M2A-IB01, M2A-IB02, M2A-IB04, and M2A-IB05 close at static/unit
+implementation scope. M2A-IB03/M2A-IB06 remain open because production closes
+the held attempt parent without correlating the synchronously committed child
+before later path reopens, while the fake claims that transition, and because
+the required runtime/source/every-package-family inverse matrix is incomplete.
+
+Focused transfer verification passes 1 file / 56 tests, existing M2-A
+verification passes 4 files / 5 tests, and root typecheck passes. Aggregate
+root tests observed 99 passing / 10 failing files and 820 passing / 39 failing
+tests; aggregate `check` stops at eight existing formatting warnings. No
+implementation repair, producer, input, external communication, construction,
+Docker, transfer, runtime/result, evidence, `Observed`, or standing
+authorization was used.
+
+Next: save the exact bounded Docker-free M2A-IBI01/M2A-IBI02
+implementation-remediation prompt and fresh independent re-review prompt; do
+not repair implementation or tests in that prompt-only task.
+
+### M2-A M2A-IBI remediation prompt handoff
+
+The exact bounded Docker-free M2A-IBI01/M2A-IBI02 implementation-remediation
+prompt and fresh independent re-review prompt are saved before source or test
+repair. The later task is limited to the dependency-input support/declaration,
+static verifier, focused test, and minimal status allowlist. It must correlate
+one held attempt parent/child through initial checkpoint settlement and close
+the missing behavioral runtime/source/destination/every-package-family
+inverse matrix.
+
+No implementation, declaration, test, verifier, producer, fixed input, host
+runtime/package, external communication, construction, image, Docker,
+transfer, runtime/result, evidence, Expected, or `Observed` byte changed or
+was accessed. Standing authorization was not used. M2A-IB03/M2A-IB06 remain
+open at implementation scope pending remediation and fresh re-review.
+
+Next: perform the exact bounded Docker-free M2A-IBI01/M2A-IBI02
+implementation remediation under
+`../prompts/m2-a-evidence-transfer-dependency-input-boundary-implementation-remediation.md`;
+do not import or execute either producer, access input, use external
+communication, construct an image, call Docker, or access runtime/result
+state.
+
+### M2-A M2A-IBI01/M2A-IBI02 implementation remediation handoff
+
+The bounded Docker-free remediation candidate now preserves the original held
+attempt parent, exact no-follow committed child, operation-specific inventory,
+and all owned descriptors through parent sync and the canonical in-progress
+checkpoint transaction. Production and the separately branded fake use the
+same correlation validator. Behavioral coverage now rejects the complete
+held-authority, runtime/report, source traversal, destination graph, every
+package tuple, and actual-constructor mode/size inverse matrix.
+
+Focused transfer verification passes 1 file / 60 tests, existing M2-A
+verification passes 4 files / 5 tests, and root typecheck passes. Aggregate
+root tests observed 99 passing / 10 failing files and 824 passing / 39 failing
+tests; all 60 focused M2-A tests pass. Aggregate `npm run check` exits during
+formatting on eight pre-existing out-of-scope warnings before lint, typecheck,
+or tests.
+
+No producer entry, fixed input, host runtime/package, external communication,
+construction, image, Docker, transfer, runtime/result, evidence promotion,
+`Observed`, or standing authorization was used. M2A-IBI01/M2A-IBI02 and
+M2A-IB03/M2A-IB06 remain open pending fresh independent re-review;
+M2A-IB01/M2A-IB02/M2A-IB04/M2A-IB05 retain reviewed Docker-free static/unit
+closure.
+
+Next: perform the fresh independent Docker-free read-only M2A-IBI01/M2A-IBI02
+remediation re-review under
+`../prompts/reviews/m2-a-evidence-transfer-dependency-input-boundary-implementation-remediation-review.md`;
+do not repair implementation or tests or execute either producer in that
+review.
+
+### M2-A M2A-IBI implementation-remediation re-review decision
+
+The fresh independent Docker-free re-review closes M2A-IBI02 at static/unit
+scope but remains `BLOCKED` on residual M2A-IBI01. The fake
+`attempt-parent-sync` result does not reach the shared transition validator,
+which receives literal `parentSynced: true`, and attempt identity narrows
+BigInt size through `Number`.
+
+Focused transfer verification passes 1 file / 60 tests, existing M2-A
+verification passes 4 files / 5 tests, and root typecheck passes. Aggregate
+root tests observed 99 passing / 10 failing files and 824 passing / 39 failing
+tests; aggregate `check` stops on eight out-of-scope formatting warnings.
+M2A-IB01/M2A-IB02/M2A-IB04/M2A-IB05 retain reviewed static/unit closure;
+M2A-IB03/M2A-IB06 remain open only on residual M2A-IBI01.
+
+No source/test repair, producer, fixed input, host runtime/package, external
+communication, construction, image, Docker, transfer, runtime/result,
+evidence promotion, `Observed`, or standing authorization was used.
+
+Next: save the exact bounded Docker-free residual M2A-IBI01 parent-sync and
+BigInt-identity remediation prompt plus fresh independent re-review prompt; do
+not repair implementation or tests in that prompt-only task.
+
+### M2-A residual M2A-IBI01 remediation prompt handoff
+
+The exact bounded Docker-free residual-remediation prompt and fresh independent
+re-review prompt are saved before source or test repair. The later task is
+limited to the dependency-input support/declaration, static verifier, focused
+test, and minimal status allowlists. It must carry exact-own parent-sync data
+through the same production/fake commit transition and retain device, inode,
+size, and mtime in one exact non-narrowed BigInt-derived representation.
+
+No implementation, declaration, test, verifier, producer, fixed input, host
+runtime/package, external communication, construction, image, Docker,
+transfer, runtime/result, evidence, Expected, or `Observed` byte changed.
+Standing authorization was not used. M2A-IBI02 and M2A-IB01/M2A-IB02/
+M2A-IB04/M2A-IB05 retain reviewed static/unit closure;
+M2A-IBI01/M2A-IB03/M2A-IB06 remain open.
+
+Next: perform the exact bounded Docker-free residual M2A-IBI01 remediation
+under
+`../prompts/m2-a-evidence-transfer-dependency-input-boundary-implementation-residual-remediation.md`;
+do not import or execute either producer, access input, use external
+communication, construct an image, call Docker, or access runtime/result
+state.
+
+### M2-A residual M2A-IBI01 remediation handoff
+
+The bounded Docker-free candidate now passes one decoded exact-own-data
+parent-sync fact from both production and the separately branded fake into the
+shared commit transition. BigInt-derived device, inode, size, and mtime remain
+canonical nonnegative decimal strings; focused coverage carries a size above
+`Number.MAX_SAFE_INTEGER` unchanged and rejects the complete required
+parent-sync and identity representation contradictions before checkpoint or
+runtime/source reads.
+
+Focused transfer verification passes 1 file / 61 tests, existing M2-A
+verification passes 4 files / 5 tests, and root typecheck passes. Aggregate
+root tests observed 99 passing / 10 failing files and 825 passing / 39 failing
+tests. Aggregate `check` stops during formatting on seven `.serena/` files and
+`containers/profile-control/test/control-host-backend.test.ts`. M2A-IBI02 and
+M2A-IB01/M2A-IB02/M2A-IB04/M2A-IB05 retain reviewed static/unit closure;
+M2A-IBI01/M2A-IB03/M2A-IB06 remain open pending fresh independent re-review.
+
+No producer entry, fixed input, host runtime/package, external communication,
+construction, image, Docker, transfer, runtime/result, evidence promotion,
+`Observed`, or standing authorization was used.
+
+Next: perform the fresh independent Docker-free read-only residual M2A-IBI01
+remediation re-review under
+`../prompts/reviews/m2-a-evidence-transfer-dependency-input-boundary-implementation-residual-remediation-review.md`;
+do not repair implementation or tests or execute either producer in that
+review.
+
+### M2-A residual M2A-IBI01 remediation re-review
+
+The fresh independent Docker-free re-review is `BLOCKED` only on
+M2A-IBI01R01/M2A-IBI01R02. Current source closes the false-parent-sync and
+BigInt-size defects, while the focused suite omits exact-key-shape attempt-
+identity submissions and the static verifier binds only size rather than all
+four BigInt-derived identity encodings. M2A-IBI02 and
+M2A-IB01/M2A-IB02/M2A-IB04/M2A-IB05 retain static/unit closure;
+M2A-IBI01/M2A-IB03/M2A-IB06 remain open.
+
+Focused transfer verification passes 1 file / 61 tests, existing M2-A
+verification passes 4 files / 5 tests, and root typecheck passes. Aggregate
+root tests observed 99 passing / 10 failing files and 825 passing / 39 failing
+tests. Aggregate `check` stops on seven `.serena/` files and
+`containers/profile-control/test/control-host-backend.test.ts`.
+
+No source/test repair, producer import/execution, fixed input, host runtime/
+package, external communication, construction, image, Docker, transfer,
+runtime/result, evidence, Expected, `Observed`, or standing authorization was
+used.
+
+Next: save the exact bounded Docker-free M2A-IBI01 identity-shape/static-
+verifier remediation prompt and fresh independent re-review prompt; do not
+repair source or tests in that prompt-only task.
+
+### M2-A M2A-IBI01 identity-verification prompt handoff
+
+The exact bounded Docker-free M2A-IBI01 identity-verification remediation and
+fresh independent re-review prompt pair is saved before verifier or focused-
+test repair. The later task is limited to the static verifier, focused test,
+and minimal status allowlist. It must close only M2A-IBI01R01/R02 by
+submitting all seven missing exact-key-shape attempt identities and binding all
+four BigInt-derived production encodings against `Number` narrowing.
+
+No implementation, declaration, verifier, test, producer, fixed input, host
+runtime/package, external communication, construction, image, Docker,
+transfer, runtime/result, evidence, Expected, or `Observed` byte changed.
+Standing authorization was not used. M2A-IBI02 and
+M2A-IB01/M2A-IB02/M2A-IB04/M2A-IB05 retain reviewed static/unit closure;
+M2A-IBI01/M2A-IB03/M2A-IB06 remain open, and every later issue #43 gate
+remains frozen.
+
+Next: perform the exact bounded Docker-free M2A-IBI01 identity-verification
+remediation under
+`../prompts/m2-a-evidence-transfer-dependency-input-boundary-implementation-identity-verification-remediation.md`;
+do not edit the support source/declaration, import or execute either producer,
+access input, use external communication, construct an image, call Docker, or
+access runtime/result state.
+
+### M2-A M2A-IBI01 identity-verification remediation handoff
+
+The bounded Docker-free candidate now submits all seven missing exact-key-
+shape attempt identities through the branded fake and shared decoder. Every
+case retains the committed occurrence and failed checkpoint, publishes no
+candidate, enables no cleanup/retry, and stops before checkpoint publication
+or runtime/source/package reads; getter and Proxy trap counters remain zero.
+Static verification requires the exact four BigInt-derived device/inode/size/
+mtime `.toString()` encodings and rejects `Number` narrowing of each.
+
+Focused transfer verification passes 1 file / 62 tests, existing M2-A
+verification passes 4 files / 5 tests, and root typecheck passes. Aggregate
+root tests observed 99 passing / 10 failing files and 826 passing / 39 failing
+tests. Aggregate `check` stops at eight pre-existing out-of-scope formatting
+warnings. M2A-IBI02 and M2A-IB01/M2A-IB02/M2A-IB04/M2A-IB05 retain reviewed
+static/unit closure; M2A-IBI01/M2A-IB03/M2A-IB06 remain open pending fresh
+independent re-review.
+
+The reviewed support/declaration and parent-sync edge remain unchanged. No
+producer, fixed input, host runtime/package, external communication,
+construction, image, Docker, transfer, runtime/result, evidence, Expected,
+`Observed`, or standing authorization was used.
+
+Next: perform the fresh independent Docker-free read-only M2A-IBI01 identity-
+verification remediation re-review under
+`../prompts/reviews/m2-a-evidence-transfer-dependency-input-boundary-implementation-identity-verification-remediation-review.md`;
+do not repair source/tests or execute either producer in that review.
+
+### M2-A M2A-IBI01 identity-verification remediation re-review
+
+The fresh independent Docker-free read-only re-review is `APPROVED` at
+static/unit cooperative-host implementation scope. All seven attempt-identity
+exact-key-shape cases retain the committed occurrence and failed checkpoint,
+publish no candidate, enable no cleanup/retry, stop before checkpoint
+publication or runtime/source/package reads, and invoke neither accessor
+getter nor Proxy trap. Static verification binds all four BigInt-derived
+device/inode/size/mtime production encodings against direct `Number`
+narrowing.
+
+Focused transfer verification passes 1 file / 62 tests, existing M2-A
+verification passes 4 files / 5 tests, and root typecheck passes. Aggregate
+root tests observed 99 passing / 10 failing files and 826 passing / 39 failing
+tests. Aggregate `check` stops at eight pre-existing formatting warnings.
+
+M2A-IBI01/M2A-IBI02 and M2A-IB01 through M2A-IB06 are closed at implementation
+scope. The reviewed support/declaration, parent-sync edge, null construction
+bindings, false execution approvals, and evidence separation remain unchanged.
+No producer, fixed input, host runtime/package, external communication,
+construction, image, Docker, transfer, runtime/result, evidence, Expected,
+`Observed`, or standing authorization was used.
+
+Next: save the exact bounded npm-acquisition producer-execution contract and
+fresh independent review prompt; do not execute the producer, access fixed
+input, or use external communication in that prompt-only task.
+
+### npm-acquisition producer execution-gate contract handoff
+
+The new Docker-free contract and fresh review prompt fix M2A-NG01 through
+M2A-NG06 around the exact current producer closure, credential-empty
+two-request transport, root-first one-shot publication, bounded process
+terminal, later candidate review, and explicit-human external authority.
+M2A-NG01 through M2A-NG06 remain open pending fresh independent review.
+
+No producer, fixed root, host environment/runtime, external communication,
+npm candidate byte, construction, Docker, runtime/result, evidence, Expected,
+`Observed`, or standing authorization was used.
+
+Next: perform the fresh independent Docker-free read-only M2A-NG01 through
+M2A-NG06 contract review under
+`../prompts/reviews/m2-a-evidence-transfer-npm-acquisition-execution-gate-review.md`;
+do not execute or import the producer, access the fixed acquisition root or
+host environment/runtime, or use external communication.
+
+### npm-acquisition producer execution-gate contract review
+
+The fresh independent Docker-free read-only review is `BLOCKED` on
+M2A-NGR01/M2A-NGR02. The producer entry does not bind the exact executable and
+lexical script argv required by the contract, and the contract's one-link
+acquisition-root directory conflicts with production's positive-link-count
+check. M2A-NG02/M2A-NG04/M2A-NG05/M2A-NG06 close at contract scope;
+M2A-NG01/M2A-NG03 remain open.
+
+The exact three-file identity/aggregate, two-request transport, root-first
+retention direction, bounded no-retry process/result separation, and
+explicit-human external authority were reproduced. Focused transfer
+verification passes 1 file / 62 tests. No producer, fixed root, host
+environment/runtime, external communication, npm candidate, construction,
+Docker, runtime/result, evidence, Expected, `Observed`, or standing
+authorization was used.
+
+Next: save the exact bounded Docker-free M2A-NGR01/M2A-NGR02
+contract-remediation prompt and fresh independent re-review prompt; do not
+repair contract/source/tests or execute the producer in that prompt-only task.
+
+### npm-acquisition M2A-NGR01/M2A-NGR02 remediation prompt handoff
+
+The exact bounded Docker-free remediation and fresh independent re-review
+prompt pair is saved before contract, acquisition-entry, verifier, or focused-
+test repair. The later task is limited to the exact entry/static/test/contract
+allowlists and must reconcile lexical host-command authority with canonical
+Node process state plus positive directory links with exact-one publication
+files.
+
+Only the saved prompt pair and minimal status records changed. No execution-
+gate requirement, implementation, verifier, test, producer, fixed root, host
+environment/runtime, external communication, npm candidate, construction,
+Docker, runtime/result, evidence, Expected, `Observed`, or standing
+authorization changed or was used. M2A-NG02/M2A-NG04/M2A-NG05/M2A-NG06
+retain contract-scope closure; M2A-NG01/M2A-NG03 remain open.
+
+Next: perform the exact bounded Docker-free M2A-NGR01/M2A-NGR02 remediation
+under
+`../prompts/m2-a-evidence-transfer-npm-acquisition-execution-gate-remediation.md`;
+do not import or execute the producer, access fixed or host runtime state, or
+use external communication.
+
+### npm-acquisition M2A-NGR01/M2A-NGR02 remediation handoff
+
+The bounded Docker-free candidate now separates the reviewed lexical host
+command from exact canonical Node executable/argv/cwd/empty-environment state
+checked before producer reachability and aligns the acquisition-root directory
+with production's positive-link-count predicate while preserving exact-one
+publication files. Function-scoped static weakening cases cover both repairs.
+The fresh three-file aggregate is
+`sha256:88a7e55d63a8579d3ce7de58d2f65c20e2524665e2f412b3f9d3213ec12d9515`.
+
+Focused transfer verification passes 1 file / 62 tests, existing M2-A
+verification passes 4 files / 5 tests, and root typecheck passes. Aggregate
+root tests retain 99 passing / 10 failing files and 826 passing / 39 failing
+tests; aggregate `check` stops at eight pre-existing formatting warnings.
+M2A-NG01/M2A-NG03 remain open pending fresh independent re-review;
+M2A-NG02/M2A-NG04/M2A-NG05/M2A-NG06 retain contract-scope closure.
+
+No producer, fixed root, host runtime, external communication, npm candidate,
+construction, Docker, runtime/result, evidence, Expected, or `Observed`
+boundary was used. Standing authorization was not used; every later issue
+remains frozen.
+
+Next: perform the fresh independent Docker-free read-only M2A-NGR01/M2A-NGR02
+remediation re-review under
+`../prompts/reviews/m2-a-evidence-transfer-npm-acquisition-execution-gate-remediation-review.md`;
+do not repair source/tests, execute the producer, access fixed or host runtime
+state, or use external communication.
+
+### npm-acquisition M2A-NGR01/M2A-NGR02 remediation re-review
+
+The fresh independent Docker-free read-only re-review is `APPROVED` at
+contract/static entry-guard scope. It closes M2A-NGR01/M2A-NGR02 and
+M2A-NG01/M2A-NG03 by independently reproducing exact complementary
+lexical-host/canonical-Node authority and distinct positive-directory/
+exact-one-file predicates. M2A-NG02/M2A-NG04/M2A-NG05/M2A-NG06 retain
+closure, completing all six M2A-NG items only at contract scope.
+
+Focused transfer verification passes 1 file / 62 tests, existing M2-A
+verification passes 4 files / 5 tests, and root typecheck passes. Aggregate
+root tests retain 99 passing / 10 failing files and 826 passing / 39 failing
+tests. No producer, fixed root, host runtime, external communication, npm
+candidate, construction, Docker, runtime/result, evidence, Expected, or
+`Observed` boundary was used. Standing authorization was not used and cannot
+authorize the external occurrence; every later issue remains frozen.
+
+Next: save the exact adjacent-preflight/one-occurrence execution prompt and
+separate Docker-free fixed-root result-review prompt; do not execute the
+producer, access fixed or host runtime state, or use external communication in
+that prompt-only task.
+
+### npm-acquisition one-occurrence/result-review prompt handoff
+
+The exact pre-authority prompt pair is saved at
+`../prompts/m2-a-evidence-transfer-npm-acquisition-execution.md` (12,829 bytes,
+SHA-256
+`cab8482f8ace0b3ad1460e95b1419965a92bd3e00e2ebd501b5e8f82757b0d8f`)
+and
+`../prompts/reviews/m2-a-evidence-transfer-npm-acquisition-result-review.md`
+(13,241 bytes, SHA-256
+`a62a49b16a94bcd75a289e8b6da97eba6cb2e1973f893fa60c013fb5a856aa8b`).
+The first fixes the adjacent full-byte/hash preflight, one direct
+`shell: false` occurrence, bounded process handoff, and no retry. The second
+fixes the later Docker-free no-follow review to only the acquisition root and
+recognized children without changing construction bindings or evidence.
+
+No producer, fixed root, host runtime, external communication, npm candidate,
+construction, Docker, runtime/result, evidence, Expected, or `Observed`
+boundary was used. Standing authorization was not used and cannot authorize
+the occurrence; all six M2A-NG items remain closed only at contract/static
+entry-guard scope and every later issue remains frozen.
+
+Next: a person must freshly review the saved prompt pair and explicitly
+authorize the exact M2A-NG06 DNS/HTTPS, fixed-root, generation-consuming
+no-retry, and later fixed-root review effects before one occurrence may run.
+
+### npm-acquisition explicit authorization and one-occurrence handoff
+
+The current repository user directly authorized all four exact M2A-NG06
+effects under the saved prompt identities. A fresh worker reproduced those
+identities, the exact three-file producer aggregate and static boundaries,
+unchanged construction/evidence sentinels, and focused transfer verification
+with 1 file / 62 tests. Its final uninterrupted full-byte/hash preflight passed
+and exactly one direct empty-environment `shell: false` occurrence was issued.
+
+The process settled naturally with exit `1`, no signal, empty stdout, and the
+fixed 29-byte `M2A_INPUT_ACQUISITION_FAILED\n` stderr line. Generation
+`20260721-01` is exhausted and was not retried. The execution worker did not
+inspect or classify the fixed root; the authoritative bounded handoff is
+`reviews/m2-a-evidence-transfer-npm-acquisition-execution.md`.
+
+Direct human authorization, not continuing-work standing authorization, was
+used. Candidate review remains unperformed, both reviewed acquisition
+construction bindings remain `null`, runtime approval remains false, and
+evidence review remains `not-performed`.
+
+Next: perform the fresh independent Docker-free fixed-root result review under
+`../prompts/reviews/m2-a-evidence-transfer-npm-acquisition-result-review.md`;
+do not run either producer, communicate externally, repair or retry the
+occurrence, or update construction bindings.
+
+### npm-acquisition exhausted-generation result review
+
+The fresh independent Docker-free review records `INCONCLUSIVE` in
+`reviews/m2-a-evidence-transfer-npm-acquisition-result.md`. It reproduced the
+exact one-occurrence natural failure handoff and found only a stable
+effective-user-owned mode-`0700` acquisition directory with an empty
+inventory. No archive, receipt, registry SRI, or construction-eligible input
+exists.
+
+Generation `20260721-01` is exhausted without retry, repair, cleanup, or
+reinterpretation. Both reviewed acquisition construction bindings remain
+`null`, runtime approval remains false, and evidence review remains
+`not-performed`. No construction, runtime result, Expected, `Observed`, or
+historical evidence changed.
+
+Issue #43 closes only at this reviewed Inconclusive npm-acquisition boundary.
+Issue #54 is now the sole active ordered frozen-research item.
+
+Next: begin issue #54 with one Docker-free fresh-generation selected-Vite
+contract and fresh independent contract-review prompt; do not implement or
+execute that generation in the contract task.
+
+### selected-Vite `20260723-01` init/reaping contract handoff
+
+The proposed Docker-free contract is now saved in
+`p2-vite-init-reaper-contract.md`. It reserves the exact `20260723-01`
+Expected/run/container tuple and proposes one Vite-only Docker `--init` option
+plus literal `HostConfig.Init=true` created/final inspect binding. The fifth
+attempt's retained post-close process-group residue is still only an
+Inconclusive observed boundary; live-versus-unreaped state and lower-level
+cause remain unknown.
+
+The current-task prompt and fresh independent review prompt are saved at
+`../prompts/p2-vite-init-reaper-contract.md` and
+`../prompts/reviews/p2-vite-init-reaper-contract-review.md`. The contract keeps
+post-close residue as child failure, requires actual group absence and every
+existing transfer/evidence/receipt predicate, preserves permissive-first and
+no-retry behavior, and treats configured init as intent rather than settlement
+evidence.
+
+This task changed no production code, staging, Expected event value, result
+root, runtime state, selected-Vite/experiment-matrix `Observed`, or accepted
+historical evidence. It ran no Docker, probe, lifecycle fixture, build,
+staging, execution, or result review. Standing authorization was not used.
+
+Next: perform the fresh independent Docker-free contract review under
+`../prompts/reviews/p2-vite-init-reaper-contract-review.md`; implementation,
+staging, Docker, result access, and Expected/Observed changes remain
+unauthorized.
+
+### selected-Vite `20260723-01` init/reaping contract review
+
+The fresh independent Docker-free contract review in
+`reviews/p2-vite-init-reaper-contract.md` is `APPROVED` for one bounded
+implementation/static-unit task with no blocking or non-blocking finding. It
+reproduces the tracked five-attempt projection and current source baseline,
+keeps the fifth result as immutable Inconclusive evidence, and approves only
+the exact Vite-only `--init`, literal-true created/final inspect binding,
+`20260723-01` identity change, old-identity rejection, codegen non-change, and
+focused negative regression boundary.
+
+Configured init remains intent rather than settlement or runtime evidence.
+Post-close residue remains child failure even after later group absence, and
+all Docker settlement, transfer, evidence, receipt, permissive-first,
+same-image, trust-marker, and no-retry predicates remain conjunctive. No
+implementation, staging, Docker, result-root access, Expected/Observed change,
+historical evidence mutation, presentation projection, or standing
+authorization was used.
+
+Next: implement the approved `20260723-01` Vite-only `--init` and six-field
+inspect binding with focused Docker-free regressions, then rebuild only the
+fixed Vite staging candidate; do not call Docker or access result roots.
+
+### selected-Vite `20260723-01` init/reaping implementation handoff
+
+The approved Docker-free implementation now binds only the exact
+`20260723-01` Expected/run/container tuple. Selected Vite has one fixed
+`--init` before `--name`, six-field created/final inspect accepts only literal
+`HostConfig.Init=true`, and focused negatives reject missing, false,
+malformed, extra, duplicate, repositioned, and changed values before evidence
+or receipt access. Both codegen create arrays remain exact and contain no
+`--init`; historical Vite tuples remain rejected. Existing process-group,
+post-close-residue failure, transfer, evidence, receipt, permissive-first,
+same-image, trust-marker, and no-retry tests remain passing.
+
+Focused P2 tests passed 4 files / 77 tests, focused M2-D context passed 1 file /
+19 tests, `npm run p2:verify` passed 9 files / 122 tests, `npm run p2:build`
+passed, and compiled imports passed. `npm run m2d:verify` passed
+typecheck/build/static before 23 integration tests correctly stopped on host
+Node `v22.23.1` versus fixed Node `v20.18.2`; 9 files / 60 tests passed. This
+full-suite command did not pass and no fixed version changed.
+
+The exact approved staging action used standing authorization, not a separate
+human review. It moved the prior ignored tree intact, rebuilt 128 source-equal
+fixed-mode Vite files, and reproduced plan-order manifest
+`8803f5b5cec7dedb2168a03087f9e574f1d380e81602ebc2c8d722783859bd20`.
+The fresh review prompt is
+`../prompts/reviews/p2-vite-init-reaper-implementation-review.md` (6,574
+bytes, SHA-256
+`6dd17fe63d0f24b8d3997fd67da400a42bb6fcd20e42e87f446b97f205dce835`).
+No Docker, result-root access, runtime evidence, Expected/Observed change,
+historical evidence mutation, external communication, or Remote Git occurred.
+
+Next: perform the fresh independent Docker-free read-only implementation and
+execution-gate review under
+`../prompts/reviews/p2-vite-init-reaper-implementation-review.md`; do not
+repair the candidate, call Docker, execute the pair, or access historical
+result roots.
+
+### selected-Vite `20260723-01` init/reaping implementation/execution-gate review
+
+The fresh independent Docker-free review in
+`reviews/p2-vite-init-reaper-implementation.md` is `APPROVED` with no finding.
+It reproduced the ten fixed candidate hashes, unchanged codegen create arrays,
+the exact 128-file source-equal fixed-mode staging manifest `8803f5b5...`,
+fixed Vite/Rollup/esbuild versions, compiled import safety, and absence of only
+the two exact new roots. The source and regressions retain literal Vite-only
+`--init`, literal-true created/final inspect binding, exact new identity,
+post-close-residue failure, all transfer/evidence/receipt gates,
+permissive-first order, same-image pairing, cooperative trust, and no retry.
+
+Focused P2 passed 4 files / 77 tests, focused M2-D context passed 1 file / 19
+tests, `npm run p2:verify` passed 9 files / 122 tests, and `npm run p2:build`
+and compiled imports passed. `npm run m2d:verify` again passed
+typecheck/build/static before the unchanged host Node `v22.23.1` versus fixed
+`v20.18.2` guard produced 23 `M2D_VERSION_MISMATCH` failures; 9 files / 60
+tests passed and the full command exited 1.
+
+The review ran no Docker, accessed no result root or historical retained state,
+created no runtime evidence, and changed no Expected event value, `Observed`,
+historical evidence, or presentation projection. Standing authorization was
+not used. It approves at most one later exact argument-free pair invocation
+after fresh fixed-identity and two-root-absence revalidation, with no retry.
+
+Next: in a fresh worker, revalidate the approved hashes, staging, fixed script,
+and only the two exact new-root absences, then invoke
+`npm run p2:execute:vite` at most once under standing authorization; do not
+retry.
+
+### selected-Vite `20260723-01` init/reaping exact one-shot execution
+
+The fresh worker reproduced all ten approved hashes, the exact 128-file
+source-equal regular non-symlink staging identity and
+`8803f5b5cec7dedb2168a03087f9e574f1d380e81602ebc2c8d722783859bd20`
+manifest, fixed Vite/Rollup/esbuild versions, the exact argument-free package
+script, and only the two exact new-root absences. It then used standing
+authorization for one `npm run p2:execute:vite` invocation. This was not a
+separate human review.
+
+The command exited 0 without retry. Its one-line bounded direct stdout is 684
+bytes including LF with SHA-256
+`683b78cd5f181e083657c76382eb94612ccdb989cea1bc8efe6075d9b6997aac`.
+It reports an exact `p2-vite-pair/v4` same-image candidate on the fixed image
+ID and two complete `matches-expected` scenario projections, each with a
+written attempt and receipt, inspected evidence, and no issue.
+
+The worker did not inspect or classify either result root after execution.
+These are candidate runtime observations pending the separately saved
+Docker-free result review, not accepted selected-Vite or experiment-matrix
+`Observed`. No Expected event value, historical evidence, or tracked
+presentation projection changed. The occurrence is exhausted and cannot be
+retried.
+
+Next: perform the fresh independent Docker-free fixed-root result review under
+`../prompts/reviews/p2-vite-init-reaper-result-review.md`; do not rerun,
+repair, call Docker, or access historical result roots.
+
+### selected-Vite `20260723-01` init/reaping fixed-root result review
+
+The fresh independent Docker-free review in
+`reviews/p2-vite-init-reaper-result.md` is `ACCEPTED` with no blocking or
+non-blocking finding. It reproduced all ten approved candidate hashes, the
+fixed package script, exact 128-file source-equal fixed-mode staging manifest
+`8803f5b5...`, and only the two bounded mode-`0700` active roots.
+
+Both canonical v4 attempts and receipts were independently reconstructed byte
+for byte with the approved pure progress validator, bounded evidence reader,
+and projectors. Both scenarios have valid-terminal progress, natural
+container/runner settlement, completed cleanup, unchanged source hashes,
+complete `matches-expected` projections, and no issue. The resulting
+same-image pair and 684-byte entry line exactly match the execution handoff.
+
+Selected Vite is accepted as Observed at the exact one-local-pair scope. The
+deterministic three-table presentation projection now contains its sanitized
+capability outcomes while retaining the five earlier immutable Inconclusive
+attempts. Constrained fixed-child success remains explicitly
+`CONSTRAINED_CHILD_REQUIRED_BY_TOOL`; configured init is not treated as a
+demonstrated cause; cooperative-progress and no-general-sandbox limitations
+remain. `experiment-matrix.md` and all Expected values are unchanged.
+
+The review ran no Docker, retry, repair, historical-root access, external
+communication, or Remote Git. Standing authorization was not needed or used
+for this non-executing review.
 
 Next: none.
